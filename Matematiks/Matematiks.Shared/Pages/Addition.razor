@@ -1,0 +1,90 @@
+﻿@page "/addition"
+
+<PageTitle>Addition</PageTitle>
+
+<h1 class="display-1"> @left + @right</h1>
+
+<h1 class="display-1" style="height:100px;"> @result</h1>
+
+@* <button class="btn btn-primary" @onclick="Generate">Next</button> *@
+
+<br />
+<div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
+
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(1)">1</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(2)">2</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(3)">3</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(4)">4</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(5)">5</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(6)">6</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(7)">7</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(8)">8</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(9)">9</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="Delete">&lt;</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(0)">0</button>
+    </div>
+</div>
+
+<p> @counter </p>
+
+<style>
+    .btn-group > button {
+        height:150px;
+        font-size: 50px;
+    }
+</style>
+
+@code {
+    private int left = 0;
+
+    private int right = 0;
+
+    private string result = string.Empty;
+
+    private int counter = 0;
+
+    private void Generate()
+    {
+        left = Random.Shared.Next(1, 19);
+
+        right = Random.Shared.Next(1, 20 - left);
+
+        result = string.Empty;
+    }
+
+    private void Input(int number)
+    {
+        result += number;
+
+        if (int.TryParse(result, out var intResult))
+        {
+            if (intResult == left + right)
+            {
+                counter++;
+                Generate();
+            }
+        }
+    }
+
+    private void Delete()
+    {
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            return;
+        }
+
+        result = result[..^1];
+    }
+
+    public Addition()
+    {
+        Generate();
+    }
+}
