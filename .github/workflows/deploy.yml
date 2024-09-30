@@ -35,7 +35,7 @@ jobs:
         uses: na1307/blazor-github-pages@v2
         id: prepare
         with:
-          project-path: BluehillHomePage/BluehillHomePage.csproj
+          project-path: Matematiks/Matematiks.Web.csproj
           main-repo: true
       - name: Setup Pages
         uses: actions/configure-pages@v5
