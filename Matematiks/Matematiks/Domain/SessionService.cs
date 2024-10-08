@@ -22,16 +22,15 @@ public class SessionService : ISessionService
     {
         var sessions = GetSessions();
 
-        var existingSession = sessions.FirstOrDefault(x => x.Id == session.Id);
+        var sessionIndex = sessions.FindIndex(x => x.Id == session.Id);
 
-        if (existingSession is null)
+        if (sessionIndex == -1)
         {
             sessions.Add(session);
         }
         else
         {
-            existingSession.CorrectCounter = session.CorrectCounter;
-            existingSession.DeleteCounter = session.DeleteCounter;
+            sessions[sessionIndex] = session;
         }
 
         _storage.SetItem("sessions", sessions);
