@@ -1,6 +1,8 @@
 ﻿@page "/"
 @page "/addition"
 
+@inject ISessionService _sessionService;
+
 <PageTitle>Addition</PageTitle>
 
 <h1 class="display-1"> @left + @right</h1>
@@ -52,6 +54,8 @@
     private int correctCounter = 0;
     private int deleteCounter = 0;
 
+    private Session session = new();
+
     private void Generate()
     {
         left = Random.Shared.Next(1, 19);
@@ -75,6 +79,10 @@
             if (intResult == left + right)
             {
                 correctCounter++;
+
+                session.CorrectCounter = correctCounter;
+
+                SaveState();
                 Generate();
             }
         }
@@ -89,10 +97,21 @@
 
         result = result[..^1];
         deleteCounter++;
+
+        session.DeleteCounter = deleteCounter;
+        SaveState();
     }
 
-    public Addition()
+    protected override Task OnInitializedAsync()
     {
         Generate();
+
+        return base.OnInitializedAsync();
     }
+
+    private void SaveState()
+    {
+        session.LastActionTime = DateTime.Now;
+        _sessionService.SaveSession(session);
+    }  
 }

@@ -1,0 +1,22 @@
+﻿@page "/sessions"
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inject ISessionService _sessionService;
+
+<PageTitle>Sessions</PageTitle>
+<QuickGrid Items="sessions">
+    <PropertyColumn Property="@(p => p.Created)" Sortable="true" Format="dd.MM.yyyy HH:mm" InitialSortDirection="SortDirection.Descending" />   
+    <PropertyColumn Property="@(p => p.CorrectCounter)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.DeleteCounter)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Duration)" Sortable="true" />
+</QuickGrid>
+
+@code {
+    private IQueryable<Session> sessions = new List<Session>().AsQueryable();
+
+    protected override void OnInitialized()
+    {
+        sessions = _sessionService.GetSessions().OrderByDescending(x => x.Created).AsQueryable();
+        base.OnInitialized();
+    }
+}
