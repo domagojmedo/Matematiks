@@ -1,5 +1,8 @@
 ﻿@page "/"
 @page "/addition"
+@using Matematiks.Data
+
+@inject ISessionService _sessionService;
 
 <PageTitle>Addition</PageTitle>
 
@@ -52,6 +55,17 @@
     private int correctCounter = 0;
     private int deleteCounter = 0;
 
+    private Session? session;
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = await _sessionService.CreateSession();
+
+        Generate();
+
+        await base.OnInitializedAsync();
+    }
+
     private void Generate()
     {
         left = Random.Shared.Next(1, 19);
@@ -61,7 +75,7 @@
         result = string.Empty;
     }
 
-    private void Input(int number)
+    private async Task Input(int number)
     {
         if (result.Count() >= 2)
         {
@@ -75,12 +89,14 @@
             if (intResult == left + right)
             {
                 correctCounter++;
+
+                await _sessionService.UpdateCounters(session!.Id, correctCounter, deleteCounter);
                 Generate();
             }
         }
     }
 
-    private void Delete()
+    private async Task Delete()
     {
         if (string.IsNullOrWhiteSpace(result))
         {
@@ -89,10 +105,7 @@
 
         result = result[..^1];
         deleteCounter++;
-    }
 
-    public Addition()
-    {
-        Generate();
+        await _sessionService.UpdateCounters(session!.Id, correctCounter, deleteCounter);
     }
 }
