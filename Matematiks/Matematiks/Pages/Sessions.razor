@@ -5,7 +5,8 @@
 
 <PageTitle>Sessions</PageTitle>
 <QuickGrid Items="sessions">
-    <PropertyColumn Property="@(p => p.Created)" Sortable="true" Format="dd.MM.yyyy HH:mm" InitialSortDirection="SortDirection.Descending" />   
+    <PropertyColumn Property="@(p => p.Created)" Sortable="true" Format="dd.MM.yyyy HH:mm" InitialSortDirection="SortDirection.Descending" />
+    <PropertyColumn Property="@(p => p.SessionType)" Sortable="true" />
     <PropertyColumn Property="@(p => p.CorrectCounter)" Sortable="true" />
     <PropertyColumn Property="@(p => p.DeleteCounter)" Sortable="true" />
     <PropertyColumn Property="@(p => p.Duration)" Sortable="true" />

@@ -40,6 +40,18 @@ public class SessionService : ISessionService
     {
         var sessions = _storage.GetItem<List<Session>>("sessions") ?? [];
 
+        // fix for older values before SessionType was introduced
+        sessions = sessions.Select(x =>
+            {
+                if (x.SessionType == 0)
+                {
+                    x.SessionType = SessionType.Addition;
+                }
+
+                return x;
+            })
+            .ToList();
+
         return sessions;
     }
 }
