@@ -1,10 +1,10 @@
-﻿@page "/multiplication"
+﻿@page "/division"
 
 @inject ISessionService _sessionService;
 
-<PageTitle>Multiplication</PageTitle>
+<PageTitle>Division</PageTitle>
 
-<h1 class="display-1"> @left x @right = @result</h1>
+<h1 class="display-1"> @left / @right = @result</h1>
 
 <div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
 
@@ -48,20 +48,23 @@
     private int correctCounter = 0;
     private int deleteCounter = 0;
 
-    private Session session = new(SessionType.Multiplication);
+    private Session session = new(SessionType.Division);
 
     private void Generate()
     {
-        left = Random.Shared.Next(1, 6);
+        var tempLeft = Random.Shared.Next(1, 6);
+        var tempRight = Random.Shared.Next(1, 6);
+        var tempResult = tempLeft * tempRight;
 
-        right = Random.Shared.Next(1, 6);
+        left = tempResult;
+        right = tempRight;        
 
         result = string.Empty;
     }
 
     private void Input(int number)
     {
-        if (result.Count() >= 3)
+        if (result.Count() >= 2)
         {
             return;
         }
@@ -70,7 +73,7 @@
 
         if (int.TryParse(result, out var intResult))
         {
-            if (intResult == left * right)
+            if (intResult == left / right)
             {
                 correctCounter++;
 
