@@ -25,5 +25,6 @@ public class Session
 public enum SessionType
 {
     Addition = 1,
-    Subtraction = 2
+    Subtraction = 2,
+    Multiplication = 3
 }
