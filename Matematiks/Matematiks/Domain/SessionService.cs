@@ -9,15 +9,8 @@ public interface ISessionService
     void SaveSession(Session session);
 }
 
-public class SessionService : ISessionService
+public class SessionService(ISyncLocalStorageService storage) : ISessionService
 {
-    private readonly ISyncLocalStorageService _storage;
-
-    public SessionService(ISyncLocalStorageService storage)
-    {
-        _storage = storage;
-    }
-
     public void SaveSession(Session session)
     {
         var sessions = GetSessions();
@@ -33,12 +26,12 @@ public class SessionService : ISessionService
             sessions[sessionIndex] = session;
         }
 
-        _storage.SetItem("sessions", sessions);
+        storage.SetItem("sessions", sessions);
     }
 
     public List<Session> GetSessions()
     {
-        var sessions = _storage.GetItem<List<Session>>("sessions") ?? [];
+        var sessions = storage.GetItem<List<Session>>("sessions") ?? [];
 
         // fix for older values before SessionType was introduced
         sessions = sessions.Select(x =>

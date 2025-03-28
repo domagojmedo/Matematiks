@@ -1,0 +1,194 @@
+﻿@page "/multidivision"
+
+@inject ISessionService _sessionService;
+@inject ISettingsService _settingsService;
+
+<PageTitle>MultiDivision</PageTitle>
+
+<h1 class="display-1"> @left @sign @right = @result</h1>
+
+<div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
+
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(1)">1</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(2)">2</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(3)">3</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(4)">4</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(5)">5</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(6)">6</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(7)">7</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(8)">8</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(9)">9</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="Delete">&lt;</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => Input(0)">0</button>
+    </div>
+</div>
+
+<p> @correctCounter | @deleteCounter </p>
+
+@foreach (var number in numbers)
+{
+    <label>
+        <input type="checkbox" value="@number" @onchange="e => OnCheckboxChanged(e, number)" checked="@selectedNumbers.Contains(number)" />
+        @number |
+    </label>
+}
+
+<style>
+    .btn-group > button {
+    height: 150px;
+    font-size: 50px;
+    }
+</style>
+
+@code {
+    private List<int> numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    private List<int> selectedNumbers = [];
+
+    private int left = 0;
+    private int right = 0;
+    private string sign;
+
+    private Operations currentOperation;
+    private List<Operations> operations = [Operations.Division, Operations.Multiplication];
+
+    private string result = string.Empty;
+
+    private int correctCounter = 0;
+    private int deleteCounter = 0;
+
+    private Session session = new(SessionType.MultiDivision);
+
+    private void Generate()
+    {
+        var settings = _settingsService.GetSettings();
+
+        selectedNumbers = settings.SelectedNumbers;
+
+        if (selectedNumbers.Count == 0)
+        {
+            left = right = 1;
+
+            sign = "x";
+
+            result = string.Empty;
+
+            return;
+        }
+
+        currentOperation = operations[Random.Shared.Next(operations.Count)];
+
+        if (currentOperation == Operations.Multiplication)
+        {
+            sign = "x";
+
+            left = selectedNumbers[Random.Shared.Next(selectedNumbers.Count)];
+
+            right = Random.Shared.Next(1, 11);
+
+            result = string.Empty;
+        }
+        else if (currentOperation == Operations.Division)
+        {
+            var tempLeft = selectedNumbers[Random.Shared.Next(selectedNumbers.Count)];
+            var tempRight = Random.Shared.Next(1, 11);
+            var tempResult = tempLeft * tempRight;
+
+            left = tempResult;
+            right = tempRight;
+
+            sign = ":";
+            result = string.Empty;
+        }
+    }
+
+    private void Input(int number)
+    {
+        if (result.Count() >= 3)
+        {
+            return;
+        }
+
+        result += number;
+
+        if (int.TryParse(result, out var intResult))
+        {
+            var operationResult = currentOperation switch
+            {
+                Operations.Multiplication => left * right,
+                Operations.Division => left / right,
+                _ => 0
+            };
+
+            if (intResult == operationResult)
+            {
+                correctCounter++;
+
+                session.CorrectCounter = correctCounter;
+
+                SaveState();
+                Generate();
+            }
+        }
+    }
+
+    private void Delete()
+    {
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            return;
+        }
+
+        result = result[..^1];
+        deleteCounter++;
+
+        session.DeleteCounter = deleteCounter;
+        SaveState();
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        Generate();
+
+        return base.OnInitializedAsync();
+    }
+
+    private void SaveState()
+    {
+        session.LastActionTime = DateTime.Now;
+        _sessionService.SaveSession(session);
+    }
+
+    private void OnCheckboxChanged(ChangeEventArgs e, int value)
+    {
+        var isChecked = ((bool?)e.Value) == true;
+
+        if (isChecked)
+        {
+            if (!selectedNumbers.Contains(value))
+            {
+                selectedNumbers.Add(value);
+            }
+        }
+        else
+        {
+            if (selectedNumbers.Contains(value))
+            {
+                selectedNumbers.Remove(value);
+            }
+        }
+
+        _settingsService.SetSelectedNumbers(selectedNumbers);
+        correctCounter = 0;
+        deleteCounter = 0;
+        session = new(SessionType.MultiDivision);
+
+        Generate();
+    }
+}

@@ -4,7 +4,7 @@
 
 <PageTitle>Division</PageTitle>
 
-<h1 class="display-1"> @left / @right = @result</h1>
+<h1 class="display-1"> @left : @right = @result</h1>
 
 <div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
 
@@ -52,8 +52,8 @@
 
     private void Generate()
     {
-        var tempLeft = Random.Shared.Next(1, 6);
-        var tempRight = Random.Shared.Next(1, 6);
+        var tempLeft = Random.Shared.Next(1, 11);
+        var tempRight = Random.Shared.Next(1, 11);
         var tempResult = tempLeft * tempRight;
 
         left = tempResult;
