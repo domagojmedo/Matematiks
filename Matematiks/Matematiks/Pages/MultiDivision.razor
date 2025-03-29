@@ -84,20 +84,26 @@
 
         currentOperation = operations[Random.Shared.Next(operations.Count)];
 
+        var hasOne = selectedNumbers.Contains(1);
+        var hasTen = selectedNumbers.Contains(10);
+
+        var min = hasOne ? 1 : 2;
+        var max = hasTen ? 11 : 10;
+
         if (currentOperation == Operations.Multiplication)
         {
             sign = "x";
 
             left = selectedNumbers[Random.Shared.Next(selectedNumbers.Count)];
 
-            right = Random.Shared.Next(1, 11);
+            right = Random.Shared.Next(min, max);
 
             result = string.Empty;
         }
         else if (currentOperation == Operations.Division)
         {
             var tempLeft = selectedNumbers[Random.Shared.Next(selectedNumbers.Count)];
-            var tempRight = Random.Shared.Next(1, 11);
+            var tempRight = Random.Shared.Next(min, max);
             var tempResult = tempLeft * tempRight;
 
             left = tempResult;
