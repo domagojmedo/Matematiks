@@ -1,0 +1,48 @@
+@namespace Matematiks.Components
+
+<div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(1)">1</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(2)">2</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(3)">3</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(4)">4</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(5)">5</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(6)">6</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(7)">7</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(8)">8</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(9)">9</button>
+    </div>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="OnDelete">&lt;</button>
+        <button type="button" class="btn btn-outline-primary py-3" @onclick="_ => OnInput(0)">0</button>
+    </div>
+</div>
+
+<style>
+    .btn-group > button {
+        height:150px;
+        font-size: 50px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<int> Input { get; set; }
+
+    [Parameter]
+    public EventCallback Delete { get; set; }
+
+    private async Task OnInput(int number)
+    {
+        await Input.InvokeAsync(number);
+    }
+
+    private async Task OnDelete()
+    {
+        await Delete.InvokeAsync();
+    }
+}
