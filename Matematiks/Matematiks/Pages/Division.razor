@@ -64,7 +64,8 @@
             return;
         }
 
-        result = result[..^1];
+        // Clear the entire input instead of just removing one character
+        result = string.Empty;
         deleteCounter++;
 
         session.DeleteCounter = deleteCounter;
