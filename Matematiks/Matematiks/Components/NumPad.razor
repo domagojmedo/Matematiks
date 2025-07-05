@@ -1,4 +1,6 @@
 @namespace Matematiks.Components
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
 <div class="btn-group-vertical ml-4 mt-4 container" role="group" aria-label="Basic example">
     <div class="btn-group">
@@ -26,6 +28,49 @@
     .btn-group > button {
         height:150px;
         font-size: 50px;
+        -webkit-tap-highlight-color: transparent;
+        transition: all 0.15s ease-in-out;
+    }
+
+    /* Prevent hover states on touch devices */
+    .btn-group > button:hover {
+        background-color: transparent;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    /* Override Bootstrap's hover state more aggressively */
+    .btn-outline-primary:hover {
+        background-color: transparent !important;
+        border-color: #0d6efd !important;
+        color: #0d6efd !important;
+    }
+
+    /* Ensure focus state doesn't persist */
+    .btn-group > button:focus,
+    .btn-outline-primary:focus {
+        background-color: transparent !important;
+        border-color: #0d6efd !important;
+        color: #0d6efd !important;
+        box-shadow: none !important;
+    }
+
+    /* Active state for visual feedback when clicked */
+    .btn-group > button:active,
+    .btn-outline-primary:active {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        color: white !important;
+        transform: scale(0.95);
+        transition: all 0.1s ease-in-out;
+    }
+
+    /* Custom class for programmatic click feedback */
+    .btn-clicked {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        color: white !important;
+        transform: scale(0.95);
     }
 </style>
 
@@ -39,10 +84,27 @@
     private async Task OnInput(int number)
     {
         await Input.InvokeAsync(number);
+        await RemoveFocusFromActiveElement();
     }
 
     private async Task OnDelete()
     {
         await Delete.InvokeAsync();
+        await RemoveFocusFromActiveElement();
+    }
+
+    private async Task RemoveFocusFromActiveElement()
+    {
+        await Task.Delay(100); // Small delay to ensure the click event is processed
+        await JS.InvokeVoidAsync("eval", @"
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.tagName === 'BUTTON') {
+                activeElement.classList.add('btn-clicked');
+                setTimeout(() => {
+                    activeElement.classList.remove('btn-clicked');
+                    activeElement.blur();
+                }, 150);
+            }
+        ");
     }
 }
