@@ -28,5 +28,6 @@ public enum SessionType
     Subtraction = 2,
     Multiplication = 3,
     Division = 4,
-    MultiDivision = 5
+    MultiDivision = 5,
+    ThirdGrade = 6
 }
