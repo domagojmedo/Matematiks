@@ -15,7 +15,6 @@ import type { AppSettings, Language, ThemeKey } from "../lib/types";
 const DEFAULT_SETTINGS: AppSettings = {
   themeKey: "warmPurple",
   dark: false,
-  fontScale: 1,
   language: "hr",
 };
 
@@ -24,7 +23,6 @@ type SettingsContextValue = {
   theme: Theme;
   setTheme: (key: ThemeKey) => void;
   setDark: (dark: boolean) => void;
-  setFontScale: (scale: number) => void;
   setLanguage: (lang: Language) => void;
 };
 
@@ -41,10 +39,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("dark", settings.dark);
-    root.style.fontSize = `${Math.round(settings.fontScale * 100)}%`;
-  }, [settings.dark, settings.fontScale]);
+    document.documentElement.classList.toggle("dark", settings.dark);
+  }, [settings.dark]);
 
   useEffect(() => {
     if (i18n.language !== settings.language) {
@@ -58,9 +54,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setDark = useCallback((dark: boolean) => {
     setSettings((s) => ({ ...s, dark }));
   }, []);
-  const setFontScale = useCallback((fontScale: number) => {
-    setSettings((s) => ({ ...s, fontScale }));
-  }, []);
   const setLanguage = useCallback((language: Language) => {
     setSettings((s) => ({ ...s, language }));
   }, []);
@@ -71,10 +64,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       theme: THEMES[settings.themeKey],
       setTheme,
       setDark,
-      setFontScale,
       setLanguage,
     }),
-    [settings, setTheme, setDark, setFontScale, setLanguage],
+    [settings, setTheme, setDark, setLanguage],
   );
 
   return (

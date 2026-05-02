@@ -8,14 +8,9 @@ import type { Language, Profile, ThemeKey } from "../lib/types";
 
 const THEME_KEYS: ThemeKey[] = ["warmPurple", "coral", "teal", "indigoPlum"];
 
-const FONT_SCALE_MIN = 0.85;
-const FONT_SCALE_MAX = 1.25;
-const FONT_SCALE_STEP = 0.05;
-
 export function SettingsRoute() {
   const { t } = useTranslation();
-  const { settings, theme, setTheme, setDark, setFontScale, setLanguage } =
-    useSettings();
+  const { settings, theme, setTheme, setDark, setLanguage } = useSettings();
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
 
@@ -92,32 +87,6 @@ export function SettingsRoute() {
             onChange={setDark}
             label={t("settings.darkMode")}
           />
-        </SettingSection>
-
-        <SettingSection title={t("settings.fontScale")}>
-          <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-stone-500 dark:text-stone-400">
-                A
-              </span>
-              <input
-                type="range"
-                min={FONT_SCALE_MIN}
-                max={FONT_SCALE_MAX}
-                step={FONT_SCALE_STEP}
-                value={settings.fontScale}
-                onChange={(e) => setFontScale(Number(e.target.value))}
-                className="flex-1 accent-current"
-                style={{ color: theme.swatch }}
-              />
-              <span className="text-2xl font-bold text-stone-700 dark:text-stone-200">
-                A
-              </span>
-              <span className="w-12 text-right text-sm font-black text-stone-700 tabular-nums dark:text-stone-200">
-                {Math.round(settings.fontScale * 100)}%
-              </span>
-            </div>
-          </div>
         </SettingSection>
 
         <SettingSection title={t("settings.language")}>

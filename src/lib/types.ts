@@ -29,7 +29,6 @@ export type Language = "hr" | "en";
 export type AppSettings = {
   themeKey: ThemeKey;
   dark: boolean;
-  fontScale: number;
   language: Language;
 };
 
