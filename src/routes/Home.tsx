@@ -28,7 +28,7 @@ export function Home() {
   const initial = (profile.name[0] ?? "?").toUpperCase();
 
   return (
-    <div className={`min-h-screen w-full ${pageBg}`}>
+    <div className={`min-h-dvh w-full ${pageBg}`}>
       <div className="mx-auto max-w-2xl px-5 pt-6 pb-10 md:px-8 md:py-10">
         <header className="mb-7 flex items-center gap-3 md:mb-10">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 md:gap-3">

@@ -9,8 +9,8 @@ export function NotFound() {
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
 
   return (
-    <div className={`min-h-screen w-full ${pageBg}`}>
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-5 py-10 text-center">
+    <div className={`min-h-dvh w-full ${pageBg}`}>
+      <div className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center px-5 py-10 text-center">
         <Mascot size={108} mood="sad" theme={theme} />
         <p
           className={`mt-5 text-base font-black tracking-widest uppercase ${theme.primaryText} ${theme.primaryTextDark}`}

@@ -276,7 +276,7 @@ export function Practice() {
 
   return (
     <div
-      className={`flex min-h-screen w-full flex-col transition-colors ${flashBg}`}
+      className={`flex min-h-dvh w-full flex-col transition-colors ${flashBg}`}
     >
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col md:justify-center md:py-6">
         <header className="flex items-center justify-between px-4 pt-5 pb-3">
@@ -325,7 +325,7 @@ export function Practice() {
         <CounterStrip correct={correct} mistakes={mistakes} streak={streak} />
 
         <section
-          className="relative flex flex-1 flex-col items-center justify-center px-4 pb-2 md:flex-none md:py-8"
+          className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 md:flex-none md:py-8"
           aria-live="polite"
         >
           {flash === "correct" && (
@@ -525,14 +525,14 @@ function NumPad({
 }) {
   const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   return (
-    <div className="px-4 pt-2 pb-5">
+    <div className="px-4 pt-2 pb-3 sm:pb-5">
       <div className="grid grid-cols-3 gap-2.5">
         {digits.map((d) => (
           <button
             key={d}
             type="button"
             onClick={() => onDigit(d)}
-            className={`flex h-16 items-center justify-center rounded-2xl bg-white text-2xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
+            className={`flex h-14 items-center justify-center rounded-2xl bg-white text-2xl sm:h-16 font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
           >
             {d}
           </button>
@@ -541,7 +541,7 @@ function NumPad({
         <button
           type="button"
           onClick={() => onDigit(0)}
-          className={`flex h-16 items-center justify-center rounded-2xl bg-white text-2xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
+          className={`flex h-14 items-center justify-center rounded-2xl bg-white text-2xl sm:h-16 font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
         >
           0
         </button>
@@ -549,7 +549,7 @@ function NumPad({
           type="button"
           onClick={onDelete}
           aria-label="Delete"
-          className={`flex h-16 items-center justify-center rounded-2xl bg-stone-100 shadow-sm ring-1 ring-stone-200 transition hover:bg-stone-200 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-800 dark:ring-stone-700 dark:hover:bg-stone-700 ${theme.primaryFocus}`}
+          className={`flex h-14 items-center justify-center rounded-2xl bg-stone-100 sm:h-16 shadow-sm ring-1 ring-stone-200 transition hover:bg-stone-200 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-800 dark:ring-stone-700 dark:hover:bg-stone-700 ${theme.primaryFocus}`}
         >
           <svg
             aria-hidden="true"

@@ -67,8 +67,8 @@ export function Summary() {
   }
 
   return (
-    <div className={`min-h-screen w-full ${pageBg}`}>
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-5 pt-6 pb-8 md:px-8 md:py-10">
+    <div className={`min-h-dvh w-full ${pageBg}`}>
+      <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 pt-6 pb-8 md:px-8 md:py-10">
         <header className="mb-3 flex items-center justify-between">
           <Link
             to="/"
