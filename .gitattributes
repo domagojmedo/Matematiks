@@ -1,7 +1,9 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
+# eol=lf forces LF in the working tree everywhere (including Windows),
+# matching what Linux CI runners check out and avoiding noisy warnings.
 ###############################################################################
-* text=auto
+* text=auto eol=lf
 
 ###############################################################################
 # Set default behavior for command prompt diff.
