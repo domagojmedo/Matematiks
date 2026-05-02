@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Mascot } from "../components/Mascot";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { trackEvent } from "../lib/analytics";
 import { formatMmSs, isTimeMode, summarizeSetup } from "../lib/format";
 import {
   isValidOperation,
@@ -102,10 +103,13 @@ export function Practice() {
     [profileId, op, setup, mistakes],
   );
 
+  const modeTag = timeMode ? "time" : "count";
+
   const finishRound = useCallback(
     (lastRecord: ProblemRecord, finalCorrect: number, finalBest: number) => {
       if (endedRef.current) return;
       endedRef.current = true;
+      trackEvent(`round_completed/${op}/${modeTag}`);
       const id = persistSession(
         [...recordsRef.current, lastRecord],
         finalCorrect,
@@ -117,26 +121,28 @@ export function Practice() {
         navigate("/", { replace: true });
       }
     },
-    [persistSession, navigate],
+    [persistSession, navigate, op, modeTag],
   );
 
   const leaveAndSave = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
+    trackEvent(`round_abandoned/${op}/${modeTag}`);
     persistSession(recordsRef.current, correct, bestStreak);
     navigate("/", { replace: true });
-  }, [persistSession, correct, bestStreak, navigate]);
+  }, [persistSession, correct, bestStreak, navigate, op, modeTag]);
 
   const finishRoundFromTimeout = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
+    trackEvent(`round_completed/${op}/${modeTag}`);
     const id = persistSession(recordsRef.current, correct, bestStreak);
     if (id) {
       navigate("/summary", { state: { sessionId: id }, replace: true });
     } else {
       navigate("/", { replace: true });
     }
-  }, [persistSession, correct, bestStreak, navigate]);
+  }, [persistSession, correct, bestStreak, navigate, op, modeTag]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
