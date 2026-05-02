@@ -1,0 +1,126 @@
+{
+  "common": {
+    "appName": "Matematiks",
+    "back": "Natrag",
+    "settings": "Postavke",
+    "home": "Početna",
+    "start": "Počni",
+    "playAgain": "Igraj ponovno",
+    "cancel": "Odustani",
+    "confirm": "Potvrdi",
+    "reload": "Ponovno učitaj",
+    "goHome": "Vrati se na početnu"
+  },
+  "error": {
+    "title": "Ups, nešto nije u redu",
+    "body": "Dogodila se neočekivana greška. Pokušaj ponovno učitati."
+  },
+  "notFound": {
+    "title": "Stranica nije pronađena",
+    "body": "Ono što tražiš ovdje ne postoji."
+  },
+  "home": {
+    "tagline": "Hajdemo vježbati!",
+    "streak": "niz",
+    "operations": "Operacije",
+    "sessions": "Vježbe",
+    "sessionsSubtitle": "Tvoja povijest",
+    "quickStart": "Brzi početak"
+  },
+  "operations": {
+    "add": "Zbrajanje",
+    "sub": "Oduzimanje",
+    "addsub": "Mix + −",
+    "mul": "Množenje",
+    "div": "Dijeljenje",
+    "muldiv": "Mix × ÷"
+  },
+  "setup": {
+    "title": "Postavi vježbu",
+    "range": "Raspon brojeva",
+    "rangePresetSmall": "do 20",
+    "rangePresetMedium": "do 100",
+    "rangePresetCustom": "Prilagođeno",
+    "min": "Najmanje",
+    "max": "Najviše",
+    "rangeFirst": "Prvi broj",
+    "rangeSecond": "Drugi broj",
+    "differentSecondRange": "Drugi raspon za drugi broj",
+    "multiplicands": "Brojevi za vježbu",
+    "rounds": "Broj zadataka",
+    "modeCount": "Fiksni broj",
+    "modeTime": "Na vrijeme",
+    "lengthSection": "Trajanje",
+    "customRounds": "Prilagođeno",
+    "customMinutes": "Prilagođeno (min)",
+    "minutesShort": "min",
+    "timePresetLabel": "{{minutes}} min",
+    "startRound": "Pokreni vježbu"
+  },
+  "practice": {
+    "correct": "točno",
+    "mistakes": "greške",
+    "streak": "niz",
+    "problemOf": "Zadatak {{current}} od {{total}}",
+    "problemNumber": "Zadatak {{current}}",
+    "leaveTitle": "Prekinuti vježbu?",
+    "leaveBody": "Tvoj napredak će biti spremljen.",
+    "leaveStay": "Ostani",
+    "leaveLeave": "Izađi"
+  },
+  "summary": {
+    "roundComplete": "Runda završena",
+    "niceWork": "Bravo!",
+    "subline": "{{operation}} · {{rounds}} zadataka",
+    "sublineTime": "{{operation}} · {{minutes}} min",
+    "accuracy": "točnost",
+    "correct": "točno",
+    "mistakes": "greške",
+    "time": "vrijeme",
+    "bestStreak": "najbolji niz",
+    "trickiest": "Najteži zadatak",
+    "took": "trajalo {{seconds}}s",
+    "tookRetries": "trajalo {{seconds}}s · {{retries}} pokušaja",
+    "badgeStreak": "Niz {{count}}",
+    "badgeAccuracy": "{{percent}}% točno",
+    "badgeFastFinish": "Brzo riješeno",
+    "badgeFlawless": "Bez greške"
+  },
+  "sessions": {
+    "title": "Vježbe",
+    "thisWeek": "Ovaj tjedan",
+    "correct": "točno",
+    "mistakes": "greške",
+    "dayStreak": "uzastopno dana",
+    "recent": "Nedavno",
+    "today": "Danas",
+    "yesterday": "Jučer",
+    "emptyTitle": "Još nema vježbi",
+    "emptyBody": "Završi rundu i sesije će se pojaviti ovdje.",
+    "emptyCta": "Započni prvu rundu"
+  },
+  "profiles": {
+    "title": "Profili",
+    "defaultName": "Igrač",
+    "switch": "Promijeni profil",
+    "addProfile": "Dodaj profil",
+    "newProfilePrompt": "Ime novog profila",
+    "rename": "Preimenuj",
+    "delete": "Obriši",
+    "deleteConfirm": "Obriši profil {{name}}? Sve njegove vježbe bit će izgubljene.",
+    "active": "Aktivno",
+    "switchTo": "Prebaci na {{name}}"
+  },
+  "settings": {
+    "title": "Postavke",
+    "profiles": "Profili",
+    "theme": "Tema",
+    "darkMode": "Tamni način",
+    "fontScale": "Veličina teksta",
+    "language": "Jezik",
+    "themeWarmPurple": "Topla ljubičasta",
+    "themeCoral": "Korala",
+    "themeTeal": "Tirkizna",
+    "themeIndigoPlum": "Indigo šljiva"
+  }
+}

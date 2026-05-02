@@ -1,0 +1,126 @@
+{
+  "common": {
+    "appName": "Matematiks",
+    "back": "Back",
+    "settings": "Settings",
+    "home": "Home",
+    "start": "Start",
+    "playAgain": "Play again",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "reload": "Reload",
+    "goHome": "Go home"
+  },
+  "error": {
+    "title": "Oops, something went wrong",
+    "body": "An unexpected error occurred. Try reloading the page."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "What you're looking for isn't here."
+  },
+  "home": {
+    "tagline": "Let's practice!",
+    "streak": "streak",
+    "operations": "Operations",
+    "sessions": "Sessions",
+    "sessionsSubtitle": "See your last practices",
+    "quickStart": "Quick start"
+  },
+  "operations": {
+    "add": "Addition",
+    "sub": "Subtraction",
+    "addsub": "Mix + −",
+    "mul": "Multiplication",
+    "div": "Division",
+    "muldiv": "Mix × ÷"
+  },
+  "setup": {
+    "title": "Set up round",
+    "range": "Number range",
+    "rangePresetSmall": "up to 20",
+    "rangePresetMedium": "up to 100",
+    "rangePresetCustom": "Custom",
+    "min": "Min",
+    "max": "Max",
+    "rangeFirst": "First number",
+    "rangeSecond": "Second number",
+    "differentSecondRange": "Different range for second number",
+    "multiplicands": "Numbers to practice",
+    "rounds": "Round size",
+    "modeCount": "Fixed count",
+    "modeTime": "Time attack",
+    "lengthSection": "Length",
+    "customRounds": "Custom",
+    "customMinutes": "Custom (min)",
+    "minutesShort": "min",
+    "timePresetLabel": "{{minutes}} min",
+    "startRound": "Start round"
+  },
+  "practice": {
+    "correct": "correct",
+    "mistakes": "mistakes",
+    "streak": "streak",
+    "problemOf": "Problem {{current}} of {{total}}",
+    "problemNumber": "Problem {{current}}",
+    "leaveTitle": "Leave practice?",
+    "leaveBody": "Your progress will be saved.",
+    "leaveStay": "Stay",
+    "leaveLeave": "Leave"
+  },
+  "summary": {
+    "roundComplete": "Round complete",
+    "niceWork": "Nice work!",
+    "subline": "{{operation}} · {{rounds}} problems",
+    "sublineTime": "{{operation}} · {{minutes}} min",
+    "accuracy": "accuracy",
+    "correct": "correct",
+    "mistakes": "mistakes",
+    "time": "time",
+    "bestStreak": "best streak",
+    "trickiest": "Trickiest one",
+    "took": "took {{seconds}}s",
+    "tookRetries": "took {{seconds}}s · {{retries}} retries",
+    "badgeStreak": "Streak {{count}}",
+    "badgeAccuracy": "{{percent}}% acc",
+    "badgeFastFinish": "Fast finish",
+    "badgeFlawless": "Flawless"
+  },
+  "sessions": {
+    "title": "Sessions",
+    "thisWeek": "This week",
+    "correct": "correct",
+    "mistakes": "mistakes",
+    "dayStreak": "day streak",
+    "recent": "Recent",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "emptyTitle": "No practices yet",
+    "emptyBody": "Finish a round and your sessions will show up here.",
+    "emptyCta": "Start your first round"
+  },
+  "profiles": {
+    "title": "Profiles",
+    "defaultName": "Player",
+    "switch": "Switch profile",
+    "addProfile": "Add profile",
+    "newProfilePrompt": "New profile name",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteConfirm": "Delete profile {{name}}? All its sessions will be lost.",
+    "active": "Active",
+    "switchTo": "Switch to {{name}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "profiles": "Profiles",
+    "theme": "Theme",
+    "darkMode": "Dark mode",
+    "fontScale": "Text size",
+    "language": "Language",
+    "themeWarmPurple": "Warm Purple",
+    "themeCoral": "Coral",
+    "themeTeal": "Teal",
+    "themeIndigoPlum": "Indigo Plum"
+  }
+}

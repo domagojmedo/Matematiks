@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Matematiks</title>
+    <script>
+      (() => {
+        const basePath = "/Matematiks";
+        const l = window.location;
+        const path = l.pathname.replace(basePath, "") || "/";
+        const redirect = `${basePath}/?p=${encodeURIComponent(path)}${l.search}`;
+        l.replace(redirect);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
