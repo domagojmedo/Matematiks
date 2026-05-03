@@ -284,7 +284,7 @@ export function Practice() {
     <div
       className={`flex min-h-dvh w-full flex-col transition-colors ${flashBg}`}
     >
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col md:justify-center md:py-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col sm:justify-center sm:py-6">
         <header className="flex items-center justify-between px-4 pt-5 pb-3">
           <button
             type="button"
@@ -331,7 +331,7 @@ export function Practice() {
         <CounterStrip correct={correct} mistakes={mistakes} streak={streak} />
 
         <section
-          className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 md:flex-none md:py-8"
+          className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 sm:flex-none sm:py-8"
           aria-live="polite"
         >
           {flash === "correct" && (

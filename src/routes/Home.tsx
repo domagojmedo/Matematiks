@@ -126,27 +126,25 @@ export function Home() {
           {t("home.operations")}
         </h2>
 
-        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 md:gap-4">
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-4">
           {OPERATIONS.map((op) => {
             const tone = OPERATION_TONE[op];
             return (
               <Link
                 key={op}
                 to={`/setup/${op}`}
-                className={`group relative flex aspect-[5/4] flex-col items-start justify-between gap-3 rounded-3xl bg-white p-4 shadow-sm ring-2 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 md:p-5 ${theme.hoverPrimaryRing} ${theme.primaryFocus} dark:bg-stone-900 dark:ring-stone-800 dark:hover:ring-stone-700`}
+                className={`group relative flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl bg-white p-4 shadow-sm ring-2 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 sm:aspect-[4/3] sm:gap-3 sm:p-5 ${theme.hoverPrimaryRing} ${theme.primaryFocus} dark:bg-stone-900 dark:ring-stone-800 dark:hover:ring-stone-700`}
               >
                 <div
-                  className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ring-2 md:h-16 md:w-16 ${TONE_CHIP[tone]}`}
+                  className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl ring-2 sm:h-20 sm:w-20 ${TONE_CHIP[tone]}`}
                 >
-                  <span className="text-3xl leading-none font-black md:text-4xl">
+                  <span className="text-4xl leading-none font-black sm:text-5xl">
                     {OPERATION_SYMBOL[op]}
                   </span>
                 </div>
-                <div className="w-full min-w-0 text-left">
-                  <p className="truncate text-base leading-tight font-black tracking-tight text-stone-900 md:text-lg dark:text-white">
-                    {t(`operations.${op}`)}
-                  </p>
-                </div>
+                <p className="w-full truncate text-center text-base leading-tight font-black tracking-tight text-stone-900 sm:text-lg dark:text-white">
+                  {t(`operations.${op}`)}
+                </p>
               </Link>
             );
           })}
