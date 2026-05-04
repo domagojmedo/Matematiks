@@ -64,7 +64,7 @@ export function SettingsRoute() {
                   }`}
                 >
                   <span
-                    className="h-8 w-8 rounded-full"
+                    className="block h-8 w-8 flex-shrink-0 rounded-full"
                     style={{ backgroundColor: tk.swatch }}
                     aria-hidden="true"
                   />
