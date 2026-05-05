@@ -24,7 +24,11 @@ import type {
  *   - reset its own input state when `problem` changes (typically via a
  *     useEffect that watches `problem`)
  */
-export function usePracticeRound(op: Operation, setup: OperationSetup) {
+export function usePracticeRound(
+  op: Operation,
+  setup: OperationSetup,
+  lessonId?: string,
+) {
   const navigate = useNavigate();
   const { profileId } = useProfiles();
 
@@ -78,6 +82,7 @@ export function usePracticeRound(op: Operation, setup: OperationSetup) {
         date: new Date().toISOString(),
         operation: op,
         setup,
+        ...(lessonId ? { lessonId } : {}),
         correct: finalCorrect,
         mistakes,
         durationMs: Math.round(performance.now() - roundStartedRef.current),
@@ -89,7 +94,7 @@ export function usePracticeRound(op: Operation, setup: OperationSetup) {
       writeJSON(sessionsKey, [session, ...all].slice(0, 200));
       return id;
     },
-    [profileId, op, setup, mistakes],
+    [profileId, op, setup, lessonId, mistakes],
   );
 
   const modeTag = timeMode ? "time" : "count";

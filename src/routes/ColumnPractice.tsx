@@ -25,13 +25,15 @@ const FLASH_MS = 400;
 export function ColumnPractice({
   op,
   setup,
+  lessonId,
 }: {
   op: Operation;
   setup: OperationSetup;
+  lessonId?: string;
 }) {
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
-  const round = usePracticeRound(op, setup);
+  const round = usePracticeRound(op, setup, lessonId);
   const {
     problem,
     problemIndex,

@@ -92,6 +92,10 @@ export function Home() {
         {last && (
           <Link
             to={`/practice/${last.operation}`}
+            state={{
+              setup: last.setup,
+              ...(last.lessonId ? { lessonId: last.lessonId } : {}),
+            }}
             className={`mb-5 flex h-14 w-full items-center gap-3 rounded-2xl px-4 text-white shadow-sm transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
           >
             <span

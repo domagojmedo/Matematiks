@@ -55,6 +55,8 @@ export type SessionRecord = {
   date: string;
   operation: Operation;
   setup: OperationSetup;
+  /** Set when the round was launched from a grade lesson. */
+  lessonId?: string;
   correct: number;
   mistakes: number;
   durationMs: number;
@@ -65,4 +67,6 @@ export type SessionRecord = {
 export type LastSession = {
   operation: Operation;
   setup: OperationSetup;
+  /** Carries the lesson tag forward to Quick Start replays. */
+  lessonId?: string;
 };

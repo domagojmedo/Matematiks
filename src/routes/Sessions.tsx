@@ -5,6 +5,7 @@ import { Mascot } from "../components/Mascot";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { formatDuration, summarizeSetup } from "../lib/format";
+import { findLesson } from "../lib/lessons";
 import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import type { SessionRecord } from "../lib/types";
@@ -192,6 +193,10 @@ function SessionCard({
 }) {
   const { t } = useTranslation();
   const tone = OPERATION_TONE[session.operation];
+  const lesson = session.lessonId ? findLesson(session.lessonId) : undefined;
+  const title = lesson
+    ? t(lesson.nameKey)
+    : t(`operations.${session.operation}`);
   return (
     <div className="flex w-full items-center gap-3.5 rounded-2xl bg-white p-3.5 text-left shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
       <div
@@ -203,14 +208,23 @@ function SessionCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="flex items-baseline gap-2 text-base leading-tight font-black text-stone-900 dark:text-white">
-          <span>{t(`operations.${session.operation}`)}</span>
-          <span className="truncate text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
-            {summarizeSetup(session.setup)}
-          </span>
+          <span className="truncate">{title}</span>
+          {!lesson && (
+            <span className="truncate text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
+              {summarizeSetup(session.setup)}
+            </span>
+          )}
         </p>
-        <p className="mt-0.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
-          {formatRelative(session.date, language, t)} ·{" "}
-          {formatDuration(session.durationMs)}
+        <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+          {lesson && (
+            <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-stone-600 uppercase dark:bg-stone-800 dark:text-stone-300">
+              {t(`grades.g${lesson.grade}`)}
+            </span>
+          )}
+          <span>
+            {formatRelative(session.date, language, t)} ·{" "}
+            {formatDuration(session.durationMs)}
+          </span>
         </p>
       </div>
       <div className="flex items-center gap-2">

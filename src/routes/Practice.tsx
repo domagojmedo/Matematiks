@@ -36,17 +36,29 @@ export function Practice() {
   const { profileId } = useProfiles();
   const location = useLocation();
 
-  const [setup] = useState<OperationSetup>(() => {
-    const stateSetup = (location.state as { setup?: OperationSetup } | null)
-      ?.setup;
-    return stateSetup ?? getSetup(profileId, op);
+  const [{ setup, lessonId }] = useState<{
+    setup: OperationSetup;
+    lessonId?: string;
+  }>(() => {
+    const state = location.state as
+      | { setup?: OperationSetup; lessonId?: string }
+      | null;
+    return {
+      setup: state?.setup ?? getSetup(profileId, op),
+      lessonId: state?.lessonId,
+    };
   });
 
   useEffect(() => {
-    const fromState = (location.state as { setup?: OperationSetup } | null)
-      ?.setup;
-    if (!fromState) return;
-    const last: LastSession = { operation: op, setup: fromState };
+    const state = location.state as
+      | { setup?: OperationSetup; lessonId?: string }
+      | null;
+    if (!state?.setup) return;
+    const last: LastSession = {
+      operation: op,
+      setup: state.setup,
+      ...(state.lessonId ? { lessonId: state.lessonId } : {}),
+    };
     writeJSON(profileKey(profileId, PROFILE_KEYS.lastSession), last);
   }, [location.state, op, profileId]);
 
@@ -55,21 +67,23 @@ export function Practice() {
   }
 
   if (setup.format === "column") {
-    return <ColumnPractice op={op} setup={setup} />;
+    return <ColumnPractice op={op} setup={setup} lessonId={lessonId} />;
   }
-  return <HorizontalPractice op={op} setup={setup} />;
+  return <HorizontalPractice op={op} setup={setup} lessonId={lessonId} />;
 }
 
 function HorizontalPractice({
   op,
   setup,
+  lessonId,
 }: {
   op: Operation;
   setup: OperationSetup;
+  lessonId?: string;
 }) {
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
-  const round = usePracticeRound(op, setup);
+  const round = usePracticeRound(op, setup, lessonId);
   const {
     problem,
     problemIndex,

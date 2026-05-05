@@ -5,6 +5,7 @@ import { Mascot } from "../components/Mascot";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { formatDuration, isTimeMode } from "../lib/format";
+import { findLesson } from "../lib/lessons";
 import { operationGlyph } from "../lib/problemGen";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import type { ProblemRecord, SessionRecord } from "../lib/types";
@@ -101,15 +102,25 @@ export function Summary() {
             {t("summary.niceWork")}
           </h1>
           <p className="mt-1 text-center text-sm font-semibold text-stone-500 dark:text-stone-400">
-            {isTimeMode(session.setup)
-              ? t("summary.sublineTime", {
-                  operation: t(`operations.${session.operation}`),
-                  minutes: Math.round((session.setup.timeMs ?? 0) / 60_000),
-                })
-              : t("summary.subline", {
-                  operation: t(`operations.${session.operation}`),
-                  rounds: session.problems.length,
-                })}
+            {(() => {
+              const lesson = session.lessonId
+                ? findLesson(session.lessonId)
+                : undefined;
+              const operation = lesson
+                ? t(lesson.nameKey)
+                : t(`operations.${session.operation}`);
+              return isTimeMode(session.setup)
+                ? t("summary.sublineTime", {
+                    operation,
+                    minutes: Math.round(
+                      (session.setup.timeMs ?? 0) / 60_000,
+                    ),
+                  })
+                : t("summary.subline", {
+                    operation,
+                    rounds: session.problems.length,
+                  });
+            })()}
           </p>
         </div>
 
