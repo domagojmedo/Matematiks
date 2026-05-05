@@ -15,11 +15,9 @@ describe("pickLayout", () => {
     expect(pickLayout(problem(20, 7, "-", 13))).toBe("simple");
   });
 
-  it("uses simple layout for single-digit multiplier", () => {
-    expect(pickLayout(problem(72, 9, "*", 648))).toBe("simple");
-  });
-
-  it("uses partial-products layout for multi-digit multiplier", () => {
+  it("uses horizontal mul layout for any column multiplication", () => {
+    // Single-digit multiplier still uses the horizontal "a × b = …" header.
+    expect(pickLayout(problem(72, 9, "*", 648))).toBe("mulPartials");
     expect(pickLayout(problem(64, 25, "*", 1600))).toBe("mulPartials");
     expect(pickLayout(problem(99, 99, "*", 9801))).toBe("mulPartials");
   });
@@ -34,6 +32,16 @@ describe("buildPhases for simple ops", () => {
     const phases = buildPhases(problem(7, 5, "+", 12));
     expect(phases).toEqual([
       { value: 12, direction: "rtl", kind: "answer" },
+    ]);
+  });
+});
+
+describe("buildPhases for single-digit mul", () => {
+  it("returns one mulSum phase (no partial products needed)", () => {
+    // 72 × 9 = 648. No partial product breakdown, just type the answer.
+    const phases = buildPhases(problem(72, 9, "*", 648));
+    expect(phases).toEqual([
+      { value: 648, direction: "rtl", kind: "mulSum" },
     ]);
   });
 });

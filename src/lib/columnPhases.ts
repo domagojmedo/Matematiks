@@ -30,14 +30,21 @@ export type Phase = {
 
 export function pickLayout(problem: Problem): LayoutKind {
   if (problem.op === "/") return "division";
-  if (problem.op === "*" && String(problem.b).length >= 2) return "mulPartials";
+  // All column-mode multiplication uses the horizontal "a × b = …" header.
+  // Single-digit multiplier collapses to one answer row (no partial products).
+  if (problem.op === "*") return "mulPartials";
   return "simple";
 }
 
 export function buildPhases(problem: Problem): Phase[] {
   if (problem.op === "/") return buildDivisionPhases(problem);
-  if (problem.op === "*" && String(problem.b).length >= 2)
+  if (problem.op === "*") {
+    if (String(problem.b).length < 2) {
+      // 72 × 9: one phase, just the answer typed rtl below the header.
+      return [{ value: problem.answer, direction: "rtl", kind: "mulSum" }];
+    }
     return buildMulPartialsPhases(problem);
+  }
   return [{ value: problem.answer, direction: "rtl", kind: "answer" }];
 }
 

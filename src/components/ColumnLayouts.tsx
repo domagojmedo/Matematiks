@@ -107,8 +107,11 @@ export function MulPartialProductsLayout({
   const bStr = String(problem.b);
   // Active b-digit position: phase k (k < bStr.length) targets bStr[k] (highest place first).
   const activeBPos = phaseIdx < bStr.length ? phaseIdx : -1;
+  const hasPartials = phases.some((p) => p.kind === "mulPartial");
   const stepLabel = (() => {
     if (!guide) return null;
+    // Single-digit multiplier collapses to one answer row — no step labels.
+    if (!hasPartials) return null;
     if (phaseIdx < bStr.length)
       return t("column.mulPartial", { n: phaseIdx + 1 });
     return t("column.mulSum");
@@ -188,7 +191,7 @@ export function MulPartialProductsLayout({
       })}
       {sumIdx >= 0 && (
         <>
-          <Divider width={width} />
+          {hasPartials && <Divider width={width} />}
           <ShiftedRow
             width={width}
             shift={0}
