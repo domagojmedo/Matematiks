@@ -40,8 +40,8 @@ export function buildPhases(problem: Problem): Phase[] {
   if (problem.op === "/") return buildDivisionPhases(problem);
   if (problem.op === "*") {
     if (String(problem.b).length < 2) {
-      // 72 × 9: one phase, just the answer typed rtl below the header.
-      return [{ value: problem.answer, direction: "rtl", kind: "mulSum" }];
+      // 72 × 9: one phase, the answer typed left-to-right below the header.
+      return [{ value: problem.answer, direction: "ltr", kind: "mulSum" }];
     }
     return buildMulPartialsPhases(problem);
   }
@@ -51,20 +51,21 @@ export function buildPhases(problem: Problem): Phase[] {
 function buildMulPartialsPhases(problem: Problem): Phase[] {
   const bStr = String(problem.b);
   // Croatian convention: start with the highest-place digit of the multiplier.
-  // For 53 × 47, fill 53 × 4 (shifted) first, then 53 × 7.
+  // For 53 × 47, fill 53 × 4 (shifted) first, then 53 × 7. Each partial — and
+  // the final sum — is typed left-to-right (highest place first).
   const partials: Phase[] = [];
   for (let i = bStr.length - 1; i >= 0; i--) {
     const digit = Number(bStr[bStr.length - 1 - i]);
     partials.push({
       value: problem.a * digit,
-      direction: "rtl",
+      direction: "ltr",
       kind: "mulPartial",
       shift: i,
     });
   }
   return [
     ...partials,
-    { value: problem.answer, direction: "rtl", kind: "mulSum" },
+    { value: problem.answer, direction: "ltr", kind: "mulSum" },
   ];
 }
 
@@ -107,14 +108,14 @@ function buildDivisionPhases(problem: Problem): Phase[] {
     });
     phases.push({
       value: product,
-      direction: "rtl",
+      direction: "ltr",
       kind: "divProduct",
       step,
       chunk: stepChunk,
     });
     phases.push({
       value: remainder,
-      direction: "rtl",
+      direction: "ltr",
       kind: "divRemainder",
       step,
       chunk: stepChunk,

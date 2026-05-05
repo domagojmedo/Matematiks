@@ -182,6 +182,7 @@ export function MulPartialProductsLayout({
             shift={phase.shift ?? 0}
             len={String(phase.value).length}
             digits={info.digits}
+            direction={phase.direction}
             isActive={info.isActive}
             isCompleted={info.isCompleted}
             flash={info.flash}
@@ -203,6 +204,7 @@ export function MulPartialProductsLayout({
                   ? (completedPhases[sumIdx] ?? [])
                   : []
             }
+            direction={phases[sumIdx]?.direction ?? "rtl"}
             isActive={phaseIdx === sumIdx}
             isCompleted={phaseIdx > sumIdx}
             flash={phaseIdx === sumIdx ? flash : null}
@@ -413,9 +415,10 @@ export function LongDivisionLayout({
                     )}{" "}
                     ={" "}
                   </span>
-                  <PhaseRtlDigits
+                  <PhaseDigits
                     value={productPhase?.value ?? 0}
                     info={productInfo}
+                    direction={productPhase?.direction ?? "ltr"}
                     theme={theme}
                   />
                 </div>
@@ -425,9 +428,10 @@ export function LongDivisionLayout({
                   <span>
                     {stepChunk} − {productPhase?.value ?? 0} ={" "}
                   </span>
-                  <PhaseRtlDigits
+                  <PhaseDigits
                     value={remainderPhase?.value ?? 0}
                     info={remainderInfo}
+                    direction={remainderPhase?.direction ?? "ltr"}
                     theme={theme}
                   />
                 </div>
@@ -445,6 +449,7 @@ function ShiftedRow({
   shift,
   len,
   digits,
+  direction,
   isActive,
   isCompleted,
   flash,
@@ -453,7 +458,9 @@ function ShiftedRow({
   width: number;
   shift: number;
   len: number;
-  digits: number[]; // rtl input order
+  /** Digits in input order (rtl: ones first; ltr: leftmost first). */
+  digits: number[];
+  direction: "rtl" | "ltr";
   isActive: boolean;
   isCompleted: boolean;
   flash: Flash;
@@ -469,12 +476,16 @@ function ShiftedRow({
         if (!inRange) {
           return <span key={col} className="inline-block min-w-[1.2ch]" />;
         }
-        const fromRight = endCol - col; // 0 = ones, 1 = tens, …
+        // Map display column ↔ input-order index:
+        //   rtl: index 0 = rightmost (ones)   → fromInput = endCol - col
+        //   ltr: index 0 = leftmost           → fromInput = col - startCol
+        const fromInput =
+          direction === "rtl" ? endCol - col : col - startCol;
         if (isCompleted) {
           return (
             <DigitCell
               key={col}
-              digit={digits[fromRight]}
+              digit={digits[fromInput]}
               isActive={false}
               flash={null}
               theme={theme}
@@ -482,12 +493,12 @@ function ShiftedRow({
           );
         }
         if (isActive) {
-          const filled = fromRight < digits.length;
-          const cellActive = fromRight === digits.length;
+          const filled = fromInput < digits.length;
+          const cellActive = fromInput === digits.length;
           return (
             <DigitCell
               key={col}
-              digit={filled ? digits[fromRight] : undefined}
+              digit={filled ? digits[fromInput] : undefined}
               isActive={cellActive}
               flash={cellActive ? flash : null}
               theme={theme}
@@ -508,22 +519,27 @@ function ShiftedRow({
   );
 }
 
-function PhaseRtlDigits({
+function PhaseDigits({
   value,
   info,
+  direction,
   theme,
 }: {
   value: number;
   info: PhaseRenderInfo;
+  direction: "rtl" | "ltr";
   theme: Theme;
 }) {
   const len = String(value).length;
   return (
     <div className="inline-flex items-baseline gap-0.5">
       {Array.from({ length: len }, (_, col) => {
-        const fromRight = len - 1 - col;
+        // Map display column ↔ input-order index:
+        //   rtl: index 0 = rightmost (ones)   → fromInput = len - 1 - col
+        //   ltr: index 0 = leftmost           → fromInput = col
+        const fromInput = direction === "rtl" ? len - 1 - col : col;
         if (info.isCompleted) {
-          const digit = info.digits[fromRight];
+          const digit = info.digits[fromInput];
           return (
             <DigitCell
               key={col}
@@ -535,12 +551,12 @@ function PhaseRtlDigits({
           );
         }
         if (info.isActive) {
-          const filled = fromRight < info.digits.length;
-          const cellActive = fromRight === info.digits.length;
+          const filled = fromInput < info.digits.length;
+          const cellActive = fromInput === info.digits.length;
           return (
             <DigitCell
               key={col}
-              digit={filled ? info.digits[fromRight] : undefined}
+              digit={filled ? info.digits[fromInput] : undefined}
               isActive={cellActive}
               flash={cellActive ? info.flash : null}
               theme={theme}

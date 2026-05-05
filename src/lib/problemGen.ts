@@ -115,12 +115,13 @@ export function generateProblem(
 ): Problem {
   const crossMode =
     setup.kind === "range" ? (setup.crossesTen ?? "any") : "any";
-  // 24 retries is enough for any feasible setup in the curriculum. If a setup
-  // is infeasible (e.g. range 1–10 with crossesTen: "always" — possible only
-  // for 1+9, 2+8, …; sparse but reachable), we still want to return *some*
-  // problem rather than loop forever. Last-attempt fallback below.
+  // 100 retries handles sparse-but-feasible setups (e.g. range 1–20 with
+  // crossesTen: "always" — generateAdd's result-first sampling can pick a
+  // small result like 7 where no (a,b) split satisfies the constraint, so we
+  // need plenty of attempts). For genuinely infeasible setups we still fall
+  // back to the last attempt rather than loop forever.
   let last = generateOnce(operation, setup);
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 100; i++) {
     const p = i === 0 ? last : generateOnce(operation, setup);
     const okPrev = !previous || !isSameProblem(p, previous);
     const okCross = matchesCrossesTen(p, crossMode);

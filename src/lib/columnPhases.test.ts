@@ -41,7 +41,7 @@ describe("buildPhases for single-digit mul", () => {
     // 72 × 9 = 648. No partial product breakdown, just type the answer.
     const phases = buildPhases(problem(72, 9, "*", 648));
     expect(phases).toEqual([
-      { value: 648, direction: "rtl", kind: "mulSum" },
+      { value: 648, direction: "ltr", kind: "mulSum" },
     ]);
   });
 });
@@ -55,18 +55,18 @@ describe("buildPhases for mul partial products", () => {
       value: 128,
       kind: "mulPartial",
       shift: 1,
-      direction: "rtl",
+      direction: "ltr",
     });
     expect(phases[1]).toMatchObject({
       value: 320,
       kind: "mulPartial",
       shift: 0,
-      direction: "rtl",
+      direction: "ltr",
     });
     expect(phases[2]).toMatchObject({
       value: 1600,
       kind: "mulSum",
-      direction: "rtl",
+      direction: "ltr",
     });
   });
 
