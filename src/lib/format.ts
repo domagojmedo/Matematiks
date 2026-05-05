@@ -19,6 +19,19 @@ export function isTimeMode(setup: OperationSetup): boolean {
   return setup.timeMs !== undefined;
 }
 
+function isContiguous(values: number[]): boolean {
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] !== (values[i - 1] as number) + 1) return false;
+  }
+  return values.length > 0;
+}
+
+function formatValues(values: number[]): string {
+  if (values.length === 1) return String(values[0]);
+  if (isContiguous(values)) return `${values[0]}–${values[values.length - 1]}`;
+  return values.join(",");
+}
+
 export function summarizeSetup(setup: OperationSetup): string {
   if (setup.kind === "range") {
     const range1 = `${setup.min}–${setup.max}`;
@@ -28,6 +41,9 @@ export function summarizeSetup(setup: OperationSetup): string {
     }
     return range1;
   }
-  if (setup.values.length === 10) return "1–10";
-  return setup.values.join(",");
+  const a = formatValues(setup.values);
+  if (setup.values2 !== undefined) {
+    return `${a} × ${formatValues(setup.values2)}`;
+  }
+  return a;
 }

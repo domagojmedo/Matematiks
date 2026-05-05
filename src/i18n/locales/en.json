@@ -25,7 +25,59 @@
     "operations": "Operations",
     "sessions": "Sessions",
     "sessionsSubtitle": "See your last practices",
-    "quickStart": "Quick start"
+    "quickStart": "Quick start",
+    "byGrade": "By grade",
+    "gradeShort": "grade"
+  },
+  "grades": {
+    "g1": "1st grade",
+    "g2": "2nd grade",
+    "g3": "3rd grade",
+    "g4": "4th grade"
+  },
+  "grade": {
+    "problems": "problems"
+  },
+  "lessons": {
+    "g1": {
+      "add10": "Addition to 10",
+      "sub10": "Subtraction to 10",
+      "add20NoCross": "Addition to 20 (no carry)",
+      "add20Cross": "Addition to 20 (with carry)",
+      "sub20NoCross": "Subtraction to 20 (no borrow)",
+      "sub20Cross": "Subtraction to 20 (with borrow)",
+      "addsub20": "Addition and subtraction to 20"
+    },
+    "g2": {
+      "add100": "Addition to 100",
+      "sub100": "Subtraction to 100",
+      "addsub100": "Addition and subtraction to 100",
+      "mul2": "Times table — 2",
+      "mul3": "Times table — 3",
+      "mul4": "Times table — 4",
+      "mul5": "Times table — 5",
+      "mul6": "Times table — 6",
+      "mul7": "Times table — 7",
+      "mul8": "Times table — 8",
+      "mul9": "Times table — 9",
+      "mul10": "Times table — 10",
+      "mulMixed": "Times table (mixed)",
+      "divTable": "Division (within table)"
+    },
+    "g3": {
+      "add1000": "Written addition to 1000",
+      "sub1000": "Written subtraction to 1000",
+      "mulSingleDigit": "Multiplying by a single digit",
+      "divSingleDigit": "Dividing by a single digit",
+      "muldivSingleDigit": "Multiplying and dividing (mixed)"
+    },
+    "g4": {
+      "addLarge": "Written addition (large numbers)",
+      "subLarge": "Written subtraction (large numbers)",
+      "mul2x2": "Written multiplication (two-digit)",
+      "div2Digit": "Written division (two-digit)",
+      "addsubLarge": "Addition and subtraction (large numbers)"
+    }
   },
   "operations": {
     "add": "Addition",
@@ -55,6 +107,11 @@
     "customMinutes": "Custom (min)",
     "minutesShort": "min",
     "timePresetLabel": "{{minutes}} min",
+    "formatSection": "Layout",
+    "formatHorizontal": "In a row",
+    "formatColumn": "Column",
+    "guideLabel": "Guide",
+    "guideHint": "Steps and active-digit hints",
     "startRound": "Start round"
   },
   "practice": {
@@ -67,6 +124,11 @@
     "leaveBody": "Your progress will be saved.",
     "leaveStay": "Stay",
     "leaveLeave": "Leave"
+  },
+  "column": {
+    "step": "Step {{n}}",
+    "mulPartial": "{{n}}. Multiply",
+    "mulSum": "Add the partial products"
   },
   "summary": {
     "roundComplete": "Round complete",

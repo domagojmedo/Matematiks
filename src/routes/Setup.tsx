@@ -111,6 +111,8 @@ export function Setup() {
           />
         )}
 
+        <FormatPicker setup={setup} onChange={setSetup} theme={theme} />
+
         <LengthPicker setup={setup} onChange={setSetup} theme={theme} />
 
         <button
@@ -380,6 +382,66 @@ function MultiplicandsPicker({
           );
         })}
       </div>
+    </section>
+  );
+}
+
+function FormatPicker({
+  setup,
+  onChange,
+  theme,
+}: {
+  setup: OperationSetup;
+  onChange: (s: OperationSetup) => void;
+  theme: ReturnType<typeof useSettings>["theme"];
+}) {
+  const { t } = useTranslation();
+  const current = setup.format ?? "horizontal";
+  const guide = setup.guide ?? true;
+  const activeBtn = `${theme.primary} text-white ring-transparent shadow-sm ${theme.primaryShadow}`;
+  const inactiveBtn =
+    "bg-white text-stone-700 ring-stone-200 hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800 dark:hover:ring-stone-700";
+  return (
+    <section className="mb-6">
+      <SectionHeading>{t("setup.formatSection")}</SectionHeading>
+      <div className="grid grid-cols-2 gap-2.5">
+        <button
+          type="button"
+          onClick={() => onChange({ ...setup, format: "horizontal" })}
+          className={`flex h-12 items-center justify-center rounded-2xl text-base font-black ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
+            current === "horizontal" ? activeBtn : inactiveBtn
+          }`}
+        >
+          {t("setup.formatHorizontal")}
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...setup, format: "column" })}
+          className={`flex h-12 items-center justify-center rounded-2xl text-base font-black ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
+            current === "column" ? activeBtn : inactiveBtn
+          }`}
+        >
+          {t("setup.formatColumn")}
+        </button>
+      </div>
+      {current === "column" && (
+        <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-stone-700 dark:text-stone-200">
+              {t("setup.guideLabel")}
+            </span>
+            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+              {t("setup.guideHint")}
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={guide}
+            onChange={(e) => onChange({ ...setup, guide: e.target.checked })}
+            className={`h-5 w-5 rounded ${theme.primaryFocus}`}
+          />
+        </label>
+      )}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { trackPageView } from "./lib/analytics";
+import { Grade } from "./routes/Grade";
 import { Home } from "./routes/Home";
 import { NotFound } from "./routes/NotFound";
 import { Practice } from "./routes/Practice";
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/setup/:operation" element={<Setup />} />
+        <Route path="/grade/:grade" element={<Grade />} />
         <Route path="/practice/:operation" element={<Practice />} />
         <Route path="/summary" element={<Summary />} />
         <Route path="/sessions" element={<Sessions />} />

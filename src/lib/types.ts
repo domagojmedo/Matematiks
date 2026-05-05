@@ -1,5 +1,7 @@
 export type Operation = "add" | "sub" | "addsub" | "mul" | "div" | "muldiv";
 
+export type PracticeFormat = "horizontal" | "column";
+
 export type OperationSetup =
   | {
       kind: "range";
@@ -7,12 +9,18 @@ export type OperationSetup =
       max: number;
       min2?: number;
       max2?: number;
+      crossesTen?: "never" | "always" | "any";
+      format?: PracticeFormat;
+      guide?: boolean;
       rounds: number;
       timeMs?: number;
     }
   | {
       kind: "multiplicands";
       values: number[];
+      values2?: number[];
+      format?: PracticeFormat;
+      guide?: boolean;
       rounds: number;
       timeMs?: number;
     };

@@ -25,7 +25,59 @@
     "operations": "Operacije",
     "sessions": "Vježbe",
     "sessionsSubtitle": "Tvoja povijest",
-    "quickStart": "Brzi početak"
+    "quickStart": "Brzi početak",
+    "byGrade": "Po razredu",
+    "gradeShort": "razred"
+  },
+  "grades": {
+    "g1": "1. razred",
+    "g2": "2. razred",
+    "g3": "3. razred",
+    "g4": "4. razred"
+  },
+  "grade": {
+    "problems": "zadataka"
+  },
+  "lessons": {
+    "g1": {
+      "add10": "Zbrajanje do 10",
+      "sub10": "Oduzimanje do 10",
+      "add20NoCross": "Zbrajanje do 20 (bez prijelaza)",
+      "add20Cross": "Zbrajanje do 20 (s prijelazom)",
+      "sub20NoCross": "Oduzimanje do 20 (bez prijelaza)",
+      "sub20Cross": "Oduzimanje do 20 (s prijelazom)",
+      "addsub20": "Zbrajanje i oduzimanje do 20"
+    },
+    "g2": {
+      "add100": "Zbrajanje do 100",
+      "sub100": "Oduzimanje do 100",
+      "addsub100": "Zbrajanje i oduzimanje do 100",
+      "mul2": "Tablica množenja s 2",
+      "mul3": "Tablica množenja s 3",
+      "mul4": "Tablica množenja s 4",
+      "mul5": "Tablica množenja s 5",
+      "mul6": "Tablica množenja s 6",
+      "mul7": "Tablica množenja s 7",
+      "mul8": "Tablica množenja s 8",
+      "mul9": "Tablica množenja s 9",
+      "mul10": "Tablica množenja s 10",
+      "mulMixed": "Tablica množenja (mješano)",
+      "divTable": "Dijeljenje (tablica)"
+    },
+    "g3": {
+      "add1000": "Pisano zbrajanje do 1000",
+      "sub1000": "Pisano oduzimanje do 1000",
+      "mulSingleDigit": "Množenje jednoznamenkastim",
+      "divSingleDigit": "Dijeljenje jednoznamenkastim",
+      "muldivSingleDigit": "Množenje i dijeljenje (mješano)"
+    },
+    "g4": {
+      "addLarge": "Pisano zbrajanje (veći brojevi)",
+      "subLarge": "Pisano oduzimanje (veći brojevi)",
+      "mul2x2": "Pisano množenje (dvoznamenkasti)",
+      "div2Digit": "Pisano dijeljenje (dvoznamenkasti)",
+      "addsubLarge": "Zbrajanje i oduzimanje (veći brojevi)"
+    }
   },
   "operations": {
     "add": "Zbrajanje",
@@ -55,6 +107,11 @@
     "customMinutes": "Prilagođeno (min)",
     "minutesShort": "min",
     "timePresetLabel": "{{minutes}} min",
+    "formatSection": "Način pisanja",
+    "formatHorizontal": "U redu",
+    "formatColumn": "Stupčano",
+    "guideLabel": "Vodič",
+    "guideHint": "Koraci i naznake aktivne znamenke",
     "startRound": "Pokreni vježbu"
   },
   "practice": {
@@ -67,6 +124,11 @@
     "leaveBody": "Tvoj napredak će biti spremljen.",
     "leaveStay": "Ostani",
     "leaveLeave": "Izađi"
+  },
+  "column": {
+    "step": "{{n}}. korak",
+    "mulPartial": "{{n}}. Pomnoži",
+    "mulSum": "Zbroji djelomične umnoške"
   },
   "summary": {
     "roundComplete": "Runda završena",

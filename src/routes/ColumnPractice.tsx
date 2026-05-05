@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useLocation, useParams } from "react-router-dom";
+import {
+  ColumnLayout,
+  type Flash,
+  LongDivisionLayout,
+  MulPartialProductsLayout,
+} from "../components/ColumnLayouts";
 import { Mascot } from "../components/Mascot";
 import {
   CounterStrip,
@@ -8,59 +13,16 @@ import {
   NumPad,
   ProgressBar,
 } from "../components/PracticeUI";
-import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePracticeRound } from "../hooks/usePracticeRound";
+import { buildPhases, type Phase, pickLayout } from "../lib/columnPhases";
 import { formatMmSs, summarizeSetup } from "../lib/format";
-import {
-  isValidOperation,
-  OPERATION_SYMBOL,
-  OPERATION_TONE,
-  TONE_CHIP,
-} from "../lib/operations";
-import { operationGlyph } from "../lib/problemGen";
-import { getSetup } from "../lib/setup";
-import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
-import type { LastSession, Operation, OperationSetup } from "../lib/types";
-import { ColumnPractice } from "./ColumnPractice";
+import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
+import type { Operation, OperationSetup } from "../lib/types";
 
 const FLASH_MS = 400;
-const MAX_DIGITS = 4;
 
-type Flash = "correct" | "wrong" | null;
-
-export function Practice() {
-  const { operation } = useParams<{ operation: string }>();
-  const isValidOp = operation !== undefined && isValidOperation(operation);
-  const op: Operation = isValidOp ? operation : "add";
-  const { profileId } = useProfiles();
-  const location = useLocation();
-
-  const [setup] = useState<OperationSetup>(() => {
-    const stateSetup = (location.state as { setup?: OperationSetup } | null)
-      ?.setup;
-    return stateSetup ?? getSetup(profileId, op);
-  });
-
-  useEffect(() => {
-    const fromState = (location.state as { setup?: OperationSetup } | null)
-      ?.setup;
-    if (!fromState) return;
-    const last: LastSession = { operation: op, setup: fromState };
-    writeJSON(profileKey(profileId, PROFILE_KEYS.lastSession), last);
-  }, [location.state, op, profileId]);
-
-  if (!isValidOp) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (setup.format === "column") {
-    return <ColumnPractice op={op} setup={setup} />;
-  }
-  return <HorizontalPractice op={op} setup={setup} />;
-}
-
-function HorizontalPractice({
+export function ColumnPractice({
   op,
   setup,
 }: {
@@ -88,14 +50,33 @@ function HorizontalPractice({
     trackedTimeout,
   } = round;
 
-  const [typed, setTyped] = useState("");
+  const [filledDigits, setFilledDigits] = useState<number[]>([]);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [completedPhases, setCompletedPhases] = useState<number[][]>([]);
   const [flash, setFlash] = useState<Flash>(null);
   const [shaking, setShaking] = useState(false);
 
-  // Reset local input state when the round runner advances to a new problem.
+  // Reset column-specific input state on each new problem.
   useEffect(() => {
-    setTyped("");
+    setFilledDigits([]);
+    setPhaseIdx(0);
+    setCompletedPhases([]);
   }, [problem]);
+
+  const phases = useMemo<Phase[]>(() => buildPhases(problem), [problem]);
+  const currentPhase = phases[phaseIdx];
+
+  const expectedDigit = useCallback(
+    (filledIdx: number): number => {
+      if (!currentPhase) return -1;
+      const valueStr = String(currentPhase.value);
+      if (currentPhase.direction === "rtl") {
+        return Math.floor(currentPhase.value / 10 ** filledIdx) % 10;
+      }
+      return Number(valueStr[filledIdx]);
+    },
+    [currentPhase],
+  );
 
   const submitWrong = useCallback(() => {
     setFlash("wrong");
@@ -104,35 +85,55 @@ function HorizontalPractice({
     trackedTimeout(() => {
       setFlash(null);
       setShaking(false);
-      setTyped("");
     }, FLASH_MS);
   }, [recordWrong, trackedTimeout]);
 
   const handleDigit = useCallback(
     (n: number) => {
       if (flash) return;
-      if (typed.length >= MAX_DIGITS) return;
-      const next = typed + String(n);
-      setTyped(next);
-      const parsed = Number.parseInt(next, 10);
-      const answerLen = String(problem.answer).length;
-      if (Number.isFinite(parsed) && parsed === problem.answer) {
+      if (!currentPhase) return;
+      const phaseLen = String(currentPhase.value).length;
+      if (filledDigits.length >= phaseLen) return;
+      const expected = expectedDigit(filledDigits.length);
+      if (n === expected) {
+        const nextFilled = [...filledDigits, n];
         setFlash("correct");
+        const phaseComplete = nextFilled.length >= phaseLen;
+        const isLastPhase = phaseIdx + 1 >= phases.length;
         trackedTimeout(() => {
           setFlash(null);
-          recordCorrect(parsed);
+          if (phaseComplete && isLastPhase) {
+            recordCorrect(problem.answer);
+          } else if (phaseComplete) {
+            setCompletedPhases((prev) => [...prev, nextFilled]);
+            setPhaseIdx((i) => i + 1);
+            setFilledDigits([]);
+          } else {
+            setFilledDigits(nextFilled);
+          }
         }, FLASH_MS);
-      } else if (next.length >= answerLen) {
+      } else {
         submitWrong();
       }
     },
-    [flash, typed, problem.answer, recordCorrect, submitWrong, trackedTimeout],
+    [
+      flash,
+      filledDigits,
+      currentPhase,
+      phaseIdx,
+      phases.length,
+      expectedDigit,
+      recordCorrect,
+      problem.answer,
+      submitWrong,
+      trackedTimeout,
+    ],
   );
 
-  const handleDelete = useCallback(() => {
-    if (flash) return;
-    setTyped("");
-  }, [flash]);
+  // Column mode commits digits only when correct, so there is nothing to undo.
+  // The on-screen delete button stays wired as a no-op for layout consistency,
+  // and we drop the Backspace shortcut entirely.
+  const handleDelete = useCallback(() => {}, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -140,14 +141,11 @@ function HorizontalPractice({
       if (e.key >= "0" && e.key <= "9") {
         e.preventDefault();
         handleDigit(Number(e.key));
-      } else if (e.key === "Backspace" || e.key === "Delete") {
-        e.preventDefault();
-        handleDelete();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleDigit, handleDelete]);
+  }, [handleDigit]);
 
   const tone = OPERATION_TONE[op];
   const flashBg =
@@ -158,6 +156,9 @@ function HorizontalPractice({
         : settings.dark
           ? theme.pageBgDark
           : theme.pageBg;
+
+  const layoutKind = pickLayout(problem);
+  const guide = setup.guide ?? true;
 
   return (
     <div
@@ -223,39 +224,43 @@ function HorizontalPractice({
               <Mascot size={56} mood="sad" theme={theme} />
             </div>
           )}
-          <div
-            className={`flex items-baseline justify-center gap-1.5 sm:gap-3 md:gap-5 ${
-              shaking ? "animate-shake" : ""
-            }`}
-          >
-            <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
-              {problem.a}
-            </span>
-            <span
-              className={`text-3xl leading-none font-black sm:text-5xl md:text-6xl lg:text-7xl ${theme.primaryText} ${theme.primaryTextDark}`}
-            >
-              {operationGlyph(problem.op)}
-            </span>
-            <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
-              {problem.b}
-            </span>
-            <span className="text-3xl leading-none font-black text-stone-300 sm:text-5xl md:text-6xl lg:text-7xl dark:text-stone-600">
-              =
-            </span>
-            <span
-              className={`inline-block min-w-[1.2ch] text-center text-4xl leading-none font-black tabular-nums sm:text-6xl md:text-7xl lg:text-8xl ${
-                flash === "correct"
-                  ? "text-emerald-500"
-                  : flash === "wrong"
-                    ? "text-rose-500"
-                    : `${theme.primaryText} ${theme.primaryTextDark}`
-              }`}
-            >
-              {typed || (
-                <span className="text-stone-300 dark:text-stone-600">?</span>
-              )}
-            </span>
-          </div>
+
+          {layoutKind === "division" && (
+            <LongDivisionLayout
+              problem={problem}
+              phases={phases}
+              phaseIdx={phaseIdx}
+              filledDigits={filledDigits}
+              completedPhases={completedPhases}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+              guide={guide}
+            />
+          )}
+          {layoutKind === "mulPartials" && (
+            <MulPartialProductsLayout
+              problem={problem}
+              phases={phases}
+              phaseIdx={phaseIdx}
+              filledDigits={filledDigits}
+              completedPhases={completedPhases}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+              guide={guide}
+            />
+          )}
+          {layoutKind === "simple" && (
+            <ColumnLayout
+              problem={problem}
+              filledDigits={filledDigits}
+              answerLen={String(problem.answer).length}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+            />
+          )}
 
           <ProgressBar
             ratio={
@@ -267,9 +272,7 @@ function HorizontalPractice({
           />
           <p className="mt-2.5 text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
             {timeMode
-              ? t("practice.problemNumber", {
-                  current: problemIndex + 1,
-                })
+              ? t("practice.problemNumber", { current: problemIndex + 1 })
               : t("practice.problemOf", {
                   current: Math.min(problemIndex + 1, totalRounds),
                   total: totalRounds,
@@ -290,4 +293,3 @@ function HorizontalPractice({
     </div>
   );
 }
-

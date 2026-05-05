@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ProfilePicker } from "../components/ProfilePicker";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { GRADES } from "../lib/lessons";
 import {
   isValidOperation,
   OPERATION_SYMBOL,
@@ -148,6 +149,29 @@ export function Home() {
               </Link>
             );
           })}
+        </div>
+
+        <h2 className="mt-7 mb-3 px-1 text-lg font-black tracking-tight text-stone-900 md:mt-10 md:mb-4 md:text-xl dark:text-white">
+          {t("home.byGrade")}
+        </h2>
+
+        <div className="grid grid-cols-4 gap-3.5 sm:gap-4">
+          {GRADES.map((g) => (
+            <Link
+              key={g}
+              to={`/grade/${g}`}
+              className={`group relative flex aspect-square flex-col items-center justify-center gap-1.5 rounded-3xl bg-white p-3 shadow-sm ring-2 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.hoverPrimaryRing} ${theme.primaryFocus} dark:bg-stone-900 dark:ring-stone-800 dark:hover:ring-stone-700`}
+            >
+              <span
+                className={`text-4xl leading-none font-black tabular-nums sm:text-5xl ${theme.primaryText} ${theme.primaryTextDark}`}
+              >
+                {g}.
+              </span>
+              <span className="text-[11px] font-bold tracking-wider text-stone-500 uppercase sm:text-xs dark:text-stone-400">
+                {t("home.gradeShort")}
+              </span>
+            </Link>
+          ))}
         </div>
 
         <Link
