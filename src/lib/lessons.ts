@@ -48,9 +48,14 @@ export const LESSONS: Lesson[] = [
     nameKey: "lessons.g1.add20NoCross",
     op: "add",
     setup: {
+      // Teen + single-digit so the lesson actually exercises the tens range.
+      // crossesTen: never additionally caps b so a%10 + b%10 < 10, i.e. the
+      // sum stays in the same ten as a (12+5=17 yes; 12+9=21 no).
       kind: "range",
-      min: 1,
-      max: 20,
+      min: 11,
+      max: 19,
+      min2: 1,
+      max2: 9,
       crossesTen: "never",
       rounds: ROUNDS,
     },
@@ -74,9 +79,14 @@ export const LESSONS: Lesson[] = [
     nameKey: "lessons.g1.sub20NoCross",
     op: "sub",
     setup: {
+      // Teen − single-digit so the lesson actually exercises the tens range.
+      // crossesTen: never additionally caps b so a%10 >= b%10, i.e. the
+      // result stays in the same ten as a (15−3=12 yes; 15−7=8 no).
       kind: "range",
-      min: 1,
-      max: 20,
+      min: 11,
+      max: 19,
+      min2: 1,
+      max2: 9,
       crossesTen: "never",
       rounds: ROUNDS,
     },
