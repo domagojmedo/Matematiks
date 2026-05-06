@@ -161,6 +161,20 @@
     "emptyBody": "Finish a round and your sessions will show up here.",
     "emptyCta": "Start your first round"
   },
+  "sessionDetail": {
+    "correct": "correct",
+    "mistakes": "mistakes",
+    "bestStreak": "streak",
+    "problems": "Problems",
+    "empty": "No problem records.",
+    "took": "{{seconds}}s",
+    "tookRetries": "{{seconds}}s · {{retries}} retries",
+    "startedAt": "at {{mmss}}",
+    "expand": "{{count}} attempts",
+    "collapse": "Hide",
+    "noAttempts": "No detailed attempts for this problem.",
+    "expected": "expected:"
+  },
   "profiles": {
     "title": "Profiles",
     "defaultName": "Player",

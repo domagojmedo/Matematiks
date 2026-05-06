@@ -46,7 +46,12 @@
       "add20Cross": "Zbrajanje do 20 (s prijelazom)",
       "sub20NoCross": "Oduzimanje do 20 (bez prijelaza)",
       "sub20Cross": "Oduzimanje do 20 (s prijelazom)",
-      "addsub20": "Zbrajanje i oduzimanje do 20"
+      "addsub20": "Zbrajanje i oduzimanje do 20",
+      "wordVocab": "Zadaci s riječima — zbroj i razlika",
+      "wordMissing": "Zadaci s riječima — pribrojnik i umanjitelj",
+      "wordCompound": "Zadaci s riječima — složeni izrazi",
+      "wordStory": "Zadaci s riječima — manje od i više od",
+      "wordMixed": "Zadaci s riječima — sve vrste"
     },
     "g2": {
       "add100": "Zbrajanje do 100",
@@ -160,6 +165,20 @@
     "emptyTitle": "Još nema vježbi",
     "emptyBody": "Završi rundu i sesije će se pojaviti ovdje.",
     "emptyCta": "Započni prvu rundu"
+  },
+  "sessionDetail": {
+    "correct": "točno",
+    "mistakes": "greške",
+    "bestStreak": "niz",
+    "problems": "Zadaci",
+    "empty": "Nema zabilježenih zadataka.",
+    "took": "{{seconds}} s",
+    "tookRetries": "{{seconds}} s · {{retries}} pokušaja",
+    "startedAt": "u {{mmss}}",
+    "expand": "{{count}} pokušaja",
+    "collapse": "Sakrij",
+    "noAttempts": "Nema detaljnih pokušaja za ovaj zadatak.",
+    "expected": "očekivano:"
   },
   "profiles": {
     "title": "Profili",

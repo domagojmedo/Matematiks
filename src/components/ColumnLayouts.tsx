@@ -1,3 +1,11 @@
+/**
+ * biome-ignore-all lint/suspicious/noArrayIndexKey: this file renders fixed
+ * positional grids (digits of a, digits of b, partial-product rows, long-
+ * division step rows). Position is the natural identity — the lists are
+ * derived from `problem` and never reorder. Index keys are semantically
+ * correct here; switching to content-based keys would also collide on
+ * repeated digits (e.g. "55") without re-introducing the index.
+ */
 import { useTranslation } from "react-i18next";
 import type { Phase } from "../lib/columnPhases";
 import { operationGlyph, type Problem } from "../lib/problemGen";
@@ -147,7 +155,7 @@ export function MulPartialProductsLayout({
         <span className="inline-flex items-baseline">
           {[...bStr].map((ch, i) => (
             <span
-              key={i}
+              key={`b-${i}-${ch}`}
               className={
                 i === activeBPos
                   ? `rounded-md px-1 ring-2 ring-offset-1 ${theme.primaryText} ${theme.primaryTextDark} ${theme.primaryRing} ring-offset-white dark:ring-offset-stone-950`
@@ -177,7 +185,7 @@ export function MulPartialProductsLayout({
         );
         return (
           <ShiftedRow
-            key={idx}
+            key={`partial-${idx}`}
             width={width}
             shift={phase.shift ?? 0}
             len={String(phase.value).length}
@@ -316,7 +324,7 @@ export function LongDivisionLayout({
         <div className="flex items-baseline gap-1">
           {quotientCells.map((c, i) => (
             <DigitCell
-              key={i}
+              key={`quotient-${i}`}
               digit={c.digit}
               isActive={c.isActive}
               flash={c.flash}
@@ -479,8 +487,7 @@ function ShiftedRow({
         // Map display column ↔ input-order index:
         //   rtl: index 0 = rightmost (ones)   → fromInput = endCol - col
         //   ltr: index 0 = leftmost           → fromInput = col - startCol
-        const fromInput =
-          direction === "rtl" ? endCol - col : col - startCol;
+        const fromInput = direction === "rtl" ? endCol - col : col - startCol;
         if (isCompleted) {
           return (
             <DigitCell

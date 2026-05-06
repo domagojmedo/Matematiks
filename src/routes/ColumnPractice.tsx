@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ColumnLayout,
@@ -14,11 +14,18 @@ import {
   ProgressBar,
 } from "../components/PracticeUI";
 import { useSettings } from "../contexts/SettingsContext";
-import { usePracticeRound } from "../hooks/usePracticeRound";
+import { usePerProblemReset } from "../hooks/usePerProblemReset";
+import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { buildPhases, type Phase, pickLayout } from "../lib/columnPhases";
 import { formatMmSs, summarizeSetup } from "../lib/format";
 import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
-import type { Operation, OperationSetup } from "../lib/types";
+import { generateProblem, type Problem } from "../lib/problemGen";
+import type {
+  Operation,
+  OperationSetup,
+  ProblemAttempt,
+  ProblemRecord,
+} from "../lib/types";
 
 const FLASH_MS = 400;
 
@@ -33,7 +40,18 @@ export function ColumnPractice({
 }) {
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
-  const round = usePracticeRound(op, setup, lessonId);
+
+  const generate = useCallback(
+    (prev: Problem | null) => generateProblem(op, setup, prev),
+    [op, setup],
+  );
+
+  const round = useRoundMechanics<Problem>({
+    op,
+    setup,
+    lessonId,
+    generate,
+  });
   const {
     problem,
     problemIndex,
@@ -45,8 +63,9 @@ export function ColumnPractice({
     streak,
     showLeaveModal,
     setShowLeaveModal,
-    recordCorrect,
-    recordWrong,
+    nowMs,
+    commitProblem,
+    noteWrongAttempt,
     leaveAndSave,
     tryBack,
     trackedTimeout,
@@ -58,12 +77,16 @@ export function ColumnPractice({
   const [flash, setFlash] = useState<Flash>(null);
   const [shaking, setShaking] = useState(false);
 
-  // Reset column-specific input state on each new problem.
-  useEffect(() => {
+  const attemptsRef = useRef<ProblemAttempt[]>([]);
+  const startedAtRef = useRef<number>(nowMs());
+
+  usePerProblemReset(problem, () => {
     setFilledDigits([]);
     setPhaseIdx(0);
     setCompletedPhases([]);
-  }, [problem]);
+    attemptsRef.current = [];
+    startedAtRef.current = nowMs();
+  });
 
   const phases = useMemo<Phase[]>(() => buildPhases(problem), [problem]);
   const currentPhase = phases[phaseIdx];
@@ -80,15 +103,44 @@ export function ColumnPractice({
     [currentPhase],
   );
 
-  const submitWrong = useCallback(() => {
-    setFlash("wrong");
-    setShaking(true);
-    recordWrong();
-    trackedTimeout(() => {
-      setFlash(null);
-      setShaking(false);
-    }, FLASH_MS);
-  }, [recordWrong, trackedTimeout]);
+  const buildRecord = useCallback(
+    (allAttempts: ProblemAttempt[]): ProblemRecord => {
+      const wrongCount = allAttempts.filter((a) => !a.correct).length;
+      return {
+        a: problem.a,
+        b: problem.b,
+        op: problem.op,
+        answer: problem.answer,
+        userAnswer: problem.answer,
+        tookMs: Math.round(nowMs() - startedAtRef.current),
+        retries: wrongCount,
+        startedAtMs: Math.round(startedAtRef.current),
+        attempts: allAttempts,
+      };
+    },
+    [problem, nowMs],
+  );
+
+  const submitWrong = useCallback(
+    (given: number, expected: number) => {
+      attemptsRef.current.push({
+        phaseIndex: phaseIdx,
+        phaseKind: currentPhase?.kind ?? "answer",
+        given,
+        expected,
+        correct: false,
+        atMs: nowMs(),
+      });
+      setFlash("wrong");
+      setShaking(true);
+      noteWrongAttempt();
+      trackedTimeout(() => {
+        setFlash(null);
+        setShaking(false);
+      }, FLASH_MS);
+    },
+    [phaseIdx, currentPhase, noteWrongAttempt, trackedTimeout, nowMs],
+  );
 
   const handleDigit = useCallback(
     (n: number) => {
@@ -98,6 +150,14 @@ export function ColumnPractice({
       if (filledDigits.length >= phaseLen) return;
       const expected = expectedDigit(filledDigits.length);
       if (n === expected) {
+        attemptsRef.current.push({
+          phaseIndex: phaseIdx,
+          phaseKind: currentPhase.kind,
+          given: n,
+          expected,
+          correct: true,
+          atMs: nowMs(),
+        });
         const nextFilled = [...filledDigits, n];
         setFlash("correct");
         const phaseComplete = nextFilled.length >= phaseLen;
@@ -105,7 +165,7 @@ export function ColumnPractice({
         trackedTimeout(() => {
           setFlash(null);
           if (phaseComplete && isLastPhase) {
-            recordCorrect(problem.answer);
+            commitProblem(buildRecord(attemptsRef.current));
           } else if (phaseComplete) {
             setCompletedPhases((prev) => [...prev, nextFilled]);
             setPhaseIdx((i) => i + 1);
@@ -115,7 +175,7 @@ export function ColumnPractice({
           }
         }, FLASH_MS);
       } else {
-        submitWrong();
+        submitWrong(n, expected);
       }
     },
     [
@@ -125,10 +185,11 @@ export function ColumnPractice({
       phaseIdx,
       phases.length,
       expectedDigit,
-      recordCorrect,
-      problem.answer,
+      commitProblem,
+      buildRecord,
       submitWrong,
       trackedTimeout,
+      nowMs,
     ],
   );
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { Mascot } from "../components/Mascot";
@@ -10,7 +10,8 @@ import {
 } from "../components/PracticeUI";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { usePracticeRound } from "../hooks/usePracticeRound";
+import { usePerProblemReset } from "../hooks/usePerProblemReset";
+import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { formatMmSs, summarizeSetup } from "../lib/format";
 import {
   isValidOperation,
@@ -18,10 +19,20 @@ import {
   OPERATION_TONE,
   TONE_CHIP,
 } from "../lib/operations";
-import { operationGlyph } from "../lib/problemGen";
+import {
+  generateProblem,
+  operationGlyph,
+  type Problem,
+} from "../lib/problemGen";
 import { getSetup } from "../lib/setup";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
-import type { LastSession, Operation, OperationSetup } from "../lib/types";
+import type {
+  LastSession,
+  Operation,
+  OperationSetup,
+  ProblemAttempt,
+  ProblemRecord,
+} from "../lib/types";
 import { ColumnPractice } from "./ColumnPractice";
 
 const FLASH_MS = 400;
@@ -40,9 +51,10 @@ export function Practice() {
     setup: OperationSetup;
     lessonId?: string;
   }>(() => {
-    const state = location.state as
-      | { setup?: OperationSetup; lessonId?: string }
-      | null;
+    const state = location.state as {
+      setup?: OperationSetup;
+      lessonId?: string;
+    } | null;
     return {
       setup: state?.setup ?? getSetup(profileId, op),
       lessonId: state?.lessonId,
@@ -50,9 +62,10 @@ export function Practice() {
   });
 
   useEffect(() => {
-    const state = location.state as
-      | { setup?: OperationSetup; lessonId?: string }
-      | null;
+    const state = location.state as {
+      setup?: OperationSetup;
+      lessonId?: string;
+    } | null;
     if (!state?.setup) return;
     const last: LastSession = {
       operation: op,
@@ -83,7 +96,18 @@ function HorizontalPractice({
 }) {
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
-  const round = usePracticeRound(op, setup, lessonId);
+
+  const generate = useCallback(
+    (prev: Problem | null) => generateProblem(op, setup, prev),
+    [op, setup],
+  );
+
+  const round = useRoundMechanics<Problem>({
+    op,
+    setup,
+    lessonId,
+    generate,
+  });
   const {
     problem,
     problemIndex,
@@ -95,8 +119,9 @@ function HorizontalPractice({
     streak,
     showLeaveModal,
     setShowLeaveModal,
-    recordCorrect,
-    recordWrong,
+    nowMs,
+    commitProblem,
+    noteWrongAttempt,
     leaveAndSave,
     tryBack,
     trackedTimeout,
@@ -106,21 +131,36 @@ function HorizontalPractice({
   const [flash, setFlash] = useState<Flash>(null);
   const [shaking, setShaking] = useState(false);
 
-  // Reset local input state when the round runner advances to a new problem.
-  useEffect(() => {
-    setTyped("");
-  }, [problem]);
+  const attemptsRef = useRef<ProblemAttempt[]>([]);
+  const startedAtRef = useRef<number>(nowMs());
 
-  const submitWrong = useCallback(() => {
-    setFlash("wrong");
-    setShaking(true);
-    recordWrong();
-    trackedTimeout(() => {
-      setFlash(null);
-      setShaking(false);
-      setTyped("");
-    }, FLASH_MS);
-  }, [recordWrong, trackedTimeout]);
+  usePerProblemReset(problem, () => {
+    setTyped("");
+    attemptsRef.current = [];
+    startedAtRef.current = nowMs();
+  });
+
+  const submitWrong = useCallback(
+    (given: number) => {
+      attemptsRef.current.push({
+        phaseIndex: 0,
+        phaseKind: "answer",
+        given,
+        expected: problem.answer,
+        correct: false,
+        atMs: nowMs(),
+      });
+      setFlash("wrong");
+      setShaking(true);
+      noteWrongAttempt();
+      trackedTimeout(() => {
+        setFlash(null);
+        setShaking(false);
+        setTyped("");
+      }, FLASH_MS);
+    },
+    [problem.answer, noteWrongAttempt, trackedTimeout, nowMs],
+  );
 
   const handleDigit = useCallback(
     (n: number) => {
@@ -131,16 +171,37 @@ function HorizontalPractice({
       const parsed = Number.parseInt(next, 10);
       const answerLen = String(problem.answer).length;
       if (Number.isFinite(parsed) && parsed === problem.answer) {
+        const correctAttempt: ProblemAttempt = {
+          phaseIndex: 0,
+          phaseKind: "answer",
+          given: parsed,
+          expected: problem.answer,
+          correct: true,
+          atMs: nowMs(),
+        };
+        const allAttempts = [...attemptsRef.current, correctAttempt];
+        const wrongCount = allAttempts.filter((a) => !a.correct).length;
+        const record: ProblemRecord = {
+          a: problem.a,
+          b: problem.b,
+          op: problem.op,
+          answer: problem.answer,
+          userAnswer: parsed,
+          tookMs: Math.round(nowMs() - startedAtRef.current),
+          retries: wrongCount,
+          startedAtMs: Math.round(startedAtRef.current),
+          attempts: allAttempts,
+        };
         setFlash("correct");
         trackedTimeout(() => {
           setFlash(null);
-          recordCorrect(parsed);
+          commitProblem(record);
         }, FLASH_MS);
       } else if (next.length >= answerLen) {
-        submitWrong();
+        submitWrong(parsed);
       }
     },
-    [flash, typed, problem.answer, recordCorrect, submitWrong, trackedTimeout],
+    [flash, typed, problem, commitProblem, submitWrong, trackedTimeout, nowMs],
   );
 
   const handleDelete = useCallback(() => {
@@ -304,4 +365,3 @@ function HorizontalPractice({
     </div>
   );
 }
-

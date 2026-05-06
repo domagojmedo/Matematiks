@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { ProfilePicker } from "../components/ProfilePicker";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { GRADES } from "../lib/lessons";
+import { findLesson, GRADES, isWordLesson } from "../lib/lessons";
 import {
   isValidOperation,
   OPERATION_SYMBOL,
@@ -13,7 +13,7 @@ import {
   TONE_CHIP,
 } from "../lib/operations";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
-import type { LastSession } from "../lib/types";
+import { isWordSetup, type LastSession } from "../lib/types";
 
 export function Home() {
   const { t } = useTranslation();
@@ -24,7 +24,26 @@ export function Home() {
     profileKey(profileId, PROFILE_KEYS.lastSession),
     null,
   );
-  const last = lastRaw && isValidOperation(lastRaw.operation) ? lastRaw : null;
+  const lastCandidate =
+    lastRaw && isValidOperation(lastRaw.operation) ? lastRaw : null;
+  const lastLesson = lastCandidate?.lessonId
+    ? findLesson(lastCandidate.lessonId)
+    : undefined;
+  // Word sessions can only be replayed via /word-practice/:id. If their lesson
+  // is missing from the catalog (curriculum revision) or hidden by the active
+  // language filter (HR-only word lesson while UI is in EN), suppress Quick
+  // Start entirely rather than route the kid into a broken /practice round
+  // with a WordLessonSetup or into Croatian content while in English UI.
+  const last =
+    lastCandidate &&
+    (isWordSetup(lastCandidate.setup)
+      ? isWordLesson(lastLesson) &&
+        (!lastLesson.languages ||
+          lastLesson.languages.includes(settings.language))
+      : true)
+      ? lastCandidate
+      : null;
+  const lastIsWord = isWordLesson(lastLesson) && last !== null;
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
   const initial = (profile.name[0] ?? "?").toUpperCase();
 
@@ -91,25 +110,35 @@ export function Home() {
 
         {last && (
           <Link
-            to={`/practice/${last.operation}`}
-            state={{
-              setup: last.setup,
-              ...(last.lessonId ? { lessonId: last.lessonId } : {}),
-            }}
+            to={
+              lastIsWord && lastLesson
+                ? `/word-practice/${lastLesson.id}`
+                : `/practice/${last.operation}`
+            }
+            state={
+              lastIsWord
+                ? null
+                : {
+                    setup: last.setup,
+                    ...(last.lessonId ? { lessonId: last.lessonId } : {}),
+                  }
+            }
             className={`mb-5 flex h-14 w-full items-center gap-3 rounded-2xl px-4 text-white shadow-sm transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
           >
             <span
               aria-hidden="true"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-lg font-black"
             >
-              {OPERATION_SYMBOL[last.operation]}
+              {lastIsWord ? "Az" : OPERATION_SYMBOL[last.operation]}
             </span>
             <div className="flex-1 text-left">
               <p className="text-base leading-none font-black">
                 {t("home.quickStart")}
               </p>
               <p className="mt-0.5 text-xs font-semibold opacity-90">
-                {t(`operations.${last.operation}`)}
+                {lastLesson
+                  ? t(lastLesson.nameKey)
+                  : t(`operations.${last.operation}`)}
               </p>
             </div>
             <svg

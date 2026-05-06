@@ -1,19 +1,35 @@
 import { describe, expect, it } from "vitest";
 import en from "../i18n/locales/en.json";
 import hr from "../i18n/locales/hr.json";
-import { findLesson, GRADES, isValidGrade, LESSONS, lessonsByGrade } from "./lessons";
+import {
+  findLesson,
+  GRADES,
+  isArithLesson,
+  isValidGrade,
+  isWordLesson,
+  LESSONS,
+  type Lesson,
+  lessonsByGrade,
+} from "./lessons";
 import { generateProblem } from "./problemGen";
+import { type Language, LessonKind, SetupKind } from "./types";
 
 function resolveKey(bundle: unknown, key: string): unknown {
   return key
     .split(".")
     .reduce<unknown>(
       (acc, part) =>
-        acc && typeof acc === "object" && part in (acc as Record<string, unknown>)
+        acc &&
+        typeof acc === "object" &&
+        part in (acc as Record<string, unknown>)
           ? (acc as Record<string, unknown>)[part]
           : undefined,
       bundle,
     );
+}
+
+function isVisibleIn(lesson: Lesson, lang: Language): boolean {
+  return !lesson.languages || lesson.languages.includes(lang);
 }
 
 describe("lessons catalog integrity", () => {
@@ -22,18 +38,20 @@ describe("lessons catalog integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("has at least one lesson for every advertised grade", () => {
+  it("has at least one lesson for every advertised grade in HR", () => {
     for (const g of GRADES) {
-      expect(lessonsByGrade(g).length).toBeGreaterThan(0);
+      expect(lessonsByGrade(g, "hr").length).toBeGreaterThan(0);
     }
   });
 
-  it("every nameKey resolves to a string in hr and en", () => {
+  it("nameKey resolves to a string in every language the lesson is visible in", () => {
     for (const lesson of LESSONS) {
-      const hrValue = resolveKey(hr, lesson.nameKey);
-      const enValue = resolveKey(en, lesson.nameKey);
-      expect(typeof hrValue).toBe("string");
-      expect(typeof enValue).toBe("string");
+      if (isVisibleIn(lesson, "hr")) {
+        expect(typeof resolveKey(hr, lesson.nameKey)).toBe("string");
+      }
+      if (isVisibleIn(lesson, "en")) {
+        expect(typeof resolveKey(en, lesson.nameKey)).toBe("string");
+      }
     }
   });
 
@@ -49,28 +67,38 @@ describe("lessons catalog integrity", () => {
       expect(lesson.setup.rounds).toBeGreaterThan(0);
       if (lesson.setup.kind === "range") {
         expect(lesson.setup.min).toBeLessThan(lesson.setup.max);
-      } else {
+      } else if (lesson.setup.kind === "multiplicands") {
         expect(lesson.setup.values.length).toBeGreaterThan(0);
         if (lesson.setup.values2 !== undefined) {
           expect(lesson.setup.values2.length).toBeGreaterThan(0);
+        }
+      } else {
+        // word lesson — wordKind matches its parent
+        expect(lesson.kind).toBe(LessonKind.Word);
+        if (isWordLesson(lesson)) {
+          expect(lesson.setup.wordKind).toBe(lesson.wordKind);
         }
       }
     }
   });
 
-  it("operation matches setup kind", () => {
-    for (const lesson of LESSONS) {
+  it("arith lesson op matches setup kind", () => {
+    const ariths = LESSONS.filter(isArithLesson);
+    for (const lesson of ariths) {
       const needsRange =
         lesson.op === "add" || lesson.op === "sub" || lesson.op === "addsub";
       const needsMultiplicands =
         lesson.op === "mul" || lesson.op === "div" || lesson.op === "muldiv";
-      if (needsRange) expect(lesson.setup.kind).toBe("range");
-      if (needsMultiplicands) expect(lesson.setup.kind).toBe("multiplicands");
+      if (needsRange) expect(lesson.setup.kind).toBe(SetupKind.Range);
+      if (needsMultiplicands)
+        expect(lesson.setup.kind).toBe(SetupKind.Multiplicands);
     }
   });
 
   it("findLesson returns the matching lesson by id", () => {
-    expect(findLesson("g2-mul-5")?.op).toBe("mul");
+    const mul5 = findLesson("g2-mul-5");
+    expect(mul5?.kind).toBe(LessonKind.Arith);
+    if (isArithLesson(mul5)) expect(mul5.op).toBe("mul");
     expect(findLesson("g3-add-1000")?.grade).toBe(3);
     expect(findLesson("nonexistent")).toBeUndefined();
   });
@@ -82,13 +110,25 @@ describe("lessons catalog integrity", () => {
     expect(isValidGrade("5")).toBe(false);
     expect(isValidGrade("foo")).toBe(false);
   });
+
+  it("word lessons are HR-only and hidden in EN", () => {
+    const word = LESSONS.filter(isWordLesson);
+    expect(word.length).toBeGreaterThan(0);
+    for (const w of word) {
+      expect(w.languages).toEqual(["hr"]);
+    }
+    const enG1Ids = lessonsByGrade(1, "en").map((l) => l.id);
+    for (const w of word) {
+      expect(enG1Ids).not.toContain(w.id);
+    }
+  });
 });
 
 describe("g1 no-cross lessons exercise the teens", () => {
   it("g1-add-20-no-cross keeps a in [11,19] and answer in [12,19]", () => {
     const lesson = findLesson("g1-add-20-no-cross");
-    expect(lesson).toBeDefined();
-    if (!lesson) return;
+    expect(lesson?.kind).toBe(LessonKind.Arith);
+    if (!isArithLesson(lesson)) return;
     for (let i = 0; i < 100; i++) {
       const p = generateProblem(lesson.op, lesson.setup);
       expect(p.a).toBeGreaterThanOrEqual(11);
@@ -102,8 +142,8 @@ describe("g1 no-cross lessons exercise the teens", () => {
 
   it("g1-sub-20-no-cross keeps a in [11,19] and answer in [10,18]", () => {
     const lesson = findLesson("g1-sub-20-no-cross");
-    expect(lesson).toBeDefined();
-    if (!lesson) return;
+    expect(lesson?.kind).toBe(LessonKind.Arith);
+    if (!isArithLesson(lesson)) return;
     for (let i = 0; i < 100; i++) {
       const p = generateProblem(lesson.op, lesson.setup);
       expect(p.a).toBeGreaterThanOrEqual(11);

@@ -1,20 +1,52 @@
-import type { Operation, OperationSetup } from "./types";
+import {
+  type Language,
+  LessonKind,
+  type Operation,
+  type OperationSetup,
+  SetupKind,
+  type WordKind,
+  type WordLessonSetup,
+} from "./types";
 
 export type Grade = 1 | 2 | 3 | 4;
 
-// Lessons ship a fully-formed setup. Tapping a lesson navigates to /practice
-// with this setup attached as router state — it does not overwrite the
-// profile's per-operation setup that /setup edits. `setup.guide` is left
-// undefined here so the column-practice "Vodič" defaults to ON for kids
-// learning the procedure; a parent can still turn it off in /setup for the
-// horizontal/manual flow without affecting lesson runs.
-export type Lesson = {
+/**
+ * Lessons ship a fully-formed setup. Tapping a lesson navigates straight to a
+ * practice route; the setup is attached as router state and does not overwrite
+ * the profile's per-operation setup that /setup edits. `setup.guide` is left
+ * undefined here so the column-practice "Vodič" defaults to ON for kids
+ * learning the procedure; a parent can still turn it off in /setup for the
+ * horizontal/manual flow without affecting lesson runs.
+ *
+ * Two lesson kinds:
+ *   - "arith": a numeric add/sub/mul/div round, dispatched to /practice/:op
+ *   - "word":  a Croatian word-problem round, dispatched to /word-practice/:id
+ *
+ * Word lessons are HR-only by design (Croatian school vocabulary is the
+ * lesson). Lessons with `languages` set are filtered out for other languages.
+ */
+export type ArithLesson = {
+  kind: typeof LessonKind.Arith;
   id: string;
   grade: Grade;
   nameKey: string;
   op: Operation;
   setup: OperationSetup;
+  languages?: Language[];
 };
+
+export type WordLesson = {
+  kind: typeof LessonKind.Word;
+  id: string;
+  grade: Grade;
+  nameKey: string;
+  /** Mirrored on `setup.wordKind`; kept here for ergonomic access. */
+  wordKind: WordKind;
+  setup: WordLessonSetup;
+  languages?: Language[];
+};
+
+export type Lesson = ArithLesson | WordLesson;
 
 export const GRADES: Grade[] = [1, 2, 3, 4];
 
@@ -26,23 +58,48 @@ const ROUNDS = 20;
 const TABLE_FACTORS = range(1, 10);
 const TABLE_NONTRIVIAL = range(2, 10);
 
+const arith = (l: Omit<ArithLesson, "kind">): ArithLesson => ({
+  kind: LessonKind.Arith,
+  ...l,
+});
+
+const word = (
+  l: Omit<WordLesson, "kind" | "setup"> & {
+    rounds?: number;
+    timeMs?: number;
+  },
+): WordLesson => ({
+  kind: LessonKind.Word,
+  id: l.id,
+  grade: l.grade,
+  nameKey: l.nameKey,
+  wordKind: l.wordKind,
+  languages: l.languages ?? ["hr"],
+  setup: {
+    kind: SetupKind.Word,
+    wordKind: l.wordKind,
+    rounds: l.rounds ?? ROUNDS,
+    ...(l.timeMs !== undefined ? { timeMs: l.timeMs } : {}),
+  },
+});
+
 export const LESSONS: Lesson[] = [
   // 1. razred
-  {
+  arith({
     id: "g1-add-10",
     grade: 1,
     nameKey: "lessons.g1.add10",
     op: "add",
     setup: { kind: "range", min: 1, max: 10, rounds: ROUNDS },
-  },
-  {
+  }),
+  arith({
     id: "g1-sub-10",
     grade: 1,
     nameKey: "lessons.g1.sub10",
     op: "sub",
     setup: { kind: "range", min: 1, max: 10, rounds: ROUNDS },
-  },
-  {
+  }),
+  arith({
     id: "g1-add-20-no-cross",
     grade: 1,
     nameKey: "lessons.g1.add20NoCross",
@@ -59,8 +116,8 @@ export const LESSONS: Lesson[] = [
       crossesTen: "never",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g1-add-20-cross",
     grade: 1,
     nameKey: "lessons.g1.add20Cross",
@@ -72,8 +129,8 @@ export const LESSONS: Lesson[] = [
       crossesTen: "always",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g1-sub-20-no-cross",
     grade: 1,
     nameKey: "lessons.g1.sub20NoCross",
@@ -90,8 +147,8 @@ export const LESSONS: Lesson[] = [
       crossesTen: "never",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g1-sub-20-cross",
     grade: 1,
     nameKey: "lessons.g1.sub20Cross",
@@ -103,50 +160,84 @@ export const LESSONS: Lesson[] = [
       crossesTen: "always",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g1-addsub-20",
     grade: 1,
     nameKey: "lessons.g1.addsub20",
     op: "addsub",
     setup: { kind: "range", min: 1, max: 20, rounds: ROUNDS },
-  },
+  }),
+
+  // 1. razred — zadaci s riječima (HR only)
+  word({
+    id: "g1-word-vocab",
+    grade: 1,
+    nameKey: "lessons.g1.wordVocab",
+    wordKind: "vocab",
+  }),
+  word({
+    id: "g1-word-missing",
+    grade: 1,
+    nameKey: "lessons.g1.wordMissing",
+    wordKind: "missing",
+  }),
+  word({
+    id: "g1-word-compound",
+    grade: 1,
+    nameKey: "lessons.g1.wordCompound",
+    wordKind: "compound",
+  }),
+  word({
+    id: "g1-word-story",
+    grade: 1,
+    nameKey: "lessons.g1.wordStory",
+    wordKind: "story",
+  }),
+  word({
+    id: "g1-word-mixed",
+    grade: 1,
+    nameKey: "lessons.g1.wordMixed",
+    wordKind: "mixed",
+  }),
 
   // 2. razred
-  {
+  arith({
     id: "g2-add-100",
     grade: 2,
     nameKey: "lessons.g2.add100",
     op: "add",
     setup: { kind: "range", min: 10, max: 100, rounds: ROUNDS },
-  },
-  {
+  }),
+  arith({
     id: "g2-sub-100",
     grade: 2,
     nameKey: "lessons.g2.sub100",
     op: "sub",
     setup: { kind: "range", min: 10, max: 100, rounds: ROUNDS },
-  },
-  {
+  }),
+  arith({
     id: "g2-addsub-100",
     grade: 2,
     nameKey: "lessons.g2.addsub100",
     op: "addsub",
     setup: { kind: "range", min: 10, max: 100, rounds: ROUNDS },
-  },
-  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map<Lesson>((n) => ({
-    id: `g2-mul-${n}`,
-    grade: 2,
-    nameKey: `lessons.g2.mul${n}`,
-    op: "mul",
-    setup: {
-      kind: "multiplicands",
-      values: [n],
-      values2: TABLE_FACTORS,
-      rounds: ROUNDS,
-    },
-  })),
-  {
+  }),
+  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map<ArithLesson>((n) =>
+    arith({
+      id: `g2-mul-${n}`,
+      grade: 2,
+      nameKey: `lessons.g2.mul${n}`,
+      op: "mul",
+      setup: {
+        kind: "multiplicands",
+        values: [n],
+        values2: TABLE_FACTORS,
+        rounds: ROUNDS,
+      },
+    }),
+  ),
+  arith({
     id: "g2-mul-mixed",
     grade: 2,
     nameKey: "lessons.g2.mulMixed",
@@ -156,8 +247,8 @@ export const LESSONS: Lesson[] = [
       values: TABLE_NONTRIVIAL,
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g2-div-table",
     grade: 2,
     nameKey: "lessons.g2.divTable",
@@ -167,10 +258,10 @@ export const LESSONS: Lesson[] = [
       values: TABLE_NONTRIVIAL,
       rounds: ROUNDS,
     },
-  },
+  }),
 
   // 3. razred
-  {
+  arith({
     id: "g3-add-1000",
     grade: 3,
     nameKey: "lessons.g3.add1000",
@@ -182,8 +273,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g3-sub-1000",
     grade: 3,
     nameKey: "lessons.g3.sub1000",
@@ -195,8 +286,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g3-mul-single-digit",
     grade: 3,
     nameKey: "lessons.g3.mulSingleDigit",
@@ -208,8 +299,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g3-div-single-digit",
     grade: 3,
     nameKey: "lessons.g3.divSingleDigit",
@@ -221,8 +312,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g3-muldiv-single-digit",
     grade: 3,
     nameKey: "lessons.g3.muldivSingleDigit",
@@ -234,10 +325,10 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
+  }),
 
   // 4. razred
-  {
+  arith({
     id: "g4-add-large",
     grade: 4,
     nameKey: "lessons.g4.addLarge",
@@ -249,8 +340,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g4-sub-large",
     grade: 4,
     nameKey: "lessons.g4.subLarge",
@@ -262,8 +353,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g4-mul-2x2",
     grade: 4,
     nameKey: "lessons.g4.mul2x2",
@@ -275,8 +366,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g4-div-2digit",
     grade: 4,
     nameKey: "lessons.g4.div2Digit",
@@ -288,8 +379,8 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
-  {
+  }),
+  arith({
     id: "g4-addsub-large",
     grade: 4,
     nameKey: "lessons.g4.addsubLarge",
@@ -301,11 +392,16 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
-  },
+  }),
 ];
 
-export function lessonsByGrade(grade: Grade): Lesson[] {
-  return LESSONS.filter((l) => l.grade === grade);
+export function lessonsByGrade(grade: Grade, language?: Language): Lesson[] {
+  return LESSONS.filter((l) => {
+    if (l.grade !== grade) return false;
+    if (l.languages && language && !l.languages.includes(language))
+      return false;
+    return true;
+  });
 }
 
 export function findLesson(id: string): Lesson | undefined {
@@ -314,4 +410,32 @@ export function findLesson(id: string): Lesson | undefined {
 
 export function isValidGrade(s: string): s is `${Grade}` {
   return s === "1" || s === "2" || s === "3" || s === "4";
+}
+
+/**
+ * Type-guard helpers. Single source of truth for "is this a word-problem
+ * lesson?" — runtime call sites should never compare against the `"word"`
+ * literal directly.
+ */
+export function isWordLesson(
+  lesson: Lesson | null | undefined,
+): lesson is WordLesson {
+  return lesson?.kind === LessonKind.Word;
+}
+
+export function isArithLesson(
+  lesson: Lesson | null | undefined,
+): lesson is ArithLesson {
+  return lesson?.kind === LessonKind.Arith;
+}
+
+/**
+ * True when a word lesson is allowed to be shown in the given language —
+ * either it has no language restriction or the language is in its allow list.
+ */
+export function isLessonVisibleInLanguage(
+  lesson: Lesson,
+  language: Language,
+): boolean {
+  return !lesson.languages || lesson.languages.includes(language);
 }

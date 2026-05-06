@@ -27,7 +27,10 @@ function crossesTenSub(a: number, b: number): boolean {
   return a % 10 < b % 10;
 }
 
-function matchesCrossesTen(p: Problem, mode: "never" | "always" | "any"): boolean {
+function matchesCrossesTen(
+  p: Problem,
+  mode: "never" | "always" | "any",
+): boolean {
   if (mode === "any") return true;
   let crosses: boolean;
   if (p.op === "+") crosses = crossesTenAdd(p.a, p.b);

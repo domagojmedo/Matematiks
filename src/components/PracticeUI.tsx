@@ -91,13 +91,7 @@ export function CounterStrip({
   );
 }
 
-export function ProgressBar({
-  ratio,
-  theme,
-}: {
-  ratio: number;
-  theme: Theme;
-}) {
+export function ProgressBar({ ratio, theme }: { ratio: number; theme: Theme }) {
   const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
   return (
     <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">

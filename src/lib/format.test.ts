@@ -3,9 +3,9 @@ import { summarizeSetup } from "./format";
 
 describe("summarizeSetup", () => {
   it("renders simple range", () => {
-    expect(
-      summarizeSetup({ kind: "range", min: 1, max: 20, rounds: 20 }),
-    ).toBe("1–20");
+    expect(summarizeSetup({ kind: "range", min: 1, max: 20, rounds: 20 })).toBe(
+      "1–20",
+    );
   });
 
   it("renders asymmetric range with arrow", () => {

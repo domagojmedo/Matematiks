@@ -5,7 +5,7 @@ import { Mascot } from "../components/Mascot";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { formatDuration, isTimeMode } from "../lib/format";
-import { findLesson } from "../lib/lessons";
+import { findLesson, isWordLesson } from "../lib/lessons";
 import { operationGlyph } from "../lib/problemGen";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import type { ProblemRecord, SessionRecord } from "../lib/types";
@@ -30,6 +30,7 @@ export function Summary() {
 
   if (!session) return <Navigate to="/" replace />;
 
+  const lesson = session.lessonId ? findLesson(session.lessonId) : undefined;
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
   const total = session.correct + session.mistakes;
   const accuracy = total > 0 ? Math.round((session.correct * 100) / total) : 0;
@@ -103,18 +104,13 @@ export function Summary() {
           </h1>
           <p className="mt-1 text-center text-sm font-semibold text-stone-500 dark:text-stone-400">
             {(() => {
-              const lesson = session.lessonId
-                ? findLesson(session.lessonId)
-                : undefined;
               const operation = lesson
                 ? t(lesson.nameKey)
                 : t(`operations.${session.operation}`);
               return isTimeMode(session.setup)
                 ? t("summary.sublineTime", {
                     operation,
-                    minutes: Math.round(
-                      (session.setup.timeMs ?? 0) / 60_000,
-                    ),
+                    minutes: Math.round((session.setup.timeMs ?? 0) / 60_000),
                   })
                 : t("summary.subline", {
                     operation,
@@ -213,8 +209,9 @@ export function Summary() {
             {t("common.home")}
           </Link>
           <Link
-            to={`/practice/${session.operation}`}
+            to={playAgainTarget(session, lesson)}
             replace
+            state={playAgainState(session, lesson)}
             className={`flex h-14 items-center justify-center rounded-2xl text-base font-black text-white shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
           >
             {t("common.playAgain")}
@@ -228,6 +225,38 @@ export function Summary() {
 function pickTrickiest(problems: ProblemRecord[]): ProblemRecord | null {
   if (problems.length === 0) return null;
   return problems.reduce((max, p) => (p.tookMs > max.tookMs ? p : max));
+}
+
+/**
+ * Pick the right route for "Play again". Word lessons need their own route +
+ * lessonId in the URL, since `session.operation` is coerced to "addsub" for
+ * persistence and would otherwise route the kid into a vanilla addsub round.
+ */
+function playAgainTarget(
+  session: SessionRecord,
+  lesson: ReturnType<typeof findLesson>,
+): string {
+  if (isWordLesson(lesson)) return `/word-practice/${lesson.id}`;
+  return `/practice/${session.operation}`;
+}
+
+function playAgainState(
+  session: SessionRecord,
+  lesson: ReturnType<typeof findLesson>,
+): { setup: SessionRecord["setup"]; lessonId?: string } | null {
+  // Word lessons get their setup from `findLesson(id)`, not from router state,
+  // so passing state is unnecessary (and indeed a word setup would be
+  // rejected by `Practice`'s `OperationSetup` typed prop).
+  if (isWordLesson(lesson)) return null;
+  // Always forward the just-played setup for arith sessions so Play Again
+  // replays whatever setup the kid actually used (custom range, time mode,
+  // crossesTen filter…). Without this, free-play custom rounds would silently
+  // reset to the profile default. lessonId is optional — only included when
+  // the session was tagged with one.
+  return {
+    setup: session.setup,
+    ...(lesson ? { lessonId: lesson.id } : {}),
+  };
 }
 
 function Stat({

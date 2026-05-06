@@ -1,4 +1,4 @@
-import type { OperationSetup } from "./types";
+import type { AnyLessonSetup } from "./types";
 
 export function formatDuration(ms: number): string {
   const totalSec = Math.max(0, Math.round(ms / 1000));
@@ -15,7 +15,7 @@ export function formatMmSs(ms: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function isTimeMode(setup: OperationSetup): boolean {
+export function isTimeMode(setup: AnyLessonSetup): boolean {
   return setup.timeMs !== undefined;
 }
 
@@ -32,7 +32,7 @@ function formatValues(values: number[]): string {
   return values.join(",");
 }
 
-export function summarizeSetup(setup: OperationSetup): string {
+export function summarizeSetup(setup: AnyLessonSetup): string {
   if (setup.kind === "range") {
     const range1 = `${setup.min}–${setup.max}`;
     if (setup.min2 !== undefined || setup.max2 !== undefined) {
@@ -41,9 +41,13 @@ export function summarizeSetup(setup: OperationSetup): string {
     }
     return range1;
   }
-  const a = formatValues(setup.values);
-  if (setup.values2 !== undefined) {
-    return `${a} × ${formatValues(setup.values2)}`;
+  if (setup.kind === "multiplicands") {
+    const a = formatValues(setup.values);
+    if (setup.values2 !== undefined) {
+      return `${a} × ${formatValues(setup.values2)}`;
+    }
+    return a;
   }
-  return a;
+  // word setup — no numeric range to summarize; the lesson title carries the meaning.
+  return "";
 }

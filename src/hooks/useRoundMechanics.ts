@@ -3,41 +3,61 @@ import { useNavigate } from "react-router-dom";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { trackEvent } from "../lib/analytics";
 import { isTimeMode } from "../lib/format";
-import { generateProblem, type Problem } from "../lib/problemGen";
 import { PROFILE_KEYS, profileKey, readJSON, writeJSON } from "../lib/storage";
-import type {
-  Operation,
-  OperationSetup,
-  ProblemRecord,
-  SessionRecord,
+import {
+  type AnyLessonSetup,
+  isWordSetup,
+  type Operation,
+  type ProblemRecord,
+  type SessionRecord,
+  SetupKind,
 } from "../lib/types";
 
 /**
- * Shared round-runner. Owns problem advancement, counters, persistence, the
- * elapsed-time tick, and navigation away from /practice. Visual concerns
- * (flash, shake, typed buffer, layout) stay in the calling component.
+ * Problem-shape-agnostic round runner.
  *
- * Caller responsibility:
- *   - call `recordCorrect(userAnswer)` exactly once per problem when the kid
- *     reaches the correct final answer (after any flash delay)
- *   - call `recordWrong()` for each wrong attempt within a problem
- *   - reset its own input state when `problem` changes (typically via a
- *     useEffect that watches `problem`)
+ * Owns:
+ *   - round-level state (counters, streak, timer, leave modal)
+ *   - persistence (writes the SessionRecord on completion or leave)
+ *   - navigation away from the practice screen
+ *   - the "current problem" via a caller-provided generator
+ *
+ * Caller owns:
+ *   - per-problem visual state (typed buffer, phase advancement, flash, etc.)
+ *   - per-attempt logging (the caller knows the phase kind / expected value /
+ *     given value and assembles `ProblemAttempt` entries)
+ *   - building the final `ProblemRecord` (with attempts + startedAtMs) and
+ *     handing it to `commitProblem` when the kid finishes the problem
+ *
+ * Why caller-built records: word problems carry extra fields (templateId,
+ * numbers, vars, kind="word") that arith problems don't. Generalising the
+ * record-builder inside the hook would force a discriminated union and a
+ * bunch of branching that the caller can do more naturally with the data
+ * they already have.
  */
-export function usePracticeRound(
-  op: Operation,
-  setup: OperationSetup,
-  lessonId?: string,
-) {
+export function useRoundMechanics<P>({
+  op,
+  setup,
+  lessonId,
+  generate,
+}: {
+  op: Operation;
+  setup: AnyLessonSetup;
+  lessonId?: string;
+  /**
+   * Build the next problem. Called once at mount and once after every
+   * successful `commitProblem`. The previous problem (or null on first call)
+   * is passed so generators can avoid immediate repeats.
+   */
+  generate: (prev: P | null) => P;
+}) {
   const navigate = useNavigate();
   const { profileId } = useProfiles();
 
   const totalRounds = setup.rounds;
   const timeMode = isTimeMode(setup);
 
-  const [problem, setProblem] = useState<Problem>(() =>
-    generateProblem(op, setup),
-  );
+  const [problem, setProblem] = useState<P>(() => generate(null));
   const [problemIndex, setProblemIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [mistakes, setMistakes] = useState(0);
@@ -46,12 +66,15 @@ export function usePracticeRound(
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  const problemStartedRef = useRef<number>(performance.now());
-  const retriesRef = useRef<number>(0);
   const roundStartedRef = useRef<number>(performance.now());
   const recordsRef = useRef<ProblemRecord[]>([]);
   const endedRef = useRef<boolean>(false);
   const timeoutsRef = useRef<number[]>([]);
+
+  const nowMs = useCallback(
+    () => performance.now() - roundStartedRef.current,
+    [],
+  );
 
   const trackedTimeout = useCallback((fn: () => void, ms: number) => {
     const id = window.setTimeout(() => {
@@ -98,45 +121,45 @@ export function usePracticeRound(
   );
 
   const modeTag = timeMode ? "time" : "count";
+  // Word lessons coerce `op` to "addsub" for storage and chip rendering, but
+  // we don't want them to inflate the addsub bucket in analytics. Tag them
+  // explicitly as "word" so the analytics backend can split them out.
+  const opTag: string = isWordSetup(setup) ? SetupKind.Word : op;
 
   const finishRound = useCallback(
-    (lastRecord: ProblemRecord, finalCorrect: number, finalBest: number) => {
+    (records: ProblemRecord[], finalCorrect: number, finalBest: number) => {
       if (endedRef.current) return;
       endedRef.current = true;
-      trackEvent(`round_completed/${op}/${modeTag}`);
-      const id = persistSession(
-        [...recordsRef.current, lastRecord],
-        finalCorrect,
-        finalBest,
-      );
+      trackEvent(`round_completed/${opTag}/${modeTag}`);
+      const id = persistSession(records, finalCorrect, finalBest);
       if (id) {
         navigate("/summary", { state: { sessionId: id }, replace: true });
       } else {
         navigate("/", { replace: true });
       }
     },
-    [persistSession, navigate, op, modeTag],
+    [persistSession, navigate, opTag, modeTag],
   );
 
   const leaveAndSave = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
-    trackEvent(`round_abandoned/${op}/${modeTag}`);
+    trackEvent(`round_abandoned/${opTag}/${modeTag}`);
     persistSession(recordsRef.current, correct, bestStreak);
     navigate("/", { replace: true });
-  }, [persistSession, correct, bestStreak, navigate, op, modeTag]);
+  }, [persistSession, correct, bestStreak, navigate, opTag, modeTag]);
 
   const finishRoundFromTimeout = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
-    trackEvent(`round_completed/${op}/${modeTag}`);
+    trackEvent(`round_completed/${opTag}/${modeTag}`);
     const id = persistSession(recordsRef.current, correct, bestStreak);
     if (id) {
       navigate("/summary", { state: { sessionId: id }, replace: true });
     } else {
       navigate("/", { replace: true });
     }
-  }, [persistSession, correct, bestStreak, navigate, op, modeTag]);
+  }, [persistSession, correct, bestStreak, navigate, opTag, modeTag]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -153,17 +176,8 @@ export function usePracticeRound(
     return () => window.clearInterval(id);
   }, [setup.timeMs, finishRoundFromTimeout]);
 
-  const recordCorrect = useCallback(
-    (userAnswer: number) => {
-      const record: ProblemRecord = {
-        a: problem.a,
-        b: problem.b,
-        op: problem.op,
-        answer: problem.answer,
-        userAnswer,
-        tookMs: Math.round(performance.now() - problemStartedRef.current),
-        retries: retriesRef.current,
-      };
+  const commitProblem = useCallback(
+    (record: ProblemRecord) => {
       const newCorrect = correct + 1;
       const newStreak = streak + 1;
       const newBest = Math.max(bestStreak, newStreak);
@@ -172,18 +186,15 @@ export function usePracticeRound(
       setBestStreak(newBest);
 
       if (!timeMode && problemIndex + 1 >= totalRounds) {
-        finishRound(record, newCorrect, newBest);
+        finishRound([...recordsRef.current, record], newCorrect, newBest);
         return;
       }
 
       recordsRef.current = [...recordsRef.current, record];
       setProblemIndex((i) => i + 1);
-      setProblem(generateProblem(op, setup, problem));
-      problemStartedRef.current = performance.now();
-      retriesRef.current = 0;
+      setProblem((prev) => generate(prev));
     },
     [
-      problem,
       correct,
       streak,
       bestStreak,
@@ -191,15 +202,13 @@ export function usePracticeRound(
       totalRounds,
       timeMode,
       finishRound,
-      op,
-      setup,
+      generate,
     ],
   );
 
-  const recordWrong = useCallback(() => {
+  const noteWrongAttempt = useCallback(() => {
     setMistakes((m) => m + 1);
     setStreak(0);
-    retriesRef.current += 1;
   }, []);
 
   const tryBack = useCallback(() => {
@@ -212,27 +221,23 @@ export function usePracticeRound(
   }, [navigate, mistakes]);
 
   return {
-    // problem state
     problem,
     problemIndex,
     totalRounds,
     timeMode,
     elapsedMs,
-    // counters
     correct,
     mistakes,
     streak,
     bestStreak,
-    // modal
     showLeaveModal,
     setShowLeaveModal,
-    // actions
-    recordCorrect,
-    recordWrong,
+    nowMs,
+    commitProblem,
+    noteWrongAttempt,
     leaveAndSave,
     tryBack,
     trackedTimeout,
-    // pass-through
     setup,
   };
 }

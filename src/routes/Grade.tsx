@@ -5,10 +5,16 @@ import { summarizeSetup } from "../lib/format";
 import {
   type Grade as GradeNum,
   isValidGrade,
+  isWordLesson,
   type Lesson,
   lessonsByGrade,
 } from "../lib/lessons";
-import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
+import {
+  OPERATION_SYMBOL,
+  OPERATION_TONE,
+  TONE_CHIP,
+  type Tone,
+} from "../lib/operations";
 
 export function Grade() {
   const { grade } = useParams<{ grade: string }>();
@@ -21,8 +27,18 @@ export function Grade() {
   }
 
   const gradeNum = Number(grade) as GradeNum;
-  const lessons = lessonsByGrade(gradeNum);
+  const lessons = lessonsByGrade(gradeNum, settings.language);
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
+
+  const launch = (lesson: Lesson) => {
+    if (isWordLesson(lesson)) {
+      navigate(`/word-practice/${lesson.id}`);
+      return;
+    }
+    navigate(`/practice/${lesson.op}`, {
+      state: { setup: lesson.setup, lessonId: lesson.id },
+    });
+  };
 
   return (
     <div className={`min-h-dvh w-full ${pageBg}`}>
@@ -56,20 +72,31 @@ export function Grade() {
         <ul className="space-y-2.5">
           {lessons.map((lesson) => (
             <li key={lesson.id}>
-              <LessonCard
-                lesson={lesson}
-                onLaunch={() =>
-                  navigate(`/practice/${lesson.op}`, {
-                    state: { setup: lesson.setup, lessonId: lesson.id },
-                  })
-                }
-              />
+              <LessonCard lesson={lesson} onLaunch={() => launch(lesson)} />
             </li>
           ))}
         </ul>
       </div>
     </div>
   );
+}
+
+function lessonChip(lesson: Lesson): { tone: Tone; symbol: string } {
+  if (isWordLesson(lesson)) {
+    return { tone: "fuchsia", symbol: "Az" };
+  }
+  return {
+    tone: OPERATION_TONE[lesson.op],
+    symbol: OPERATION_SYMBOL[lesson.op],
+  };
+}
+
+function lessonSubtitle(lesson: Lesson, problemsLabel: string): string {
+  if (isWordLesson(lesson)) {
+    return `${lesson.setup.rounds} ${problemsLabel}`;
+  }
+  const summary = summarizeSetup(lesson.setup);
+  return `${summary} · ${lesson.setup.rounds} ${problemsLabel}`;
 }
 
 function LessonCard({
@@ -80,7 +107,10 @@ function LessonCard({
   onLaunch: () => void;
 }) {
   const { t } = useTranslation();
-  const tone = OPERATION_TONE[lesson.op];
+  const { tone, symbol } = lessonChip(lesson);
+  const symbolClass = isWordLesson(lesson)
+    ? "text-base leading-none font-black"
+    : "text-3xl leading-none font-black";
   return (
     <button
       type="button"
@@ -90,17 +120,14 @@ function LessonCard({
       <div
         className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ring-2 ${TONE_CHIP[tone]}`}
       >
-        <span className="text-3xl leading-none font-black">
-          {OPERATION_SYMBOL[lesson.op]}
-        </span>
+        <span className={symbolClass}>{symbol}</span>
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-base font-black text-stone-900 dark:text-white">
           {t(lesson.nameKey)}
         </p>
         <p className="mt-0.5 truncate text-xs font-semibold text-stone-500 tabular-nums dark:text-stone-400">
-          {summarizeSetup(lesson.setup)} · {lesson.setup.rounds}{" "}
-          {t("grade.problems")}
+          {lessonSubtitle(lesson, t("grade.problems"))}
         </p>
       </div>
       <svg

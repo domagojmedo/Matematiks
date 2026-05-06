@@ -30,9 +30,7 @@ describe("pickLayout", () => {
 describe("buildPhases for simple ops", () => {
   it("returns one rtl phase with the answer", () => {
     const phases = buildPhases(problem(7, 5, "+", 12));
-    expect(phases).toEqual([
-      { value: 12, direction: "rtl", kind: "answer" },
-    ]);
+    expect(phases).toEqual([{ value: 12, direction: "rtl", kind: "answer" }]);
   });
 });
 
@@ -40,9 +38,7 @@ describe("buildPhases for single-digit mul", () => {
   it("returns one mulSum phase (no partial products needed)", () => {
     // 72 × 9 = 648. No partial product breakdown, just type the answer.
     const phases = buildPhases(problem(72, 9, "*", 648));
-    expect(phases).toEqual([
-      { value: 648, direction: "ltr", kind: "mulSum" },
-    ]);
+    expect(phases).toEqual([{ value: 648, direction: "ltr", kind: "mulSum" }]);
   });
 });
 

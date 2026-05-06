@@ -198,7 +198,10 @@ function SessionCard({
     ? t(lesson.nameKey)
     : t(`operations.${session.operation}`);
   return (
-    <div className="flex w-full items-center gap-3.5 rounded-2xl bg-white p-3.5 text-left shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+    <Link
+      to={`/session/${session.id}`}
+      className="flex w-full items-center gap-3.5 rounded-2xl bg-white p-3.5 text-left shadow-sm ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] dark:bg-stone-900 dark:ring-stone-800"
+    >
       <div
         className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ring-2 ${TONE_CHIP[tone]}`}
       >
@@ -241,7 +244,7 @@ function SessionCard({
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
