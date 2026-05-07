@@ -580,6 +580,12 @@ function PickOpPad({
   onPick: (op: "+" | "-") => void;
   theme: import("../lib/themes").Theme;
 }) {
+  // Buttons fill the same vertical space NumPad would occupy (4 rows of h-14 /
+  // sm:h-16 + 3 gaps of 0.625rem). Keeping the pad height constant prevents
+  // the prose/equation area above from jumping when phases swap between
+  // pickOp and answer. The bonus is huge tap targets for the operator choice.
+  const padHeight = "h-[15.875rem] sm:h-[17.875rem]";
+  const btnClass = `flex ${padHeight} items-center justify-center rounded-2xl bg-white text-7xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`;
   return (
     <div className="px-4 pt-2 pb-3 sm:pb-5">
       <div className="grid grid-cols-2 gap-2.5">
@@ -587,7 +593,7 @@ function PickOpPad({
           type="button"
           onClick={() => onPick("+")}
           aria-label="plus"
-          className={`flex h-16 items-center justify-center rounded-2xl bg-white text-4xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
+          className={btnClass}
         >
           +
         </button>
@@ -595,7 +601,7 @@ function PickOpPad({
           type="button"
           onClick={() => onPick("-")}
           aria-label="minus"
-          className={`flex h-16 items-center justify-center rounded-2xl bg-white text-4xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`}
+          className={btnClass}
         >
           −
         </button>
