@@ -106,10 +106,21 @@ export function ProgressBar({ ratio, theme }: { ratio: number; theme: Theme }) {
 export function NumPad({
   onDigit,
   onDelete,
+  onConfirm,
+  confirmDisabled,
   theme,
 }: {
   onDigit: (n: number) => void;
   onDelete: () => void;
+  /**
+   * Optional confirm callback. When provided, the empty bottom-left slot is
+   * replaced with a confirm key — used by problems that require an explicit
+   * "I'm done typing" gesture instead of auto-submitting on prefix match
+   * (e.g. unit-conversion problems where 200 is a prefix of 2000).
+   */
+  onConfirm?: () => void;
+  /** Greys out the confirm key when the typed buffer is empty. */
+  confirmDisabled?: boolean;
   theme: Theme;
 }) {
   const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -126,7 +137,31 @@ export function NumPad({
             {d}
           </button>
         ))}
-        <div aria-hidden="true" />
+        {onConfirm ? (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+            aria-label="Confirm"
+            className={`flex h-14 items-center justify-center rounded-2xl bg-emerald-500 text-white sm:h-16 shadow-sm ring-1 ring-emerald-600 transition hover:bg-emerald-600 active:scale-95 focus:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:ring-stone-200 disabled:hover:bg-stone-200 dark:bg-emerald-600 dark:ring-emerald-700 dark:hover:bg-emerald-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-500 dark:disabled:ring-stone-700 dark:disabled:hover:bg-stone-800 ${theme.primaryFocus}`}
+          >
+            <svg
+              aria-hidden="true"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+          </button>
+        ) : (
+          <div aria-hidden="true" />
+        )}
         <button
           type="button"
           onClick={() => onDigit(0)}

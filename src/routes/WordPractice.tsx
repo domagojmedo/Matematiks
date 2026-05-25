@@ -271,14 +271,17 @@ function WordPracticeRound({
       if (typed.length >= MAX_DIGITS) return;
       const next = typed + String(n);
       setTyped(next);
+      // Convert phases use an explicit confirm key — the kid types the full
+      // answer and presses ✓. Without that, the auto-submit-on-match below
+      // would mark "200" correct even when the kid was about to type "2000".
+      if (currentPhase.kind === "convert") return;
       const parsed = Number.parseInt(next, 10);
       const expected = currentPhase.expected;
       const expectedLen = String(expected).length;
-      const phaseKind = currentPhase.kind;
       if (Number.isFinite(parsed) && parsed === expected) {
         attemptsRef.current.push({
           phaseIndex: phaseIdx,
-          phaseKind,
+          phaseKind: "answer",
           given: parsed,
           expected,
           correct: true,
@@ -290,7 +293,7 @@ function WordPracticeRound({
           advancePhase();
         }, FLASH_MS);
       } else if (next.length >= expectedLen) {
-        handleWrong(parsed, expected, phaseKind);
+        handleWrong(parsed, expected, "answer");
       }
     },
     [
@@ -304,6 +307,40 @@ function WordPracticeRound({
       nowMs,
     ],
   );
+
+  const handleConfirm = useCallback(() => {
+    if (flash) return;
+    if (!currentPhase || currentPhase.kind !== "convert") return;
+    if (typed.length === 0) return;
+    const parsed = Number.parseInt(typed, 10);
+    const expected = currentPhase.expected;
+    if (Number.isFinite(parsed) && parsed === expected) {
+      attemptsRef.current.push({
+        phaseIndex: phaseIdx,
+        phaseKind: "convert",
+        given: parsed,
+        expected,
+        correct: true,
+        atMs: nowMs(),
+      });
+      setFlash("correct");
+      trackedTimeout(() => {
+        setFlash(null);
+        advancePhase();
+      }, FLASH_MS);
+    } else {
+      handleWrong(parsed, expected, "convert");
+    }
+  }, [
+    flash,
+    currentPhase,
+    typed,
+    phaseIdx,
+    handleWrong,
+    advancePhase,
+    trackedTimeout,
+    nowMs,
+  ]);
 
   const handleDelete = useCallback(() => {
     if (flash) return;
@@ -329,11 +366,14 @@ function WordPracticeRound({
       } else if (e.key === "Backspace" || e.key === "Delete") {
         e.preventDefault();
         handleDelete();
+      } else if (e.key === "Enter" && currentPhase?.kind === "convert") {
+        e.preventDefault();
+        handleConfirm();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleDigit, handleDelete, handlePickOp, currentPhase]);
+  }, [handleDigit, handleDelete, handlePickOp, handleConfirm, currentPhase]);
 
   // ----- Rendering ----------------------------------------------------------
 
@@ -453,6 +493,14 @@ function WordPracticeRound({
 
         {currentPhase?.kind === "pickOp" ? (
           <PickOpPad onPick={handlePickOp} theme={theme} />
+        ) : currentPhase?.kind === "convert" ? (
+          <NumPad
+            onDigit={handleDigit}
+            onDelete={handleDelete}
+            onConfirm={handleConfirm}
+            confirmDisabled={typed.length === 0}
+            theme={theme}
+          />
         ) : (
           <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
         )}

@@ -258,19 +258,19 @@ describe("convert (mass) templates — whole-number conversions only", () => {
     });
   }
 
-  it("kg → g multiplies by 1000 with kg ≤ 5", () => {
+  it("kg → g multiplies by 1000 with kg ≤ 10", () => {
     const t = TEMPLATES.convert_kg_to_g as WordTemplate;
     for (let i = 0; i < ITER; i++) {
       const p = t.generate();
       const phase = p.phases[0];
       if (phase?.kind !== "convert") throw new Error("expected convert");
-      expect(phase.value).toBeLessThanOrEqual(5);
+      expect(phase.value).toBeLessThanOrEqual(10);
       expect(phase.value).toBeGreaterThanOrEqual(1);
       expect(phase.expected).toBe(phase.value * 1000);
     }
   });
 
-  it("g → kg divides by 1000 with kg ≤ 5", () => {
+  it("g → kg divides by 1000 with kg ≤ 10", () => {
     const t = TEMPLATES.convert_g_to_kg as WordTemplate;
     for (let i = 0; i < ITER; i++) {
       const p = t.generate();
@@ -278,7 +278,22 @@ describe("convert (mass) templates — whole-number conversions only", () => {
       if (phase?.kind !== "convert") throw new Error("expected convert");
       expect(phase.value % 1000).toBe(0);
       expect(phase.expected).toBe(phase.value / 1000);
-      expect(phase.expected).toBeLessThanOrEqual(5);
+      expect(phase.expected).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it("every convert template keeps the small-count side at most 10", () => {
+    // Catches future range-widening that would put a kid in front of "37 kg
+    // in g" or "420 dag in g". The small-count side is whichever of
+    // value/expected is the smaller-magnitude number.
+    for (const t of TEMPLATES_BY_TYPE.convert) {
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "convert") throw new Error("expected convert");
+        const small = Math.min(phase.value, phase.expected);
+        expect(small).toBeLessThanOrEqual(10);
+      }
     }
   });
 

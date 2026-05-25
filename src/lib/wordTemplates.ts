@@ -595,17 +595,16 @@ function buildConvertTemplate(
 // "compress" = larger unit per result digit, so we DIVIDE by `factor`:
 // g→kg (÷1000), dag→kg (÷100), g→dag (÷10), kg→t (÷1000).
 //
-// Source-value ranges:
-//   kg-bound templates cap kg-side at 5 (per spec — keep masses kid-relatable).
-//   dag↔g already span 49 values via the dag picker.
-//   t↔kg uses 1–9 tons: tons are inherently above the 5 kg cap and the wider
-//   range lowers the chance of seeing the same conversion twice in a row.
+// Source-value ranges: every template caps the small-count side at 10 — kids
+// shouldn't be quizzed on "37 kg in g" or "42 dag in g". The big-count side
+// is always `small * factor`, so it's a multiple of the factor and the
+// divided answer is always whole.
 
 const convertKgToG = buildConvertTemplate(
   "convert_kg_to_g",
   "kg",
   "g",
-  () => randInt(1, 5),
+  () => randInt(1, 10),
   1000,
   "expand",
 );
@@ -614,7 +613,7 @@ const convertGToKg = buildConvertTemplate(
   "convert_g_to_kg",
   "g",
   "kg",
-  () => randInt(1, 5) * 1000,
+  () => randInt(1, 10) * 1000,
   1000,
   "compress",
 );
@@ -623,7 +622,7 @@ const convertKgToDag = buildConvertTemplate(
   "convert_kg_to_dag",
   "kg",
   "dag",
-  () => randInt(1, 5),
+  () => randInt(1, 10),
   100,
   "expand",
 );
@@ -632,7 +631,7 @@ const convertDagToKg = buildConvertTemplate(
   "convert_dag_to_kg",
   "dag",
   "kg",
-  () => randInt(1, 5) * 100,
+  () => randInt(1, 10) * 100,
   100,
   "compress",
 );
@@ -641,7 +640,7 @@ const convertDagToG = buildConvertTemplate(
   "convert_dag_to_g",
   "dag",
   "g",
-  () => randInt(2, 50),
+  () => randInt(2, 10),
   10,
   "expand",
 );
@@ -650,7 +649,7 @@ const convertGToDag = buildConvertTemplate(
   "convert_g_to_dag",
   "g",
   "dag",
-  () => randInt(2, 50) * 10,
+  () => randInt(2, 10) * 10,
   10,
   "compress",
 );
@@ -659,7 +658,7 @@ const convertTToKg = buildConvertTemplate(
   "convert_t_to_kg",
   "t",
   "kg",
-  () => randInt(1, 9),
+  () => randInt(1, 10),
   1000,
   "expand",
 );
@@ -668,7 +667,7 @@ const convertKgToT = buildConvertTemplate(
   "convert_kg_to_t",
   "kg",
   "t",
-  () => randInt(1, 9) * 1000,
+  () => randInt(1, 10) * 1000,
   1000,
   "compress",
 );
