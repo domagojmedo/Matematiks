@@ -327,6 +327,14 @@ export const LESSONS: Lesson[] = [
     },
   }),
 
+  // 3. razred — pretvaranje mjernih jedinica (HR only)
+  word({
+    id: "g3-units-mass",
+    grade: 3,
+    nameKey: "lessons.g3.unitsMass",
+    wordKind: "convert",
+  }),
+
   // 4. razred
   arith({
     id: "g4-add-large",

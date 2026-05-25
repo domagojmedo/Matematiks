@@ -1,4 +1,4 @@
-import type { Operation } from "./types";
+import type { Operation, WordKind } from "./types";
 
 export const OPERATIONS: Operation[] = [
   "add",
@@ -44,4 +44,25 @@ export const TONE_CHIP: Record<Tone, string> = {
 
 export function isValidOperation(s: string): s is Operation {
   return (OPERATIONS as readonly string[]).includes(s);
+}
+
+/**
+ * Visual chip (tone + symbol) for a word-problem lesson. Unit-conversion
+ * lessons get the muldiv color/symbol since the underlying math is ×/÷ by a
+ * power of ten; other word kinds keep the generic "Az" prose chip.
+ */
+export function wordChip(wordKind: WordKind): { tone: Tone; symbol: string } {
+  if (wordKind === "convert") {
+    return { tone: OPERATION_TONE.muldiv, symbol: OPERATION_SYMBOL.muldiv };
+  }
+  return { tone: "fuchsia", symbol: "Az" };
+}
+
+/**
+ * Which `Operation` tag to stamp on session records for a word lesson. Drives
+ * tone + symbol on the Sessions list and "Quick Start" replay. Convert lessons
+ * are ×/÷ by construction; arith-prose lessons exercise +/−.
+ */
+export function operationForWordKind(wordKind: WordKind): Operation {
+  return wordKind === "convert" ? "muldiv" : "addsub";
 }

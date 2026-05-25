@@ -7,7 +7,7 @@ import {
   NOUNS,
   nounPlural,
 } from "./wordDeclension";
-import type { WordPhase, WordProblem } from "./wordTypes";
+import type { Unit, WordPhase, WordProblem } from "./wordTypes";
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -562,6 +562,129 @@ const storyMore: WordTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// Unit-conversion templates (mass). Each template fixes the from/to units and
+// generates a whole-number source value so the answer is also whole. Prose is
+// uniform across directions: "Pretvori N <unit> u <unit>.".
+// ---------------------------------------------------------------------------
+
+function buildConvertTemplate(
+  id: string,
+  from: Unit,
+  to: Unit,
+  pickValue: () => number,
+  factor: number,
+  direction: "expand" | "compress",
+): WordTemplate {
+  return {
+    id,
+    type: "convert",
+    generate: () => {
+      const value = pickValue();
+      const expected = direction === "expand" ? value * factor : value / factor;
+      const phases: WordPhase[] = [
+        { kind: "convert", value, fromUnit: from, toUnit: to, expected },
+      ];
+      return { templateId: id, numbers: [value], phases };
+    },
+    renderProse: (p) => `Pretvori ${p.numbers[0]} ${from} u ${to}.`,
+  };
+}
+
+// "expand" = smaller unit per result digit, so we MULTIPLY by `factor`:
+// kg→g (×1000), kg→dag (×100), dag→g (×10), t→kg (×1000).
+// "compress" = larger unit per result digit, so we DIVIDE by `factor`:
+// g→kg (÷1000), dag→kg (÷100), g→dag (÷10), kg→t (÷1000).
+//
+// Source-value ranges:
+//   kg-bound templates cap kg-side at 5 (per spec — keep masses kid-relatable).
+//   dag↔g already span 49 values via the dag picker.
+//   t↔kg uses 1–9 tons: tons are inherently above the 5 kg cap and the wider
+//   range lowers the chance of seeing the same conversion twice in a row.
+
+const convertKgToG = buildConvertTemplate(
+  "convert_kg_to_g",
+  "kg",
+  "g",
+  () => randInt(1, 5),
+  1000,
+  "expand",
+);
+
+const convertGToKg = buildConvertTemplate(
+  "convert_g_to_kg",
+  "g",
+  "kg",
+  () => randInt(1, 5) * 1000,
+  1000,
+  "compress",
+);
+
+const convertKgToDag = buildConvertTemplate(
+  "convert_kg_to_dag",
+  "kg",
+  "dag",
+  () => randInt(1, 5),
+  100,
+  "expand",
+);
+
+const convertDagToKg = buildConvertTemplate(
+  "convert_dag_to_kg",
+  "dag",
+  "kg",
+  () => randInt(1, 5) * 100,
+  100,
+  "compress",
+);
+
+const convertDagToG = buildConvertTemplate(
+  "convert_dag_to_g",
+  "dag",
+  "g",
+  () => randInt(2, 50),
+  10,
+  "expand",
+);
+
+const convertGToDag = buildConvertTemplate(
+  "convert_g_to_dag",
+  "g",
+  "dag",
+  () => randInt(2, 50) * 10,
+  10,
+  "compress",
+);
+
+const convertTToKg = buildConvertTemplate(
+  "convert_t_to_kg",
+  "t",
+  "kg",
+  () => randInt(1, 9),
+  1000,
+  "expand",
+);
+
+const convertKgToT = buildConvertTemplate(
+  "convert_kg_to_t",
+  "kg",
+  "t",
+  () => randInt(1, 9) * 1000,
+  1000,
+  "compress",
+);
+
+const CONVERT_TEMPLATES: readonly WordTemplate[] = [
+  convertKgToG,
+  convertGToKg,
+  convertKgToDag,
+  convertDagToKg,
+  convertDagToG,
+  convertGToDag,
+  convertTToKg,
+  convertKgToT,
+];
+
+// ---------------------------------------------------------------------------
 // Registry — keyed by templateId for lookup, grouped by type for stratified
 // per-lesson selection.
 // ---------------------------------------------------------------------------
@@ -579,6 +702,14 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [compoundNumMinusSum.id]: compoundNumMinusSum,
   [storyFewer.id]: storyFewer,
   [storyMore.id]: storyMore,
+  [convertKgToG.id]: convertKgToG,
+  [convertGToKg.id]: convertGToKg,
+  [convertKgToDag.id]: convertKgToDag,
+  [convertDagToKg.id]: convertDagToKg,
+  [convertDagToG.id]: convertDagToG,
+  [convertGToDag.id]: convertGToDag,
+  [convertTToKg.id]: convertTToKg,
+  [convertKgToT.id]: convertKgToT,
 };
 
 export const TEMPLATES_BY_TYPE: Record<
@@ -599,6 +730,7 @@ export const TEMPLATES_BY_TYPE: Record<
     compoundNumMinusSum,
   ],
   story: [storyFewer, storyMore],
+  convert: CONVERT_TEMPLATES,
 };
 
 export function findTemplate(id: string): WordTemplate | undefined {

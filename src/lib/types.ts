@@ -44,7 +44,13 @@ export type OperationSetup =
       timeMs?: number;
     };
 
-export type WordKind = "vocab" | "missing" | "compound" | "story" | "mixed";
+export type WordKind =
+  | "vocab"
+  | "missing"
+  | "compound"
+  | "story"
+  | "mixed"
+  | "convert";
 
 export type WordLessonSetup = {
   kind: typeof SetupKind.Word;

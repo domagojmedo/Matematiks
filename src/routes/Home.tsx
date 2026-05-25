@@ -11,6 +11,7 @@ import {
   OPERATION_TONE,
   OPERATIONS,
   TONE_CHIP,
+  wordChip,
 } from "../lib/operations";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import { isWordSetup, type LastSession } from "../lib/types";
@@ -129,7 +130,9 @@ export function Home() {
               aria-hidden="true"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-lg font-black"
             >
-              {lastIsWord ? "Az" : OPERATION_SYMBOL[last.operation]}
+              {lastIsWord && isWordLesson(lastLesson)
+                ? wordChip(lastLesson.wordKind).symbol
+                : OPERATION_SYMBOL[last.operation]}
             </span>
             <div className="flex-1 text-left">
               <p className="text-base leading-none font-black">

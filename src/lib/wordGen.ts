@@ -1,9 +1,5 @@
 import type { WordKind, WordLessonSetup } from "./types";
-import {
-  TEMPLATES,
-  TEMPLATES_BY_TYPE,
-  type WordTemplate,
-} from "./wordTemplates";
+import { TEMPLATES_BY_TYPE, type WordTemplate } from "./wordTemplates";
 import type { WordProblem } from "./wordTypes";
 
 function shuffle<T>(arr: T[]): T[] {
@@ -43,7 +39,16 @@ function balancedQueue(
 
 function poolFor(wordKind: WordKind): readonly WordTemplate[] {
   if (wordKind === "mixed") {
-    return Object.values(TEMPLATES);
+    // "mixed" is the catch-all word-problem lesson — explicitly the four
+    // arithmetic word-problem types. Unit-conversion templates are a different
+    // pedagogical genre (no operator picking, no equation prose) and are
+    // launched only from a dedicated `wordKind: "convert"` lesson.
+    return [
+      ...TEMPLATES_BY_TYPE.vocab,
+      ...TEMPLATES_BY_TYPE.missing,
+      ...TEMPLATES_BY_TYPE.compound,
+      ...TEMPLATES_BY_TYPE.story,
+    ];
   }
   return TEMPLATES_BY_TYPE[wordKind];
 }

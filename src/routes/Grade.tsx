@@ -14,6 +14,7 @@ import {
   OPERATION_TONE,
   TONE_CHIP,
   type Tone,
+  wordChip,
 } from "../lib/operations";
 
 export function Grade() {
@@ -83,7 +84,7 @@ export function Grade() {
 
 function lessonChip(lesson: Lesson): { tone: Tone; symbol: string } {
   if (isWordLesson(lesson)) {
-    return { tone: "fuchsia", symbol: "Az" };
+    return wordChip(lesson.wordKind);
   }
   return {
     tone: OPERATION_TONE[lesson.op],

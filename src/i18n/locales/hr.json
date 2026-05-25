@@ -74,7 +74,8 @@
       "sub1000": "Pisano oduzimanje do 1000",
       "mulSingleDigit": "Množenje jednoznamenkastim",
       "divSingleDigit": "Dijeljenje jednoznamenkastim",
-      "muldivSingleDigit": "Množenje i dijeljenje (mješano)"
+      "muldivSingleDigit": "Množenje i dijeljenje (mješano)",
+      "unitsMass": "Mjerne jedinice — masa"
     },
     "g4": {
       "addLarge": "Pisano zbrajanje (veći brojevi)",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SetupKind, type WordLessonSetup } from "./types";
 import { WordGenerator } from "./wordGen";
-import { TEMPLATES, TEMPLATES_BY_TYPE } from "./wordTemplates";
+import { TEMPLATES_BY_TYPE } from "./wordTemplates";
 
 function makeSetup(
   wordKind: WordLessonSetup["wordKind"],
@@ -68,7 +68,7 @@ describe("WordGenerator", () => {
     }
   });
 
-  it("mixed lesson covers all 12 templates over a round", () => {
+  it("mixed lesson covers all 12 arith word templates over a round", () => {
     const gen = new WordGenerator(makeSetup("mixed", 20));
     const seen = new Set<string>();
     let prev = null;
@@ -77,11 +77,35 @@ describe("WordGenerator", () => {
       seen.add(p.templateId);
       prev = p;
     }
-    // 20 rounds, 12 templates: 8 templates get 2, 4 get 1.
-    // Across runs there's randomness, but every template should appear at
-    // least once because balancedQueue gives floor(20/12)=1 to each.
-    for (const id of Object.keys(TEMPLATES)) {
+    // "mixed" pools the four arith word-problem types (vocab/missing/
+    // compound/story = 12 templates). Convert templates are deliberately
+    // excluded — they're launched only from a dedicated "convert" lesson.
+    const mixedIds = [
+      ...TEMPLATES_BY_TYPE.vocab,
+      ...TEMPLATES_BY_TYPE.missing,
+      ...TEMPLATES_BY_TYPE.compound,
+      ...TEMPLATES_BY_TYPE.story,
+    ].map((t) => t.id);
+    for (const id of mixedIds) {
       expect(seen.has(id)).toBe(true);
+    }
+    for (const t of TEMPLATES_BY_TYPE.convert) {
+      expect(seen.has(t.id)).toBe(false);
+    }
+  });
+
+  it("convert lesson stratifies across the 8 mass-conversion templates", () => {
+    const gen = new WordGenerator(makeSetup("convert", 16));
+    const counts: Record<string, number> = {};
+    let prev = null;
+    for (let i = 0; i < 16; i++) {
+      const p: ReturnType<typeof gen.next> = gen.next(prev);
+      counts[p.templateId] = (counts[p.templateId] ?? 0) + 1;
+      prev = p;
+    }
+    // 16 rounds / 8 templates → exactly 2 each.
+    for (const t of TEMPLATES_BY_TYPE.convert) {
+      expect(counts[t.id]).toBe(2);
     }
   });
 

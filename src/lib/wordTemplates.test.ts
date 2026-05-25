@@ -237,6 +237,77 @@ describe("story templates — 4 phases, names + noun + total ≤ 20", () => {
   });
 });
 
+describe("convert (mass) templates — whole-number conversions only", () => {
+  for (const t of TEMPLATES_BY_TYPE.convert) {
+    it(`${t.id}: single convert phase, expected is a whole number`, () => {
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        expect(p.phases).toHaveLength(1);
+        const phase = p.phases[0];
+        expect(phase?.kind).toBe("convert");
+        if (phase?.kind !== "convert") continue;
+        expect(Number.isInteger(phase.value)).toBe(true);
+        expect(Number.isInteger(phase.expected)).toBe(true);
+        expect(phase.value).toBeGreaterThan(0);
+        expect(phase.expected).toBeGreaterThan(0);
+        // Prose carries the source value, "Pretvori N <from> u <to>.".
+        expect(t.renderProse(p)).toContain(String(phase.value));
+        expect(t.renderProse(p)).toContain(phase.fromUnit);
+        expect(t.renderProse(p)).toContain(phase.toUnit);
+      }
+    });
+  }
+
+  it("kg → g multiplies by 1000 with kg ≤ 5", () => {
+    const t = TEMPLATES.convert_kg_to_g as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "convert") throw new Error("expected convert");
+      expect(phase.value).toBeLessThanOrEqual(5);
+      expect(phase.value).toBeGreaterThanOrEqual(1);
+      expect(phase.expected).toBe(phase.value * 1000);
+    }
+  });
+
+  it("g → kg divides by 1000 with kg ≤ 5", () => {
+    const t = TEMPLATES.convert_g_to_kg as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "convert") throw new Error("expected convert");
+      expect(phase.value % 1000).toBe(0);
+      expect(phase.expected).toBe(phase.value / 1000);
+      expect(phase.expected).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it("dag ↔ g and dag ↔ kg and kg ↔ t all round-trip on whole numbers", () => {
+    const checks: Array<[string, number, "expand" | "compress"]> = [
+      ["convert_kg_to_dag", 100, "expand"],
+      ["convert_dag_to_kg", 100, "compress"],
+      ["convert_dag_to_g", 10, "expand"],
+      ["convert_g_to_dag", 10, "compress"],
+      ["convert_t_to_kg", 1000, "expand"],
+      ["convert_kg_to_t", 1000, "compress"],
+    ];
+    for (const [id, factor, dir] of checks) {
+      const t = TEMPLATES[id] as WordTemplate;
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "convert") throw new Error("expected convert");
+        if (dir === "expand") {
+          expect(phase.expected).toBe(phase.value * factor);
+        } else {
+          expect(phase.value % factor).toBe(0);
+          expect(phase.expected).toBe(phase.value / factor);
+        }
+      }
+    }
+  });
+});
+
 describe("findTemplate", () => {
   it("returns each template by its id", () => {
     for (const id of Object.keys(TEMPLATES)) {
@@ -250,12 +321,13 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 12 templates across 4 types", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(12);
+  it("includes 20 templates across 5 types (4 arith + 1 convert)", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(20);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.story).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.convert).toHaveLength(8);
   });
 
   it("every template id is unique", () => {

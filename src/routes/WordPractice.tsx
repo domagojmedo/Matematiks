@@ -14,7 +14,7 @@ import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { formatMmSs } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
-import { TONE_CHIP } from "../lib/operations";
+import { operationForWordKind, TONE_CHIP, wordChip } from "../lib/operations";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type ProblemAttempt,
@@ -25,8 +25,9 @@ import { WordGenerator } from "../lib/wordGen";
 import { findTemplate } from "../lib/wordTemplates";
 import {
   buildSteps,
-  finalAnswerPhase,
-  type WordAnswerPhase,
+  finalInputPhase,
+  phaseAtStep,
+  type WordConvertPhase,
   type WordPhase,
   type WordPickOpPhase,
   type WordProblem,
@@ -66,17 +67,20 @@ function WordPracticeRound({
   const { theme, settings } = useSettings();
   const { profileId } = useProfiles();
 
+  const sessionOp = operationForWordKind(setup.wordKind);
+  const chip = wordChip(setup.wordKind);
+
   // Stamp this round as the new "last session" so Home's Quick Start can
   // replay it. Without this, finishing a word lesson leaves Quick Start
   // pointing at whatever arith round preceded it.
   useEffect(() => {
     const last: import("../lib/types").LastSession = {
-      operation: "addsub",
+      operation: sessionOp,
       setup,
       lessonId,
     };
     writeJSON(profileKey(profileId, PROFILE_KEYS.lastSession), last);
-  }, [profileId, lessonId, setup]);
+  }, [profileId, lessonId, setup, sessionOp]);
 
   // One generator per round. Held in a ref so re-renders don't rebuild it
   // (which would reset the stratified queue mid-round).
@@ -92,9 +96,10 @@ function WordPracticeRound({
   );
 
   const round = useRoundMechanics<WordProblem>({
-    // Word lessons exercise both add and sub; reuse "addsub" so the existing
-    // operation chip / Sessions-card colors map sensibly.
-    op: "addsub",
+    // Tag the session with the operation that best represents the lesson:
+    // addsub for the prose-arith lessons, muldiv for unit-conversion lessons
+    // (math is ×/÷ by powers of ten). Keeps Sessions-card colors meaningful.
+    op: sessionOp,
     setup,
     lessonId,
     generate,
@@ -138,16 +143,39 @@ function WordPracticeRound({
 
   const buildRecord = useCallback(
     (allAttempts: ProblemAttempt[]): ProblemRecord => {
-      const finalPhase = finalAnswerPhase(problem);
+      const finalPhase = finalInputPhase(problem);
       const wrongCount = allAttempts.filter((a) => !a.correct).length;
+      // Convert phases don't expose an a/b/op equation. Synthesize one so the
+      // Sessions list and the existing SessionDetail equation row still have
+      // something sensible to render: e.g. "5 kg = ? g" → 5 × 1000 = 5000.
+      let a: number;
+      let b: number;
+      let op: "+" | "-" | "*" | "/";
+      let answer: number;
+      if (finalPhase.kind === "answer") {
+        a = finalPhase.a;
+        b = finalPhase.b;
+        op = finalPhase.op;
+        answer = finalPhase.result;
+      } else {
+        a = finalPhase.value;
+        // Invariant: every convert template multiplies/divides by a factor > 1,
+        // so `value !== expected` and one strict branch always applies.
+        // Smaller→larger unit divides; larger→smaller unit multiplies.
+        if (finalPhase.expected > finalPhase.value) {
+          b = finalPhase.expected / finalPhase.value;
+          op = "*";
+        } else {
+          b = finalPhase.value / finalPhase.expected;
+          op = "/";
+        }
+        answer = finalPhase.expected;
+      }
       return {
-        // Primary equation = the final answer phase. Lossy but enough for the
-        // existing summary code and Sessions list. Full prose is reconstructed
-        // from kind / templateId / numbers / vars in SessionDetail.
-        a: finalPhase.a,
-        b: finalPhase.b,
-        op: finalPhase.op,
-        answer: finalPhase.result,
+        a,
+        b,
+        op,
+        answer,
         userAnswer: finalPhase.expected,
         tookMs: Math.round(nowMs() - startedAtRef.current),
         retries: wrongCount,
@@ -235,17 +263,22 @@ function WordPracticeRound({
   const handleDigit = useCallback(
     (n: number) => {
       if (flash) return;
-      if (!currentPhase || currentPhase.kind !== "answer") return;
+      if (
+        !currentPhase ||
+        (currentPhase.kind !== "answer" && currentPhase.kind !== "convert")
+      )
+        return;
       if (typed.length >= MAX_DIGITS) return;
       const next = typed + String(n);
       setTyped(next);
       const parsed = Number.parseInt(next, 10);
       const expected = currentPhase.expected;
       const expectedLen = String(expected).length;
+      const phaseKind = currentPhase.kind;
       if (Number.isFinite(parsed) && parsed === expected) {
         attemptsRef.current.push({
           phaseIndex: phaseIdx,
-          phaseKind: "answer",
+          phaseKind,
           given: parsed,
           expected,
           correct: true,
@@ -257,7 +290,7 @@ function WordPracticeRound({
           advancePhase();
         }, FLASH_MS);
       } else if (next.length >= expectedLen) {
-        handleWrong(parsed, expected, "answer");
+        handleWrong(parsed, expected, phaseKind);
       }
     },
     [
@@ -308,7 +341,7 @@ function WordPracticeRound({
   const proseText = template ? template.renderProse(problem) : "";
   const steps = useMemo(() => buildSteps(phases), [phases]);
 
-  const tone = "fuchsia"; // matches addsub op tone for visual consistency
+  const tone = chip.tone;
   const flashBg =
     flash === "correct"
       ? "bg-emerald-50 dark:bg-emerald-950/60"
@@ -348,7 +381,7 @@ function WordPracticeRound({
             <span
               className={`flex h-7 w-7 items-center justify-center rounded-full text-sm leading-none font-black ring-2 ${TONE_CHIP[tone]}`}
             >
-              Az
+              {chip.symbol}
             </span>
             <span className="text-sm font-black text-stone-900 dark:text-white">
               {t(nameKey)}
@@ -451,7 +484,20 @@ function StepLine({
   flash: Flash;
   theme: import("../lib/themes").Theme;
 }) {
-  const answer = phases[step.answerIdx] as WordAnswerPhase;
+  const inputPhase = phaseAtStep(phases, step);
+  if (inputPhase.kind === "convert") {
+    return (
+      <ConvertStepLine
+        phase={inputPhase}
+        isActive={phaseIdx === step.answerIdx}
+        isCompleted={phaseIdx > step.answerIdx}
+        typed={typed}
+        flash={flash}
+        theme={theme}
+      />
+    );
+  }
+  const answer = inputPhase;
   const pickOpPhase =
     step.pickOpIdx !== null
       ? (phases[step.pickOpIdx] as WordPickOpPhase)
@@ -564,6 +610,61 @@ function StepLine({
             {/* hint: which two operands the choice applies to */}
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ConvertStepLine({
+  phase,
+  isActive,
+  isCompleted,
+  typed,
+  flash,
+  theme,
+}: {
+  phase: WordConvertPhase;
+  isActive: boolean;
+  isCompleted: boolean;
+  typed: string;
+  flash: Flash;
+  theme: import("../lib/themes").Theme;
+}) {
+  const dim = isCompleted ? "muted" : "live";
+  const numClass =
+    dim === "muted"
+      ? "text-stone-400 dark:text-stone-500"
+      : "text-stone-900 dark:text-white";
+  const unitClass =
+    dim === "muted"
+      ? "text-stone-400 dark:text-stone-500"
+      : "text-stone-500 dark:text-stone-400";
+  const slotClass =
+    flash === "correct"
+      ? "text-emerald-500"
+      : flash === "wrong" && isActive
+        ? "text-rose-500"
+        : `${theme.primaryText} ${theme.primaryTextDark}`;
+
+  const slotText = isCompleted
+    ? String(phase.expected)
+    : isActive
+      ? typed || "?"
+      : "?";
+  const slotIsSlot = isActive && !isCompleted;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline gap-1.5 px-1 text-3xl font-black tabular-nums sm:gap-2.5 sm:text-4xl">
+        <span className={numClass}>{phase.value}</span>
+        <span className={`${unitClass} text-2xl sm:text-3xl`}>
+          {phase.fromUnit}
+        </span>
+        <span className="text-stone-300 dark:text-stone-600">=</span>
+        <span className={slotIsSlot ? slotClass : numClass}>{slotText}</span>
+        <span className={`${unitClass} text-2xl sm:text-3xl`}>
+          {phase.toUnit}
+        </span>
       </div>
     </div>
   );
