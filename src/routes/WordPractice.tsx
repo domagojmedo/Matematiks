@@ -35,7 +35,10 @@ import {
 } from "../lib/wordTypes";
 
 const FLASH_MS = 400;
-const MAX_DIGITS = 4;
+// Largest answer across word lessons is a 5-digit convert (10 kg → 10000 g).
+// Arith word phases peak at 2 digits — extra digits there get rejected by the
+// length check anyway, so a single cap covers both.
+const MAX_DIGITS = 5;
 
 type Flash = "correct" | "wrong" | null;
 
