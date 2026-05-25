@@ -8,7 +8,12 @@ import { formatDuration, isTimeMode } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
 import { operationGlyph } from "../lib/problemGen";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
-import type { ProblemRecord, SessionRecord } from "../lib/types";
+import {
+  isWordRecord,
+  type ProblemRecord,
+  type SessionRecord,
+} from "../lib/types";
+import { findTemplate } from "../lib/wordTemplates";
 
 export function Summary() {
   const location = useLocation();
@@ -151,35 +156,7 @@ export function Summary() {
             <p className="mb-2 text-xs font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
               {t("summary.trickiest")}
             </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-stone-900 tabular-nums dark:text-white">
-                {trickiest.a}
-              </span>
-              <span
-                className={`text-2xl font-black ${theme.primaryText} ${theme.primaryTextDark}`}
-              >
-                {operationGlyph(trickiest.op)}
-              </span>
-              <span className="text-3xl font-black text-stone-900 tabular-nums dark:text-white">
-                {trickiest.b}
-              </span>
-              <span className="text-2xl font-black text-stone-300 dark:text-stone-600">
-                =
-              </span>
-              <span className="text-3xl font-black text-emerald-500 tabular-nums">
-                {trickiest.answer}
-              </span>
-              <span className="ml-auto text-xs font-bold text-stone-500 dark:text-stone-400">
-                {trickiest.retries === 0
-                  ? t("summary.took", {
-                      seconds: Math.round(trickiest.tookMs / 1000),
-                    })
-                  : t("summary.tookRetries", {
-                      seconds: Math.round(trickiest.tookMs / 1000),
-                      retries: trickiest.retries,
-                    })}
-              </span>
-            </div>
+            <TrickiestProblem problem={trickiest} theme={theme} t={t} />
           </section>
         )}
 
@@ -225,6 +202,72 @@ export function Summary() {
 function pickTrickiest(problems: ProblemRecord[]): ProblemRecord | null {
   if (problems.length === 0) return null;
   return problems.reduce((max, p) => (p.tookMs > max.tookMs ? p : max));
+}
+
+/**
+ * Trickiest-problem block. For word records (vocab/missing/.../convert) we
+ * reconstruct the prose from the saved templateId + numbers + vars so the
+ * kid sees "Pretvori 5 kg u dag." above the raw "5 × 100 = 500" equation,
+ * not just the bare arithmetic.
+ */
+function TrickiestProblem({
+  problem,
+  theme,
+  t,
+}: {
+  problem: ProblemRecord;
+  theme: import("../lib/themes").Theme;
+  // Re-using the parent's `t` instead of calling useTranslation here avoids
+  // an extra hook subscription for a one-shot block.
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
+  const prose =
+    isWordRecord(problem) && problem.templateId && problem.numbers
+      ? (findTemplate(problem.templateId)?.renderProse({
+          templateId: problem.templateId,
+          numbers: problem.numbers,
+          ...(problem.vars ? { vars: problem.vars } : {}),
+          phases: [],
+        }) ?? null)
+      : null;
+  const tookLabel =
+    problem.retries === 0
+      ? t("summary.took", { seconds: Math.round(problem.tookMs / 1000) })
+      : t("summary.tookRetries", {
+          seconds: Math.round(problem.tookMs / 1000),
+          retries: problem.retries,
+        });
+  return (
+    <div>
+      {prose && (
+        <p className="mb-2 text-sm font-bold leading-snug text-stone-700 dark:text-stone-200">
+          {prose}
+        </p>
+      )}
+      <div className="flex items-baseline gap-2">
+        <span className="text-3xl font-black text-stone-900 tabular-nums dark:text-white">
+          {problem.a}
+        </span>
+        <span
+          className={`text-2xl font-black ${theme.primaryText} ${theme.primaryTextDark}`}
+        >
+          {operationGlyph(problem.op)}
+        </span>
+        <span className="text-3xl font-black text-stone-900 tabular-nums dark:text-white">
+          {problem.b}
+        </span>
+        <span className="text-2xl font-black text-stone-300 dark:text-stone-600">
+          =
+        </span>
+        <span className="text-3xl font-black text-emerald-500 tabular-nums">
+          {problem.answer}
+        </span>
+        <span className="ml-auto text-xs font-bold text-stone-500 dark:text-stone-400">
+          {tookLabel}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /**
