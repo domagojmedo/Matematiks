@@ -92,7 +92,7 @@ export function useSpeechRecognition({
     const rec = new Ctor();
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = true;
+    rec.continuous = false;
     rec.maxAlternatives = 3;
     rec.onresult = (e) => {
       // The event's results[] grows across firings within one session.
