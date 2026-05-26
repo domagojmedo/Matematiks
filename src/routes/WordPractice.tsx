@@ -11,7 +11,6 @@ import {
 } from "../components/PracticeUI";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { useMicLevel } from "../hooks/useMicLevel";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -436,6 +435,7 @@ function WordPracticeRound({
 
   const {
     listening,
+    speechActive,
     interim,
     start: startVoice,
     stop: stopVoice,
@@ -444,9 +444,6 @@ function WordPracticeRound({
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
-  const micLevel = useMicLevel(
-    voiceEnabled && isNumberPhase && !voicePaused && !voiceError,
-  );
 
   useEffect(() => {
     if (!voiceEnabled) return;
@@ -616,7 +613,7 @@ function WordPracticeRound({
           <VoiceButton
             listening={listening}
             paused={voicePaused}
-            level={micLevel}
+            speechActive={speechActive}
             interim={interim}
             error={voiceError}
             onPress={onMicPress}

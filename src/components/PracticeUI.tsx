@@ -199,7 +199,7 @@ export function NumPad({
 export function VoiceButton({
   listening,
   paused,
-  level,
+  speechActive,
   interim,
   error,
   onPress,
@@ -207,8 +207,8 @@ export function VoiceButton({
 }: {
   listening: boolean;
   paused: boolean;
-  /** Smoothed mic level in [0, 1]; drives the fill inside the icon circle. */
-  level: number;
+  /** True while the engine reports detectable speech in the mic input. */
+  speechActive: boolean;
   interim: string;
   error: string | null;
   onPress: () => void;
@@ -227,7 +227,10 @@ export function VoiceButton({
       : showInterim
         ? interim
         : t("voice.listening");
-  const fillPct = active ? Math.round(level * 100) : 0;
+  // Fill the icon circle from the bottom when the engine reports speech.
+  // CSS-only animation, so no second mic stream is needed — keeps it from
+  // competing with SpeechRecognition for the microphone.
+  const fillPct = active && speechActive ? 100 : 0;
   const ringClass = active
     ? "ring-emerald-300 dark:ring-emerald-600"
     : error
@@ -261,7 +264,7 @@ export function VoiceButton({
               transition gives it a slightly liquid feel without lagging. */}
           <span
             aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 bg-emerald-400/80 transition-[height] duration-75 ease-out dark:bg-emerald-500/80"
+            className="absolute inset-x-0 bottom-0 bg-emerald-400/80 transition-[height] duration-200 ease-out dark:bg-emerald-500/80"
             style={{ height: `${fillPct}%` }}
           />
           <svg

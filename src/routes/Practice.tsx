@@ -11,7 +11,6 @@ import {
 } from "../components/PracticeUI";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { useMicLevel } from "../hooks/useMicLevel";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -276,6 +275,7 @@ function HorizontalPractice({
 
   const {
     listening,
+    speechActive,
     interim,
     start: startVoice,
     stop: stopVoice,
@@ -284,7 +284,6 @@ function HorizontalPractice({
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
-  const micLevel = useMicLevel(voiceEnabled && !voicePaused && !voiceError);
 
   // Auto-start: whenever voice is enabled, not paused, not currently flashing
   // a result, and not already listening, kick a new recognition session. The
@@ -455,7 +454,7 @@ function HorizontalPractice({
           <VoiceButton
             listening={listening}
             paused={voicePaused}
-            level={micLevel}
+            speechActive={speechActive}
             interim={interim}
             error={voiceError}
             onPress={onMicPress}
