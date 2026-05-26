@@ -202,6 +202,7 @@ export function VoiceButton({
   speechActive,
   interim,
   error,
+  loadingPercent,
   onPress,
   theme,
 }: {
@@ -211,22 +212,30 @@ export function VoiceButton({
   speechActive: boolean;
   interim: string;
   error: string | null;
+  /**
+   * Set while the Whisper model is being downloaded. Takes priority over the
+   * normal "Listening…" label so the user understands the mic isn't broken
+   * during the first-load delay.
+   */
+  loadingPercent?: number | null;
   onPress: () => void;
   theme: Theme;
 }) {
   const { t } = useTranslation();
-  const active = !paused && !error;
+  const active = !paused && !error && loadingPercent == null;
   const showInterim = active && interim.length > 0;
-  // Label priority: error → paused → interim transcript → "Listening…".
-  // The optimistic "Listening…" fallback keeps the pill stable in the brief
-  // gap between recognition sessions.
+  // Label priority: error → loading → paused → interim transcript → "Listening…".
   const label = error
     ? error
-    : paused
-      ? t("voice.paused")
-      : showInterim
-        ? interim
-        : t("voice.listening");
+    : loadingPercent != null
+      ? t("voice.loadingModel", {
+          percent: Math.round(loadingPercent * 100),
+        })
+      : paused
+        ? t("voice.paused")
+        : showInterim
+          ? interim
+          : t("voice.listening");
   // Fill the icon circle from the bottom when the engine reports speech.
   // CSS-only animation, so no second mic stream is needed — keeps it from
   // competing with SpeechRecognition for the microphone.

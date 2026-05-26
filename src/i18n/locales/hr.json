@@ -204,13 +204,17 @@
     "themeTeal": "Tirkizna",
     "themeIndigoPlum": "Indigo šljiva",
     "voiceInput": "Glasovni unos",
-    "voiceInputHint": "Reci broj umjesto upisivanja"
+    "voiceInputHint": "Reci broj umjesto upisivanja",
+    "useWhisperHint": "Koristi prepoznavanje na uređaju (eksperimentalno)",
+    "useWhisperNote": "Prvi put preuzima ~40 MB, zatim radi bez interneta. Izbjegava paljenje i gašenje mikrofona u Chromeu na Androidu."
   },
   "voice": {
     "listening": "Slušam…",
     "paused": "Dodirni za mikrofon",
     "notUnderstood": "Nisam razumio",
     "micDenied": "Mikrofon nije dopušten",
-    "toggleAria": "Uključi/isključi mikrofon"
+    "toggleAria": "Uključi/isključi mikrofon",
+    "loadingModel": "Učitavam model… {{percent}}%",
+    "modelReady": "Slušam…"
   }
 }

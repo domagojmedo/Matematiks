@@ -26,6 +26,7 @@ type SettingsContextValue = {
   setDark: (dark: boolean) => void;
   setLanguage: (lang: Language) => void;
   setVoiceInput: (enabled: boolean) => void;
+  setUseWhisper: (enabled: boolean) => void;
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -62,6 +63,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setVoiceInput = useCallback((voiceInput: boolean) => {
     setSettings((s) => ({ ...s, voiceInput }));
   }, []);
+  const setUseWhisper = useCallback((useWhisper: boolean) => {
+    setSettings((s) => ({ ...s, useWhisper }));
+  }, []);
 
   const value = useMemo<SettingsContextValue>(
     () => ({
@@ -71,8 +75,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setDark,
       setLanguage,
       setVoiceInput,
+      setUseWhisper,
     }),
-    [settings, setTheme, setDark, setLanguage, setVoiceInput],
+    [settings, setTheme, setDark, setLanguage, setVoiceInput, setUseWhisper],
   );
 
   return (

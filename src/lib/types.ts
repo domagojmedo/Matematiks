@@ -80,6 +80,12 @@ export type AppSettings = {
   dark: boolean;
   language: Language;
   voiceInput?: boolean;
+  /**
+   * Use the on-device Whisper recognizer instead of the browser's Web Speech
+   * API. Trades a ~40 MB first-load model download for a continuous-stream
+   * mic pipeline that doesn't cycle on Android Chrome. Defaults off.
+   */
+  useWhisper?: boolean;
 };
 
 /**

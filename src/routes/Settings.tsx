@@ -11,8 +11,15 @@ const THEME_KEYS: ThemeKey[] = ["warmPurple", "coral", "teal", "indigoPlum"];
 
 export function SettingsRoute() {
   const { t } = useTranslation();
-  const { settings, theme, setTheme, setDark, setLanguage, setVoiceInput } =
-    useSettings();
+  const {
+    settings,
+    theme,
+    setTheme,
+    setDark,
+    setLanguage,
+    setVoiceInput,
+    setUseWhisper,
+  } = useSettings();
   const voiceSupported = isSpeechRecognitionSupported();
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
@@ -99,6 +106,18 @@ export function SettingsRoute() {
               onChange={setVoiceInput}
               label={t("settings.voiceInputHint")}
             />
+            {(settings.voiceInput ?? false) && (
+              <div className="mt-2.5">
+                <ToggleRow
+                  checked={settings.useWhisper ?? false}
+                  onChange={setUseWhisper}
+                  label={t("settings.useWhisperHint")}
+                />
+                <p className="mt-1.5 px-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
+                  {t("settings.useWhisperNote")}
+                </p>
+              </div>
+            )}
           </SettingSection>
         )}
 

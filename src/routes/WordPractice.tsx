@@ -13,15 +13,11 @@ import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
 import { formatMmSs } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
 import { operationForWordKind, TONE_CHIP, wordChip } from "../lib/operations";
-import {
-  isSpeechRecognitionSupported,
-  parseSpokenNumber,
-  speechLangTag,
-} from "../lib/speech";
+import { isSpeechRecognitionSupported, parseSpokenNumber } from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type ProblemAttempt,
@@ -439,11 +435,16 @@ function WordPracticeRound({
     interim,
     start: startVoice,
     stop: stopVoice,
-  } = useSpeechRecognition({
-    lang: speechLangTag(settings.language),
+    modelLoaded,
+    downloadProgress,
+  } = useVoiceRecognition({
+    language: settings.language,
+    useWhisper: voiceEnabled && (settings.useWhisper ?? false),
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
+
+  const voiceReady = modelLoaded;
 
   useEffect(() => {
     if (!voiceEnabled) return;
@@ -451,9 +452,18 @@ function WordPracticeRound({
     if (flash) return;
     if (listening) return;
     if (!isNumberPhase) return;
+    if (!voiceReady) return;
     const id = window.setTimeout(() => startVoice(), 150);
     return () => window.clearTimeout(id);
-  }, [voiceEnabled, voicePaused, flash, listening, isNumberPhase, startVoice]);
+  }, [
+    voiceEnabled,
+    voicePaused,
+    flash,
+    listening,
+    isNumberPhase,
+    voiceReady,
+    startVoice,
+  ]);
 
   const onMicPress = useCallback(() => {
     if (voicePaused) {
@@ -616,6 +626,7 @@ function WordPracticeRound({
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
+            loadingPercent={downloadProgress}
             onPress={onMicPress}
             theme={theme}
           />

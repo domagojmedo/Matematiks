@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@tailwindcss/vite": "^4.2.4",
     "i18next": "^26.0.8",
     "react": "^19.2.5",

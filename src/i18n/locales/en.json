@@ -198,13 +198,17 @@
     "themeTeal": "Teal",
     "themeIndigoPlum": "Indigo Plum",
     "voiceInput": "Voice input",
-    "voiceInputHint": "Say the answer instead of typing"
+    "voiceInputHint": "Say the answer instead of typing",
+    "useWhisperHint": "Use on-device speech engine (experimental)",
+    "useWhisperNote": "Downloads ~40 MB the first time, then works offline. Avoids the microphone turning on and off on Android Chrome."
   },
   "voice": {
     "listening": "Listening…",
     "paused": "Tap for microphone",
     "notUnderstood": "Didn't catch that",
     "micDenied": "Microphone blocked",
-    "toggleAria": "Toggle microphone"
+    "toggleAria": "Toggle microphone",
+    "loadingModel": "Loading speech model… {{percent}}%",
+    "modelReady": "Listening…"
   }
 }

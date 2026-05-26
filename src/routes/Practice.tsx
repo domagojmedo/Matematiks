@@ -13,7 +13,7 @@ import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
 import { formatMmSs, summarizeSetup } from "../lib/format";
 import {
   isValidOperation,
@@ -27,11 +27,7 @@ import {
   type Problem,
 } from "../lib/problemGen";
 import { getSetup } from "../lib/setup";
-import {
-  isSpeechRecognitionSupported,
-  parseSpokenNumber,
-  speechLangTag,
-} from "../lib/speech";
+import { isSpeechRecognitionSupported, parseSpokenNumber } from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import type {
   LastSession,
@@ -279,11 +275,19 @@ function HorizontalPractice({
     interim,
     start: startVoice,
     stop: stopVoice,
-  } = useSpeechRecognition({
-    lang: speechLangTag(settings.language),
+    modelLoaded,
+    downloadProgress,
+  } = useVoiceRecognition({
+    language: settings.language,
+    useWhisper: voiceEnabled && (settings.useWhisper ?? false),
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
+
+  // While the Whisper model is still downloading, suppress auto-start so we
+  // don't open the mic and then immediately drop frames the worker isn't
+  // ready to consume. The download-progress label takes over the mic pill.
+  const voiceReady = modelLoaded;
 
   // Auto-start: whenever voice is enabled, not paused, not currently flashing
   // a result, and not already listening, kick a new recognition session. The
@@ -293,9 +297,10 @@ function HorizontalPractice({
     if (voicePaused) return;
     if (flash) return;
     if (listening) return;
+    if (!voiceReady) return;
     const id = window.setTimeout(() => startVoice(), 150);
     return () => window.clearTimeout(id);
-  }, [voiceEnabled, voicePaused, flash, listening, startVoice]);
+  }, [voiceEnabled, voicePaused, flash, listening, voiceReady, startVoice]);
 
   const onMicPress = useCallback(() => {
     if (voicePaused) {
@@ -457,6 +462,7 @@ function HorizontalPractice({
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
+            loadingPercent={downloadProgress}
             onPress={onMicPress}
             theme={theme}
           />
