@@ -406,8 +406,8 @@ function WordPracticeRound({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  // Sticky "user denied the mic prompt" flag. See Practice.tsx for context.
-  const [voiceBlocked, setVoiceBlocked] = useState(false);
+  // Kid-toggleable mute. See Practice.tsx for context.
+  const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -427,7 +427,7 @@ function WordPracticeRound({
     (err: string) => {
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
-        setVoiceBlocked(true);
+        setVoicePaused(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -446,23 +446,17 @@ function WordPracticeRound({
     onError: handleVoiceError,
   });
 
-  const onMicHoldStart = useCallback(() => {
-    if (!isNumberPhase) return;
+  const onMicPress = useCallback(() => {
     setVoiceError(null);
-    setVoiceBlocked(false);
-    startVoice();
-  }, [isNumberPhase, startVoice]);
+    setVoicePaused((prev) => !prev);
+    if (!voicePaused) stopVoice();
+  }, [voicePaused, stopVoice]);
 
-  const onMicHoldEnd = useCallback(() => {
-    stopVoice();
-  }, [stopVoice]);
-
-  // Auto-press: simulate the kid holding the mic button while on this
-  // screen, but only when the current phase actually accepts a number
-  // answer (not during the pickOp phase of mixed word problems).
+  // Auto-listen while on the screen, but only during phases that accept a
+  // number answer (not the pickOp phase of mixed word problems).
   useEffect(() => {
     if (!voiceEnabled) return;
-    if (voiceBlocked) return;
+    if (voicePaused) return;
     if (!isNumberPhase) return;
     if (flash) return;
     if (listening) return;
@@ -473,7 +467,7 @@ function WordPracticeRound({
     return () => window.clearTimeout(id);
   }, [
     voiceEnabled,
-    voiceBlocked,
+    voicePaused,
     isNumberPhase,
     flash,
     listening,
@@ -631,11 +625,11 @@ function WordPracticeRound({
         {voiceEnabled && isNumberPhase && (
           <VoiceButton
             listening={listening}
+            paused={voicePaused}
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
-            onHoldStart={onMicHoldStart}
-            onHoldEnd={onMicHoldEnd}
+            onPress={onMicPress}
             theme={theme}
           />
         )}

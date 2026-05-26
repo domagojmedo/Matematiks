@@ -113,6 +113,9 @@ export function SettingsRoute() {
               onChange={setVoiceInput}
               label={t("settings.voiceInputHint")}
             />
+            <p className="mt-1.5 px-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
+              {t("settings.voiceInputBrowsers")}
+            </p>
             {SHOW_WHISPER_TOGGLE && (settings.voiceInput ?? false) && (
               <div className="mt-2.5">
                 <ToggleRow

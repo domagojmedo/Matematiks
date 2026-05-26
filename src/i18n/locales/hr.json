@@ -205,6 +205,7 @@
     "themeIndigoPlum": "Indigo šljiva",
     "voiceInput": "Glasovni unos",
     "voiceInputHint": "Reci broj umjesto upisivanja",
+    "voiceInputBrowsers": "Radi samo u Chromeu, Edgeu i Safariju.",
     "useWhisperHint": "Koristi prepoznavanje na uređaju (eksperimentalno)",
     "useWhisperNote": "Prvi put preuzima ~40 MB, zatim radi bez interneta. Izbjegava paljenje i gašenje mikrofona u Chromeu na Androidu.",
     "whisperDownloading": "Preuzimam… {{percent}}%",

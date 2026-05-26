@@ -199,6 +199,7 @@
     "themeIndigoPlum": "Indigo Plum",
     "voiceInput": "Voice input",
     "voiceInputHint": "Say the answer instead of typing",
+    "voiceInputBrowsers": "Only works in Chrome, Edge, and Safari.",
     "useWhisperHint": "Use on-device speech engine (experimental)",
     "useWhisperNote": "Downloads ~40 MB the first time, then works offline. Avoids the microphone turning on and off on Android Chrome.",
     "whisperDownloading": "Downloading… {{percent}}%",

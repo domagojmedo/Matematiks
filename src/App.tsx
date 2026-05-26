@@ -16,6 +16,9 @@ function PageViewTracker() {
   const location = useLocation();
   useEffect(() => {
     trackPageView(location.pathname + location.search);
+    // Reset scroll on navigation: a scrolled Home → tap Grade was leaving
+    // the new screen offset down the page on mobile.
+    window.scrollTo(0, 0);
   }, [location.pathname, location.search]);
   return null;
 }

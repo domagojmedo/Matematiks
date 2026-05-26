@@ -241,10 +241,11 @@ function HorizontalPractice({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  // Sticky "user denied the mic prompt" flag. Auto-listen respects this so
-  // we don't loop the permission prompt; cleared when the user manually
-  // presses the button (treating that as a fresh retry request).
-  const [voiceBlocked, setVoiceBlocked] = useState(false);
+  // Kid-toggleable mute. When true the auto-listen effect is suppressed and
+  // the engine stays closed until the kid taps the mic button to unmute.
+  // Also flipped on automatically when the mic permission is denied so we
+  // don't loop the prompt; a manual tap clears it as a retry.
+  const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -264,7 +265,7 @@ function HorizontalPractice({
     (err: string) => {
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
-        setVoiceBlocked(true);
+        setVoicePaused(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -283,24 +284,21 @@ function HorizontalPractice({
     onError: handleVoiceError,
   });
 
-  const onMicHoldStart = useCallback(() => {
+  const onMicPress = useCallback(() => {
     setVoiceError(null);
-    setVoiceBlocked(false);
-    startVoice();
-  }, [startVoice]);
+    setVoicePaused((prev) => !prev);
+    // When toggling off, also tear down the current session immediately so
+    // the kid sees the engine go quiet right away rather than waiting for
+    // it to close itself.
+    if (!voicePaused) stopVoice();
+  }, [voicePaused, stopVoice]);
 
-  const onMicHoldEnd = useCallback(() => {
-    stopVoice();
-  }, [stopVoice]);
-
-  // Simulate the kid holding the mic button the whole time they're on this
-  // screen. The engine on Android Chrome closes single-utterance sessions
-  // on its own, so we re-press whenever it goes idle. This may bring back
-  // ghost-utterance cycling on noisy mics — opt-in trade-off for not making
-  // the kid hold the button manually.
+  // Auto-listen while on the screen: simulate the kid holding the button.
+  // The engine on Android Chrome closes single-utterance sessions on its
+  // own, so we re-press whenever it goes idle. Suppressed by voicePaused.
   useEffect(() => {
     if (!voiceEnabled) return;
-    if (voiceBlocked) return;
+    if (voicePaused) return;
     if (flash) return;
     if (listening) return;
     const id = window.setTimeout(() => {
@@ -308,7 +306,7 @@ function HorizontalPractice({
       startVoice();
     }, 150);
     return () => window.clearTimeout(id);
-  }, [voiceEnabled, voiceBlocked, flash, listening, startVoice]);
+  }, [voiceEnabled, voicePaused, flash, listening, startVoice]);
 
   useEffect(() => {
     return () => stopVoice();
@@ -460,11 +458,11 @@ function HorizontalPractice({
         {voiceEnabled && (
           <VoiceButton
             listening={listening}
+            paused={voicePaused}
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
-            onHoldStart={onMicHoldStart}
-            onHoldEnd={onMicHoldEnd}
+            onPress={onMicPress}
             theme={theme}
           />
         )}

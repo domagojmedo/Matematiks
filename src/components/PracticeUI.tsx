@@ -198,84 +198,64 @@ export function NumPad({
 
 export function VoiceButton({
   listening,
+  paused,
   speechActive,
   interim,
   error,
-  onHoldStart,
-  onHoldEnd,
+  onPress,
   theme,
 }: {
   listening: boolean;
+  /** True when the kid has tapped to mute auto-listen. */
+  paused: boolean;
   /** True while the engine reports detectable speech in the mic input. */
   speechActive: boolean;
   interim: string;
   error: string | null;
-  /** Called on pointerdown — the kid started holding the button. */
-  onHoldStart: () => void;
-  /** Called on pointerup / cancel / leave — the kid released the button. */
-  onHoldEnd: () => void;
+  onPress: () => void;
   theme: Theme;
 }) {
   const { t } = useTranslation();
-  const active = listening && !error;
+  const active = !paused && !error;
   const showInterim = active && interim.length > 0;
-  // Label priority: error → interim transcript while holding → "Listening…"
-  // while holding → "Hold to speak" at rest.
+  // Label priority: error → live interim transcript → "Tap for microphone"
+  // when muted → "Listening…" otherwise. The optimistic "Listening…" sticks
+  // even between engine sessions so the brief idle gap during auto-restart
+  // doesn't flicker the label.
   const label = error
     ? error
     : showInterim
       ? interim
-      : listening
-        ? t("voice.listening")
-        : t("voice.holdToSpeak");
-  // Fill the icon circle from the bottom when the engine reports speech.
+      : paused
+        ? t("voice.paused")
+        : t("voice.listening");
   const fillPct = active && speechActive ? 100 : 0;
   const ringClass = error
     ? "ring-rose-300 dark:ring-rose-700"
-    : listening
-      ? "ring-emerald-500 dark:ring-emerald-500"
-      : "ring-stone-200 dark:ring-stone-800";
+    : paused
+      ? "ring-stone-200 dark:ring-stone-800"
+      : "ring-emerald-300 dark:ring-emerald-600";
   const iconColor = error
     ? "text-rose-500"
-    : listening
-      ? "text-emerald-700 dark:text-emerald-200"
-      : "text-stone-500 dark:text-stone-400";
-
-  const handleDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (error) return;
-    e.preventDefault();
-    // Capture the pointer so a drag off the button still fires pointerup on
-    // this element, instead of dropping the gesture half-way through.
-    e.currentTarget.setPointerCapture(e.pointerId);
-    onHoldStart();
-  };
-  const handleUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    onHoldEnd();
-  };
+    : paused
+      ? "text-stone-400 dark:text-stone-500"
+      : "text-emerald-700 dark:text-emerald-200";
 
   return (
     <div className="px-4 pt-1">
       <button
         type="button"
-        onPointerDown={handleDown}
-        onPointerUp={handleUp}
-        onPointerCancel={handleUp}
-        onContextMenu={(e) => e.preventDefault()}
-        aria-pressed={listening}
-        aria-label={t("voice.holdToSpeak")}
-        className={`flex h-14 w-full touch-none items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition select-none active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus} ${
-          listening ? "scale-[0.99]" : ""
-        }`}
+        onClick={onPress}
+        aria-pressed={!paused}
+        aria-label={t("voice.toggleAria")}
+        className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus}`}
       >
         <span
           className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ${
             error
               ? "bg-rose-50 dark:bg-rose-950/40"
               : "bg-stone-100 dark:bg-stone-800"
-          } ${listening && fillPct < 4 ? "animate-pulse" : ""}`}
+          } ${listening && active && fillPct < 4 ? "animate-pulse" : ""}`}
         >
           <span
             aria-hidden="true"
@@ -294,9 +274,19 @@ export function VoiceButton({
             strokeLinejoin="round"
             className={`relative ${iconColor}`}
           >
-            <rect x="9" y="3" width="6" height="12" rx="3" />
-            <path d="M5 11a7 7 0 0 0 14 0" />
-            <path d="M12 18v3" />
+            {paused ? (
+              <>
+                <path d="M3 3l18 18" />
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+              </>
+            ) : (
+              <>
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </>
+            )}
           </svg>
         </span>
         <span
