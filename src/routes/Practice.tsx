@@ -275,6 +275,8 @@ function HorizontalPractice({
 
   const {
     listening,
+    speechActive,
+    interim,
     start: startVoice,
     stop: stopVoice,
   } = useSpeechRecognition({
@@ -452,6 +454,8 @@ function HorizontalPractice({
           <VoiceButton
             listening={listening}
             paused={voicePaused}
+            speechActive={speechActive}
+            interim={interim}
             error={voiceError}
             onPress={onMicPress}
             theme={theme}

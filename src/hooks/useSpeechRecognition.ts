@@ -27,6 +27,8 @@ type SpeechRecognitionLike = {
   onresult: ((e: RecognitionEvent) => void) | null;
   onerror: ((e: RecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
+  onspeechstart: (() => void) | null;
+  onspeechend: (() => void) | null;
 };
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
@@ -52,6 +54,12 @@ export function useSpeechRecognition({
   onError,
 }: SpeechHookOptions) {
   const [listening, setListening] = useState(false);
+  // True while the engine reports speech is currently being heard
+  // (between onspeechstart and onspeechend). Drives the "I hear you" pulse.
+  const [speechActive, setSpeechActive] = useState(false);
+  // Latest interim transcript — the partial words being recognized before
+  // the final result lands. Empty when nothing is being spoken.
+  const [interim, setInterim] = useState("");
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
@@ -83,20 +91,36 @@ export function useSpeechRecognition({
     }
     const rec = new Ctor();
     rec.lang = lang;
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.continuous = false;
     rec.maxAlternatives = 3;
     rec.onresult = (e) => {
-      const result = e.results[e.results.length - 1];
-      if (!result) return;
-      const transcript = result[0]?.transcript ?? "";
-      onResultRef.current(transcript);
+      // The event's results[] grows across firings within one session.
+      // Aggregate everything from resultIndex onward, separating the
+      // in-progress (interim) chunks from the engine's finalized text.
+      let interimText = "";
+      let finalText = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i];
+        const text = result[0]?.transcript ?? "";
+        if (result.isFinal) finalText += text;
+        else interimText += text;
+      }
+      if (interimText) setInterim(interimText.trim());
+      if (finalText) {
+        setInterim("");
+        onResultRef.current(finalText);
+      }
     };
     rec.onerror = (e) => {
       onErrorRef.current?.(e.error);
     };
+    rec.onspeechstart = () => setSpeechActive(true);
+    rec.onspeechend = () => setSpeechActive(false);
     rec.onend = () => {
       setListening(false);
+      setSpeechActive(false);
+      setInterim("");
       recRef.current = null;
     };
     recRef.current = rec;
@@ -123,5 +147,5 @@ export function useSpeechRecognition({
     };
   }, []);
 
-  return { listening, start, stop };
+  return { listening, speechActive, interim, start, stop };
 }

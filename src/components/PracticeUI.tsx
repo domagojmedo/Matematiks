@@ -199,28 +199,37 @@ export function NumPad({
 export function VoiceButton({
   listening,
   paused,
+  speechActive,
+  interim,
   error,
   onPress,
   theme,
 }: {
   listening: boolean;
   paused: boolean;
+  speechActive: boolean;
+  interim: string;
   error: string | null;
   onPress: () => void;
   theme: Theme;
 }) {
   const { t } = useTranslation();
-  // Optimistic label: when voice is enabled and not paused, show "Listening…"
-  // even in the brief gap between sessions, so the user sees a stable status
-  // instead of a flicker between "Listening…" and "Ready".
+  const active = !paused && !error;
+  const showInterim = active && interim.length > 0;
+  // Label priority: error → paused → interim transcript → "Listening…".
+  // The optimistic "Listening…" fallback keeps the pill stable in the brief
+  // gap between recognition sessions.
   const label = error
     ? error
     : paused
       ? t("voice.paused")
-      : t("voice.listening");
-  const active = !paused && !error;
+      : showInterim
+        ? interim
+        : t("voice.listening");
   const ringClass = active
-    ? "ring-emerald-400 dark:ring-emerald-500"
+    ? speechActive
+      ? "ring-emerald-500 dark:ring-emerald-400"
+      : "ring-emerald-300 dark:ring-emerald-600"
     : error
       ? "ring-rose-300 dark:ring-rose-700"
       : "ring-stone-200 dark:ring-stone-800";
@@ -238,39 +247,57 @@ export function VoiceButton({
         aria-label={t("voice.toggleAria")}
         className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus}`}
       >
+        <span className="relative flex h-9 w-9 items-center justify-center">
+          {/* Outward ping ripple when the engine reports audible speech.
+              Absolutely positioned so it doesn't disturb the icon layout. */}
+          {speechActive && active && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 animate-ping rounded-full bg-emerald-400/60 dark:bg-emerald-500/50"
+            />
+          )}
+          <span
+            className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+              speechActive && active
+                ? "bg-emerald-100 dark:bg-emerald-900/60"
+                : "bg-stone-100 dark:bg-stone-800"
+            } ${listening && active && !speechActive ? "animate-pulse" : ""}`}
+          >
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={iconColor}
+            >
+              {paused ? (
+                <>
+                  <path d="M3 3l18 18" />
+                  <rect x="9" y="3" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0" />
+                </>
+              ) : (
+                <>
+                  <rect x="9" y="3" width="6" height="12" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0" />
+                  <path d="M12 18v3" />
+                </>
+              )}
+            </svg>
+          </span>
+        </span>
         <span
-          className={`relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 ${
-            listening && active ? "animate-pulse" : ""
+          className={`truncate text-base font-black ${
+            showInterim
+              ? "text-emerald-600 dark:text-emerald-300"
+              : "text-stone-900 dark:text-white"
           }`}
         >
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={iconColor}
-          >
-            {paused ? (
-              <>
-                <path d="M3 3l18 18" />
-                <rect x="9" y="3" width="6" height="12" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0" />
-              </>
-            ) : (
-              <>
-                <rect x="9" y="3" width="6" height="12" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0" />
-                <path d="M12 18v3" />
-              </>
-            )}
-          </svg>
-        </span>
-        <span className="text-base font-black text-stone-900 dark:text-white">
           {label}
         </span>
       </button>
