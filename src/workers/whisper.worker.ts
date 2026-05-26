@@ -56,12 +56,16 @@ async function getPipeline(): Promise<AutomaticSpeechRecognitionPipeline> {
   loading = (async () => {
     const p = (await pipeline(
       "automatic-speech-recognition",
-      "Xenova/whisper-tiny",
+      // onnx-community is the actively maintained ONNX export of whisper-tiny.
+      // The older Xenova/whisper-tiny q8 build ships without some scale tensors
+      // that current onnxruntime-web requires, which fails with
+      // "Missing required scale" at session creation.
+      "onnx-community/whisper-tiny",
       {
-        // Quantized variant — much smaller download, still good enough for
-        // short numeric utterances. Browser CacheStorage holds the files
-        // after the first fetch.
-        dtype: "q8",
+        // q4 keeps the encoder small (~30 MB total for tiny) without the
+        // missing-scale issue q8 has on this model. Quality is adequate for
+        // short numeric utterances in HR and EN.
+        dtype: "q4",
         progress_callback: (info: ProgressInfo) => {
           const anyInfo = info as ProgressInfo & {
             file?: string;

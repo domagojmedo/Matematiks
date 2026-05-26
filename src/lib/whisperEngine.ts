@@ -20,7 +20,13 @@ export type WhisperEngineState = {
 };
 
 type WorkerOut =
-  | { type: "progress"; status: string; loaded?: number; total?: number }
+  | {
+      type: "progress";
+      status: string;
+      file?: string;
+      loaded?: number;
+      total?: number;
+    }
   | { type: "ready" }
   | { type: "result"; id: number; text: string }
   | { type: "error"; id?: number; message: string };
@@ -38,9 +44,26 @@ const pending = new Map<
 >();
 let nextId = 0;
 
+// Per-file download progress. transformers.js fires events per asset
+// (encoder.onnx, decoder.onnx, tokenizer.json, etc.); we aggregate so the
+// reported ratio is monotonic across the whole load instead of jumping
+// back to 0% every time a new file starts.
+const fileProgress = new Map<string, { loaded: number; total: number }>();
+
 function setState(patch: Partial<WhisperEngineState>): void {
   state = { ...state, ...patch };
   for (const l of listeners) l(state);
+}
+
+function recomputeProgress(): void {
+  let loaded = 0;
+  let total = 0;
+  for (const f of fileProgress.values()) {
+    loaded += f.loaded;
+    total += f.total;
+  }
+  if (total === 0) return;
+  setState({ downloadProgress: Math.min(1, loaded / total) });
 }
 
 function attachWorker(): Worker {
@@ -51,13 +74,25 @@ function attachWorker(): Worker {
   w.addEventListener("message", (e: MessageEvent<WorkerOut>) => {
     const msg = e.data;
     if (msg.type === "progress") {
-      if (msg.status === "progress" && msg.total) {
-        const ratio = Math.min(1, (msg.loaded ?? 0) / msg.total);
-        setState({ downloadProgress: ratio });
+      if (
+        (msg.status === "progress" || msg.status === "done") &&
+        msg.file &&
+        msg.total
+      ) {
+        // On 'done' transformers.js reports loaded === total, which keeps the
+        // aggregate ratio climbing monotonically as files finish.
+        const finalLoaded =
+          msg.status === "done" ? msg.total : (msg.loaded ?? 0);
+        fileProgress.set(msg.file, {
+          loaded: finalLoaded,
+          total: msg.total,
+        });
+        recomputeProgress();
       }
       return;
     }
     if (msg.type === "ready") {
+      fileProgress.clear();
       setState({ status: "ready", downloadProgress: null, error: null });
       return;
     }
