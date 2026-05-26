@@ -241,6 +241,9 @@ function HorizontalPractice({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  // User-controlled pause. When the mic is denied or the user taps the
+  // mic button to mute, we set this so the auto-restart effect stops trying.
+  const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -258,12 +261,14 @@ function HorizontalPractice({
 
   const handleVoiceError = useCallback(
     (err: string) => {
-      const msg =
-        err === "not-allowed" || err === "service-not-allowed"
-          ? t("voice.micDenied")
-          : t("voice.notUnderstood");
-      setVoiceError(msg);
-      trackedTimeout(() => setVoiceError(null), 1800);
+      // "no-speech" / "aborted" / "audio-capture" are recoverable — the
+      // auto-restart effect picks it back up. Permission errors are fatal:
+      // every retry would just fail again, so pause to break the loop.
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        setVoiceError(t("voice.micDenied"));
+        setVoicePaused(true);
+        trackedTimeout(() => setVoiceError(null), 2400);
+      }
     },
     [t, trackedTimeout],
   );
@@ -278,15 +283,27 @@ function HorizontalPractice({
     onError: handleVoiceError,
   });
 
-  const onMicPress = useCallback(() => {
+  // Auto-start: whenever voice is enabled, not paused, not currently flashing
+  // a result, and not already listening, kick a new recognition session. The
+  // small delay debounces restart storms (e.g. if onend fires repeatedly).
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    if (voicePaused) return;
     if (flash) return;
-    if (listening) {
-      stopVoice();
-    } else {
+    if (listening) return;
+    const id = window.setTimeout(() => startVoice(), 150);
+    return () => window.clearTimeout(id);
+  }, [voiceEnabled, voicePaused, flash, listening, startVoice]);
+
+  const onMicPress = useCallback(() => {
+    if (voicePaused) {
       setVoiceError(null);
-      startVoice();
+      setVoicePaused(false);
+    } else {
+      setVoicePaused(true);
+      stopVoice();
     }
-  }, [flash, listening, startVoice, stopVoice]);
+  }, [voicePaused, stopVoice]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -434,6 +451,7 @@ function HorizontalPractice({
         {voiceEnabled && (
           <VoiceButton
             listening={listening}
+            paused={voicePaused}
             error={voiceError}
             onPress={onMicPress}
             theme={theme}

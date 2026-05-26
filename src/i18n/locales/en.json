@@ -201,9 +201,10 @@
     "voiceInputHint": "Say the answer instead of typing"
   },
   "voice": {
-    "tap": "Say a number",
     "listening": "Listening…",
+    "paused": "Mic paused · tap",
     "notUnderstood": "Didn't catch that",
-    "micDenied": "Microphone blocked"
+    "micDenied": "Microphone blocked",
+    "toggleAria": "Toggle microphone"
   }
 }

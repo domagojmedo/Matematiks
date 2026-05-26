@@ -7,14 +7,21 @@ import {
   LeaveModal,
   NumPad,
   ProgressBar,
+  VoiceButton,
 } from "../components/PracticeUI";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { formatMmSs } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
 import { operationForWordKind, TONE_CHIP, wordChip } from "../lib/operations";
+import {
+  isSpeechRecognitionSupported,
+  parseSpokenNumber,
+  speechLangTag,
+} from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type ProblemAttempt,
@@ -350,6 +357,112 @@ function WordPracticeRound({
     setTyped("");
   }, [flash]);
 
+  // Voice input: submits the current phase only. pickOp phases are skipped
+  // — we don't recognize "plus" / "minus" — so voice stays idle there and
+  // the kid uses the on-screen + / − pad.
+  const isNumberPhase =
+    currentPhase?.kind === "answer" || currentPhase?.kind === "convert";
+
+  const submitFullAnswer = useCallback(
+    (n: number) => {
+      if (flash) return;
+      if (!currentPhase) return;
+      if (currentPhase.kind !== "answer" && currentPhase.kind !== "convert") {
+        return;
+      }
+      const str = String(n);
+      if (str.length > MAX_DIGITS) return;
+      setTyped(str);
+      const expected = currentPhase.expected;
+      if (n === expected) {
+        attemptsRef.current.push({
+          phaseIndex: phaseIdx,
+          phaseKind: currentPhase.kind,
+          given: n,
+          expected,
+          correct: true,
+          atMs: nowMs(),
+        });
+        setFlash("correct");
+        trackedTimeout(() => {
+          setFlash(null);
+          advancePhase();
+        }, FLASH_MS);
+      } else {
+        handleWrong(n, expected, currentPhase.kind);
+      }
+    },
+    [
+      flash,
+      currentPhase,
+      phaseIdx,
+      advancePhase,
+      handleWrong,
+      trackedTimeout,
+      nowMs,
+    ],
+  );
+
+  const voiceEnabled =
+    (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voicePaused, setVoicePaused] = useState(false);
+
+  const handleVoiceResult = useCallback(
+    (transcript: string) => {
+      const parsed = parseSpokenNumber(transcript, settings.language);
+      if (parsed === null) {
+        setVoiceError(t("voice.notUnderstood"));
+        trackedTimeout(() => setVoiceError(null), 1500);
+        return;
+      }
+      setVoiceError(null);
+      submitFullAnswer(parsed);
+    },
+    [settings.language, submitFullAnswer, trackedTimeout, t],
+  );
+
+  const handleVoiceError = useCallback(
+    (err: string) => {
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        setVoiceError(t("voice.micDenied"));
+        setVoicePaused(true);
+        trackedTimeout(() => setVoiceError(null), 2400);
+      }
+    },
+    [t, trackedTimeout],
+  );
+
+  const {
+    listening,
+    start: startVoice,
+    stop: stopVoice,
+  } = useSpeechRecognition({
+    lang: speechLangTag(settings.language),
+    onResult: handleVoiceResult,
+    onError: handleVoiceError,
+  });
+
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    if (voicePaused) return;
+    if (flash) return;
+    if (listening) return;
+    if (!isNumberPhase) return;
+    const id = window.setTimeout(() => startVoice(), 150);
+    return () => window.clearTimeout(id);
+  }, [voiceEnabled, voicePaused, flash, listening, isNumberPhase, startVoice]);
+
+  const onMicPress = useCallback(() => {
+    if (voicePaused) {
+      setVoiceError(null);
+      setVoicePaused(false);
+    } else {
+      setVoicePaused(true);
+      stopVoice();
+    }
+  }, [voicePaused, stopVoice]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -493,6 +606,16 @@ function WordPracticeRound({
                 })}
           </p>
         </section>
+
+        {voiceEnabled && isNumberPhase && (
+          <VoiceButton
+            listening={listening}
+            paused={voicePaused}
+            error={voiceError}
+            onPress={onMicPress}
+            theme={theme}
+          />
+        )}
 
         {currentPhase?.kind === "pickOp" ? (
           <PickOpPad onPick={handlePickOp} theme={theme} />

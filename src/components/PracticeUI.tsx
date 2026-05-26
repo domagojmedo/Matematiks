@@ -198,38 +198,49 @@ export function NumPad({
 
 export function VoiceButton({
   listening,
+  paused,
   error,
   onPress,
   theme,
 }: {
   listening: boolean;
+  paused: boolean;
   error: string | null;
   onPress: () => void;
   theme: Theme;
 }) {
   const { t } = useTranslation();
-  const label = error ?? (listening ? t("voice.listening") : t("voice.tap"));
-  const ringClass = listening
+  // Optimistic label: when voice is enabled and not paused, show "Listening…"
+  // even in the brief gap between sessions, so the user sees a stable status
+  // instead of a flicker between "Listening…" and "Ready".
+  const label = error
+    ? error
+    : paused
+      ? t("voice.paused")
+      : t("voice.listening");
+  const active = !paused && !error;
+  const ringClass = active
     ? "ring-emerald-400 dark:ring-emerald-500"
     : error
       ? "ring-rose-300 dark:ring-rose-700"
       : "ring-stone-200 dark:ring-stone-800";
-  const iconColor = listening
+  const iconColor = active
     ? "text-emerald-500"
     : error
       ? "text-rose-500"
-      : `${theme.primaryText} ${theme.primaryTextDark}`;
+      : "text-stone-400 dark:text-stone-500";
   return (
     <div className="px-4 pt-1">
       <button
         type="button"
         onClick={onPress}
-        aria-pressed={listening}
+        aria-pressed={!paused}
+        aria-label={t("voice.toggleAria")}
         className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus}`}
       >
         <span
           className={`relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 ${
-            listening ? "animate-pulse" : ""
+            listening && active ? "animate-pulse" : ""
           }`}
         >
           <svg
@@ -244,9 +255,19 @@ export function VoiceButton({
             strokeLinejoin="round"
             className={iconColor}
           >
-            <rect x="9" y="3" width="6" height="12" rx="3" />
-            <path d="M5 11a7 7 0 0 0 14 0" />
-            <path d="M12 18v3" />
+            {paused ? (
+              <>
+                <path d="M3 3l18 18" />
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+              </>
+            ) : (
+              <>
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </>
+            )}
           </svg>
         </span>
         <span className="text-base font-black text-stone-900 dark:text-white">

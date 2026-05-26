@@ -207,9 +207,10 @@
     "voiceInputHint": "Reci broj umjesto upisivanja"
   },
   "voice": {
-    "tap": "Reci broj",
     "listening": "Slušam…",
+    "paused": "Mikrofon pauziran · dodirni",
     "notUnderstood": "Nisam razumio",
-    "micDenied": "Mikrofon nije dopušten"
+    "micDenied": "Mikrofon nije dopušten",
+    "toggleAria": "Uključi/isključi mikrofon"
   }
 }
