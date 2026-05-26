@@ -7,11 +7,13 @@ import {
   LeaveModal,
   NumPad,
   ProgressBar,
+  VoiceButton,
 } from "../components/PracticeUI";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { formatMmSs, summarizeSetup } from "../lib/format";
 import {
   isValidOperation,
@@ -25,6 +27,11 @@ import {
   type Problem,
 } from "../lib/problemGen";
 import { getSetup } from "../lib/setup";
+import {
+  isSpeechRecognitionSupported,
+  parseSpokenNumber,
+  speechLangTag,
+} from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import type {
   LastSession,
@@ -162,6 +169,38 @@ function HorizontalPractice({
     [problem.answer, noteWrongAttempt, trackedTimeout, nowMs],
   );
 
+  const submitCorrect = useCallback(
+    (parsed: number) => {
+      const correctAttempt: ProblemAttempt = {
+        phaseIndex: 0,
+        phaseKind: "answer",
+        given: parsed,
+        expected: problem.answer,
+        correct: true,
+        atMs: nowMs(),
+      };
+      const allAttempts = [...attemptsRef.current, correctAttempt];
+      const wrongCount = allAttempts.filter((a) => !a.correct).length;
+      const record: ProblemRecord = {
+        a: problem.a,
+        b: problem.b,
+        op: problem.op,
+        answer: problem.answer,
+        userAnswer: parsed,
+        tookMs: Math.round(nowMs() - startedAtRef.current),
+        retries: wrongCount,
+        startedAtMs: Math.round(startedAtRef.current),
+        attempts: allAttempts,
+      };
+      setFlash("correct");
+      trackedTimeout(() => {
+        setFlash(null);
+        commitProblem(record);
+      }, FLASH_MS);
+    },
+    [problem, commitProblem, trackedTimeout, nowMs],
+  );
+
   const handleDigit = useCallback(
     (n: number) => {
       if (flash) return;
@@ -171,43 +210,83 @@ function HorizontalPractice({
       const parsed = Number.parseInt(next, 10);
       const answerLen = String(problem.answer).length;
       if (Number.isFinite(parsed) && parsed === problem.answer) {
-        const correctAttempt: ProblemAttempt = {
-          phaseIndex: 0,
-          phaseKind: "answer",
-          given: parsed,
-          expected: problem.answer,
-          correct: true,
-          atMs: nowMs(),
-        };
-        const allAttempts = [...attemptsRef.current, correctAttempt];
-        const wrongCount = allAttempts.filter((a) => !a.correct).length;
-        const record: ProblemRecord = {
-          a: problem.a,
-          b: problem.b,
-          op: problem.op,
-          answer: problem.answer,
-          userAnswer: parsed,
-          tookMs: Math.round(nowMs() - startedAtRef.current),
-          retries: wrongCount,
-          startedAtMs: Math.round(startedAtRef.current),
-          attempts: allAttempts,
-        };
-        setFlash("correct");
-        trackedTimeout(() => {
-          setFlash(null);
-          commitProblem(record);
-        }, FLASH_MS);
+        submitCorrect(parsed);
       } else if (next.length >= answerLen) {
         submitWrong(parsed);
       }
     },
-    [flash, typed, problem, commitProblem, submitWrong, trackedTimeout, nowMs],
+    [flash, typed, problem.answer, submitCorrect, submitWrong],
+  );
+
+  const submitFullAnswer = useCallback(
+    (n: number) => {
+      if (flash) return;
+      const str = String(n);
+      if (str.length > MAX_DIGITS) return;
+      setTyped(str);
+      if (n === problem.answer) {
+        submitCorrect(n);
+      } else {
+        submitWrong(n);
+      }
+    },
+    [flash, problem.answer, submitCorrect, submitWrong],
   );
 
   const handleDelete = useCallback(() => {
     if (flash) return;
     setTyped("");
   }, [flash]);
+
+  const voiceEnabled =
+    (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  const handleVoiceResult = useCallback(
+    (transcript: string) => {
+      const parsed = parseSpokenNumber(transcript, settings.language);
+      if (parsed === null) {
+        setVoiceError(t("voice.notUnderstood"));
+        trackedTimeout(() => setVoiceError(null), 1500);
+        return;
+      }
+      setVoiceError(null);
+      submitFullAnswer(parsed);
+    },
+    [settings.language, submitFullAnswer, trackedTimeout, t],
+  );
+
+  const handleVoiceError = useCallback(
+    (err: string) => {
+      const msg =
+        err === "not-allowed" || err === "service-not-allowed"
+          ? t("voice.micDenied")
+          : t("voice.notUnderstood");
+      setVoiceError(msg);
+      trackedTimeout(() => setVoiceError(null), 1800);
+    },
+    [t, trackedTimeout],
+  );
+
+  const {
+    listening,
+    start: startVoice,
+    stop: stopVoice,
+  } = useSpeechRecognition({
+    lang: speechLangTag(settings.language),
+    onResult: handleVoiceResult,
+    onError: handleVoiceError,
+  });
+
+  const onMicPress = useCallback(() => {
+    if (flash) return;
+    if (listening) {
+      stopVoice();
+    } else {
+      setVoiceError(null);
+      startVoice();
+    }
+  }, [flash, listening, startVoice, stopVoice]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -351,6 +430,15 @@ function HorizontalPractice({
                 })}
           </p>
         </section>
+
+        {voiceEnabled && (
+          <VoiceButton
+            listening={listening}
+            error={voiceError}
+            onPress={onMicPress}
+            theme={theme}
+          />
+        )}
 
         <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
       </div>

@@ -202,6 +202,14 @@
     "themeWarmPurple": "Topla ljubičasta",
     "themeCoral": "Korala",
     "themeTeal": "Tirkizna",
-    "themeIndigoPlum": "Indigo šljiva"
+    "themeIndigoPlum": "Indigo šljiva",
+    "voiceInput": "Glasovni unos",
+    "voiceInputHint": "Reci broj umjesto upisivanja"
+  },
+  "voice": {
+    "tap": "Reci broj",
+    "listening": "Slušam…",
+    "notUnderstood": "Nisam razumio",
+    "micDenied": "Mikrofon nije dopušten"
   }
 }

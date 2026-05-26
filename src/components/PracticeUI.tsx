@@ -196,6 +196,67 @@ export function NumPad({
   );
 }
 
+export function VoiceButton({
+  listening,
+  error,
+  onPress,
+  theme,
+}: {
+  listening: boolean;
+  error: string | null;
+  onPress: () => void;
+  theme: Theme;
+}) {
+  const { t } = useTranslation();
+  const label = error ?? (listening ? t("voice.listening") : t("voice.tap"));
+  const ringClass = listening
+    ? "ring-emerald-400 dark:ring-emerald-500"
+    : error
+      ? "ring-rose-300 dark:ring-rose-700"
+      : "ring-stone-200 dark:ring-stone-800";
+  const iconColor = listening
+    ? "text-emerald-500"
+    : error
+      ? "text-rose-500"
+      : `${theme.primaryText} ${theme.primaryTextDark}`;
+  return (
+    <div className="px-4 pt-1">
+      <button
+        type="button"
+        onClick={onPress}
+        aria-pressed={listening}
+        className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus}`}
+      >
+        <span
+          className={`relative flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 ${
+            listening ? "animate-pulse" : ""
+          }`}
+        >
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={iconColor}
+          >
+            <rect x="9" y="3" width="6" height="12" rx="3" />
+            <path d="M5 11a7 7 0 0 0 14 0" />
+            <path d="M12 18v3" />
+          </svg>
+        </span>
+        <span className="text-base font-black text-stone-900 dark:text-white">
+          {label}
+        </span>
+      </button>
+    </div>
+  );
+}
+
 export function LeaveModal({
   theme,
   onStay,

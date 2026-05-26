@@ -79,6 +79,7 @@ export type AppSettings = {
   themeKey: ThemeKey;
   dark: boolean;
   language: Language;
+  voiceInput?: boolean;
 };
 
 /**

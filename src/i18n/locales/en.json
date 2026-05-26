@@ -196,6 +196,14 @@
     "themeWarmPurple": "Warm Purple",
     "themeCoral": "Coral",
     "themeTeal": "Teal",
-    "themeIndigoPlum": "Indigo Plum"
+    "themeIndigoPlum": "Indigo Plum",
+    "voiceInput": "Voice input",
+    "voiceInputHint": "Say the answer instead of typing"
+  },
+  "voice": {
+    "tap": "Say a number",
+    "listening": "Listening…",
+    "notUnderstood": "Didn't catch that",
+    "micDenied": "Microphone blocked"
   }
 }

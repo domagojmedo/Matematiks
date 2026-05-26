@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   themeKey: "warmPurple",
   dark: false,
   language: "hr",
+  voiceInput: false,
 };
 
 type SettingsContextValue = {
@@ -24,6 +25,7 @@ type SettingsContextValue = {
   setTheme: (key: ThemeKey) => void;
   setDark: (dark: boolean) => void;
   setLanguage: (lang: Language) => void;
+  setVoiceInput: (enabled: boolean) => void;
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -57,6 +59,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setLanguage = useCallback((language: Language) => {
     setSettings((s) => ({ ...s, language }));
   }, []);
+  const setVoiceInput = useCallback((voiceInput: boolean) => {
+    setSettings((s) => ({ ...s, voiceInput }));
+  }, []);
 
   const value = useMemo<SettingsContextValue>(
     () => ({
@@ -65,8 +70,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setTheme,
       setDark,
       setLanguage,
+      setVoiceInput,
     }),
-    [settings, setTheme, setDark, setLanguage],
+    [settings, setTheme, setDark, setLanguage, setVoiceInput],
   );
 
   return (

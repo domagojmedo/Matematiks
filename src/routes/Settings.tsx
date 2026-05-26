@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { isSpeechRecognitionSupported } from "../lib/speech";
 import { THEMES } from "../lib/themes";
 import type { Language, Profile, ThemeKey } from "../lib/types";
 
@@ -10,7 +11,9 @@ const THEME_KEYS: ThemeKey[] = ["warmPurple", "coral", "teal", "indigoPlum"];
 
 export function SettingsRoute() {
   const { t } = useTranslation();
-  const { settings, theme, setTheme, setDark, setLanguage } = useSettings();
+  const { settings, theme, setTheme, setDark, setLanguage, setVoiceInput } =
+    useSettings();
+  const voiceSupported = isSpeechRecognitionSupported();
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
 
@@ -88,6 +91,16 @@ export function SettingsRoute() {
             label={t("settings.darkMode")}
           />
         </SettingSection>
+
+        {voiceSupported && (
+          <SettingSection title={t("settings.voiceInput")}>
+            <ToggleRow
+              checked={settings.voiceInput ?? false}
+              onChange={setVoiceInput}
+              label={t("settings.voiceInputHint")}
+            />
+          </SettingSection>
+        )}
 
         <SettingSection title={t("settings.language")}>
           <div className="grid grid-cols-2 gap-2.5">
