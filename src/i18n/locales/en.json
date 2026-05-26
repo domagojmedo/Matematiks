@@ -202,7 +202,7 @@
   },
   "voice": {
     "listening": "Listening…",
-    "paused": "Mic paused · tap",
+    "paused": "Tap for microphone",
     "notUnderstood": "Didn't catch that",
     "micDenied": "Microphone blocked",
     "toggleAria": "Toggle microphone"

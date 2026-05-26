@@ -199,7 +199,7 @@ export function NumPad({
 export function VoiceButton({
   listening,
   paused,
-  speechActive,
+  level,
   interim,
   error,
   onPress,
@@ -207,7 +207,8 @@ export function VoiceButton({
 }: {
   listening: boolean;
   paused: boolean;
-  speechActive: boolean;
+  /** Smoothed mic level in [0, 1]; drives the fill inside the icon circle. */
+  level: number;
   interim: string;
   error: string | null;
   onPress: () => void;
@@ -226,15 +227,14 @@ export function VoiceButton({
       : showInterim
         ? interim
         : t("voice.listening");
+  const fillPct = active ? Math.round(level * 100) : 0;
   const ringClass = active
-    ? speechActive
-      ? "ring-emerald-500 dark:ring-emerald-400"
-      : "ring-emerald-300 dark:ring-emerald-600"
+    ? "ring-emerald-300 dark:ring-emerald-600"
     : error
       ? "ring-rose-300 dark:ring-rose-700"
       : "ring-stone-200 dark:ring-stone-800";
   const iconColor = active
-    ? "text-emerald-500"
+    ? "text-emerald-700 dark:text-emerald-200"
     : error
       ? "text-rose-500"
       : "text-stone-400 dark:text-stone-500";
@@ -247,49 +247,49 @@ export function VoiceButton({
         aria-label={t("voice.toggleAria")}
         className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white shadow-sm ring-2 transition active:scale-[0.99] focus:outline-none focus-visible:ring-4 dark:bg-stone-900 ${ringClass} ${theme.primaryFocus}`}
       >
-        <span className="relative flex h-9 w-9 items-center justify-center">
-          {/* Outward ping ripple when the engine reports audible speech.
-              Absolutely positioned so it doesn't disturb the icon layout. */}
-          {speechActive && active && (
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 animate-ping rounded-full bg-emerald-400/60 dark:bg-emerald-500/50"
-            />
-          )}
-          <span
-            className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-              speechActive && active
-                ? "bg-emerald-100 dark:bg-emerald-900/60"
+        <span
+          className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ${
+            active
+              ? "bg-stone-100 dark:bg-stone-800"
+              : error
+                ? "bg-rose-50 dark:bg-rose-950/40"
                 : "bg-stone-100 dark:bg-stone-800"
-            } ${listening && active && !speechActive ? "animate-pulse" : ""}`}
+          } ${listening && active && fillPct < 4 ? "animate-pulse" : ""}`}
+        >
+          {/* Level fill: solid emerald block growing from the bottom of the
+              circle. Height tracks the smoothed mic level. The short width
+              transition gives it a slightly liquid feel without lagging. */}
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 bg-emerald-400/80 transition-[height] duration-75 ease-out dark:bg-emerald-500/80"
+            style={{ height: `${fillPct}%` }}
+          />
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`relative ${iconColor}`}
           >
-            <svg
-              aria-hidden="true"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={iconColor}
-            >
-              {paused ? (
-                <>
-                  <path d="M3 3l18 18" />
-                  <rect x="9" y="3" width="6" height="12" rx="3" />
-                  <path d="M5 11a7 7 0 0 0 14 0" />
-                </>
-              ) : (
-                <>
-                  <rect x="9" y="3" width="6" height="12" rx="3" />
-                  <path d="M5 11a7 7 0 0 0 14 0" />
-                  <path d="M12 18v3" />
-                </>
-              )}
-            </svg>
-          </span>
+            {paused ? (
+              <>
+                <path d="M3 3l18 18" />
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+              </>
+            ) : (
+              <>
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </>
+            )}
+          </svg>
         </span>
         <span
           className={`truncate text-base font-black ${

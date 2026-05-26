@@ -208,7 +208,7 @@
   },
   "voice": {
     "listening": "Slušam…",
-    "paused": "Mikrofon pauziran · dodirni",
+    "paused": "Dodirni za mikrofon",
     "notUnderstood": "Nisam razumio",
     "micDenied": "Mikrofon nije dopušten",
     "toggleAria": "Uključi/isključi mikrofon"
