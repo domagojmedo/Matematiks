@@ -200,7 +200,11 @@
     "voiceInput": "Voice input",
     "voiceInputHint": "Say the answer instead of typing",
     "useWhisperHint": "Use on-device speech engine (experimental)",
-    "useWhisperNote": "Downloads ~40 MB the first time, then works offline. Avoids the microphone turning on and off on Android Chrome."
+    "useWhisperNote": "Downloads ~40 MB the first time, then works offline. Avoids the microphone turning on and off on Android Chrome.",
+    "whisperDownloading": "Downloading… {{percent}}%",
+    "whisperPreparing": "Preparing model…",
+    "whisperReady": "Ready",
+    "whisperError": "Failed to load: {{message}}"
   },
   "voice": {
     "listening": "Listening…",

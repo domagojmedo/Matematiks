@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { useWhisperEngine } from "../hooks/useWhisperEngine";
 import { isSpeechRecognitionSupported } from "../lib/speech";
 import { THEMES } from "../lib/themes";
 import type { Language, Profile, ThemeKey } from "../lib/types";
@@ -116,6 +117,9 @@ export function SettingsRoute() {
                 <p className="mt-1.5 px-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {t("settings.useWhisperNote")}
                 </p>
+                {(settings.useWhisper ?? false) && (
+                  <WhisperEngineStatus />
+                )}
               </div>
             )}
           </SettingSection>
@@ -371,6 +375,84 @@ function ProfileRow({
   );
 }
 
+function WhisperEngineStatus() {
+  const { t } = useTranslation();
+  // Passing autoload=true here triggers the model download as soon as the
+  // user lands on this section. The engine is a singleton, so subsequent
+  // mounts (e.g. when entering a practice round) see the already-loaded
+  // state instead of re-downloading.
+  const engine = useWhisperEngine(true);
+
+  if (engine.status === "idle") return null;
+
+  const isError = engine.status === "error";
+  const isReady = engine.status === "ready";
+  const percent =
+    engine.downloadProgress != null
+      ? Math.round(engine.downloadProgress * 100)
+      : null;
+
+  const label = isError
+    ? t("settings.whisperError", { message: engine.error ?? "" })
+    : isReady
+      ? t("settings.whisperReady")
+      : percent != null
+        ? t("settings.whisperDownloading", { percent })
+        : t("settings.whisperPreparing");
+
+  const barClass = isError
+    ? "bg-rose-500"
+    : isReady
+      ? "bg-emerald-500"
+      : "bg-emerald-500";
+  const trackClass = isError
+    ? "bg-rose-100 dark:bg-rose-950/40"
+    : "bg-stone-200 dark:bg-stone-800";
+
+  return (
+    <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+      <div className="flex items-center justify-between gap-3">
+        <span
+          className={`min-w-0 flex-1 text-sm font-bold ${
+            isError
+              ? "text-rose-600 dark:text-rose-300"
+              : "text-stone-700 dark:text-stone-200"
+          }`}
+        >
+          {label}
+        </span>
+        {isReady && (
+          <span
+            aria-hidden="true"
+            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+          </span>
+        )}
+      </div>
+      {!isReady && !isError && (
+        <div className={`mt-2 h-2 w-full overflow-hidden rounded-full ${trackClass}`}>
+          <div
+            className={`h-full rounded-full transition-[width] duration-150 ${barClass}`}
+            style={{ width: `${percent ?? 5}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SettingSection({
   title,
   children,
@@ -398,12 +480,12 @@ function ToggleRow({
   label: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-      <span className="text-base font-bold text-stone-700 dark:text-stone-200">
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+      <span className="min-w-0 flex-1 text-base font-bold text-stone-700 dark:text-stone-200">
         {label}
       </span>
       <span
-        className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+        className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition ${
           checked ? "bg-emerald-500" : "bg-stone-300 dark:bg-stone-700"
         }`}
       >

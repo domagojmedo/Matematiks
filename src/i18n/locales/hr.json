@@ -206,7 +206,11 @@
     "voiceInput": "Glasovni unos",
     "voiceInputHint": "Reci broj umjesto upisivanja",
     "useWhisperHint": "Koristi prepoznavanje na uređaju (eksperimentalno)",
-    "useWhisperNote": "Prvi put preuzima ~40 MB, zatim radi bez interneta. Izbjegava paljenje i gašenje mikrofona u Chromeu na Androidu."
+    "useWhisperNote": "Prvi put preuzima ~40 MB, zatim radi bez interneta. Izbjegava paljenje i gašenje mikrofona u Chromeu na Androidu.",
+    "whisperDownloading": "Preuzimam… {{percent}}%",
+    "whisperPreparing": "Pripremam model…",
+    "whisperReady": "Spremno",
+    "whisperError": "Greška pri učitavanju: {{message}}"
   },
   "voice": {
     "listening": "Slušam…",

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import pcmCaptureWorkletUrl from "../audio/pcm-capture.worklet.ts?worker&url";
+import { transcribeWhisper } from "../lib/whisperEngine";
 import type { Language } from "../lib/types";
+import { useWhisperEngine } from "./useWhisperEngine";
 
 const TARGET_RATE = 16_000;
 // VAD parameters — tuned for indoor speech on a tablet/laptop mic.
@@ -17,12 +19,6 @@ export type WhisperHookOptions = {
   onResult: (transcript: string) => void;
   onError?: (error: string) => void;
 };
-
-type WorkerOut =
-  | { type: "progress"; status: string; loaded?: number; total?: number }
-  | { type: "ready" }
-  | { type: "result"; id: number; text: string }
-  | { type: "error"; id?: number; message: string };
 
 function resampleTo16k(input: Float32Array, inputRate: number): Float32Array {
   if (inputRate === TARGET_RATE) return input;
@@ -57,8 +53,11 @@ export function useWhisperRecognition({
 }: WhisperHookOptions) {
   const [listening, setListening] = useState(false);
   const [speechActive, setSpeechActive] = useState(false);
-  const [modelLoaded, setModelLoaded] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+
+  // The engine is a process-wide singleton owned by lib/whisperEngine.ts.
+  // This hook subscribes to its load state and asks it to start downloading
+  // as soon as `enabled` is true.
+  const engineState = useWhisperEngine(enabled);
 
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
@@ -71,61 +70,17 @@ export function useWhisperRecognition({
 
   // All audio plumbing lives in refs — we deliberately avoid putting these
   // into React state to keep audio-thread updates from triggering renders.
-  const workerRef = useRef<Worker | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const bufferRef = useRef<Float32Array[]>([]);
-  const bufferLenRef = useRef(0); // running total of samples in bufferRef
-  // Sample index (within the rolling buffer) where the current utterance
-  // began. Null when no speech is in progress.
+  const bufferLenRef = useRef(0);
+  // Sample index (in the rolling buffer) where the current utterance began.
+  // Null when no speech is in progress.
   const speechStartRef = useRef<number | null>(null);
   const lastVoiceAtRef = useRef<number>(0);
-  const transcribeIdRef = useRef(0);
-  const totalSamplesRef = useRef(0); // monotonic sample counter since stream start
-
-  // Mount the worker once when the hook is enabled. Tearing down the worker
-  // would force a re-download of the model from CacheStorage on every toggle,
-  // so we keep it alive for the hook's lifetime.
-  useEffect(() => {
-    if (!enabled) return;
-    const worker = new Worker(
-      new URL("../workers/whisper.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    workerRef.current = worker;
-
-    worker.addEventListener("message", (e: MessageEvent<WorkerOut>) => {
-      const msg = e.data;
-      if (msg.type === "progress") {
-        if (msg.status === "progress" && msg.total) {
-          const ratio = Math.min(1, (msg.loaded ?? 0) / msg.total);
-          setDownloadProgress(ratio);
-        } else if (msg.status === "ready" || msg.status === "done") {
-          // Per-file finish events fire before the overall "ready"; clear the
-          // bar only once the pipeline reports itself ready.
-        }
-      } else if (msg.type === "ready") {
-        setModelLoaded(true);
-        setDownloadProgress(null);
-      } else if (msg.type === "result") {
-        const text = msg.text.trim();
-        if (text) onResultRef.current(text);
-      } else if (msg.type === "error") {
-        onErrorRef.current?.(msg.message);
-      }
-    });
-
-    worker.postMessage({ type: "load" });
-
-    return () => {
-      worker.terminate();
-      workerRef.current = null;
-      setModelLoaded(false);
-      setDownloadProgress(null);
-    };
-  }, [enabled]);
+  const totalSamplesRef = useRef(0);
 
   const stopAudio = useCallback(() => {
     workletNodeRef.current?.disconnect();
@@ -160,8 +115,6 @@ export function useWhisperRecognition({
     if (length < (MIN_UTTERANCE_MS / 1000) * TARGET_RATE) return;
 
     // Pull contiguous samples out of the chunked buffer at [utterStart, utterEnd).
-    // The chunks form a growing log; we compute the offset of each chunk via
-    // a running count maintained alongside the array.
     const out = new Float32Array(length);
     let written = 0;
     let chunkStart = total - bufferLenRef.current;
@@ -180,11 +133,14 @@ export function useWhisperRecognition({
       chunkStart = chunkEnd;
     }
 
-    const id = ++transcribeIdRef.current;
-    workerRef.current?.postMessage(
-      { type: "transcribe", id, pcm: out, language: langRef.current },
-      [out.buffer],
-    );
+    transcribeWhisper(out, langRef.current)
+      .then((text) => {
+        const trimmed = text.trim();
+        if (trimmed) onResultRef.current(trimmed);
+      })
+      .catch((err) => {
+        onErrorRef.current?.(err instanceof Error ? err.message : String(err));
+      });
   }, []);
 
   const onPcmFrame = useCallback(
@@ -262,8 +218,8 @@ export function useWhisperRecognition({
         onPcmFrame(e.data, inputRate);
       };
       source.connect(node);
-      // Worklet doesn't produce audio; routing it to destination keeps the
-      // graph alive but would echo the mic. Connect to a muted gain instead.
+      // Worklet doesn't produce audio; routing through a muted gain keeps the
+      // graph alive without echoing the mic.
       const sink = ctx.createGain();
       sink.gain.value = 0;
       node.connect(sink).connect(ctx.destination);
@@ -296,7 +252,8 @@ export function useWhisperRecognition({
     stopAudio();
   }, [stopAudio]);
 
-  // Tear everything down on unmount, including the AudioContext we left alive.
+  // Tear down the audio graph on unmount. The worker stays alive in the
+  // singleton — that's the whole point of moving it out of this hook.
   useEffect(() => {
     return () => {
       stopAudio();
@@ -311,7 +268,7 @@ export function useWhisperRecognition({
     interim: "",
     start,
     stop,
-    modelLoaded,
-    downloadProgress,
+    modelLoaded: engineState.status === "ready",
+    downloadProgress: engineState.downloadProgress,
   };
 }
