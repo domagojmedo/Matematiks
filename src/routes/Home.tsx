@@ -252,6 +252,10 @@ export function Home() {
             <path d="M9 6l6 6-6 6" />
           </svg>
         </Link>
+
+        <p className="mt-6 text-center text-[11px] font-semibold text-stone-400 tabular-nums dark:text-stone-600">
+          v{__APP_VERSION__} · {__APP_BUILD_TIME__.slice(0, 10)}
+        </p>
       </div>
       <ProfilePicker
         open={pickerOpen}
