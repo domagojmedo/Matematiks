@@ -293,20 +293,24 @@ function HorizontalPractice({
     if (!voicePaused) stopVoice();
   }, [voicePaused, stopVoice]);
 
-  // Auto-listen while on the screen: simulate the kid holding the button.
-  // The engine on Android Chrome closes single-utterance sessions on its
-  // own, so we re-press whenever it goes idle. Suppressed by voicePaused.
+  // Auto-listen exactly once per problem. Critically, the dep is `problem`,
+  // not `listening` — if the engine closes itself (silence timeout, or the
+  // android mic-on chime getting picked up as non-speech audio and ending
+  // the session) we deliberately do NOT reopen for the same problem.
+  // Otherwise the chime triggers another start → another chime → another
+  // session-end, looping until the kid leaves the screen. We accept that
+  // losing voice for the current problem is the lesser evil; the kid can
+  // type or wait for the next problem to retry by voice.
   useEffect(() => {
     if (!voiceEnabled) return;
     if (voicePaused) return;
     if (flash) return;
-    if (listening) return;
     const id = window.setTimeout(() => {
       setVoiceError(null);
       startVoice();
     }, 150);
     return () => window.clearTimeout(id);
-  }, [voiceEnabled, voicePaused, flash, listening, startVoice]);
+  }, [voiceEnabled, voicePaused, flash, problem, startVoice]);
 
   useEffect(() => {
     return () => stopVoice();

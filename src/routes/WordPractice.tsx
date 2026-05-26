@@ -452,14 +452,16 @@ function WordPracticeRound({
     if (!voicePaused) stopVoice();
   }, [voicePaused, stopVoice]);
 
-  // Auto-listen while on the screen, but only during phases that accept a
-  // number answer (not the pickOp phase of mixed word problems).
+  // Auto-listen one session per problem (and per phase change, since a
+  // multi-phase word problem may have several answer phases). The dep is
+  // `problem` + `currentPhase`, not `listening`, so the engine doesn't
+  // reopen if it closes itself — see Practice.tsx for the chime-loop
+  // explanation.
   useEffect(() => {
     if (!voiceEnabled) return;
     if (voicePaused) return;
     if (!isNumberPhase) return;
     if (flash) return;
-    if (listening) return;
     const id = window.setTimeout(() => {
       setVoiceError(null);
       startVoice();
@@ -470,7 +472,8 @@ function WordPracticeRound({
     voicePaused,
     isNumberPhase,
     flash,
-    listening,
+    problem,
+    currentPhase,
     startVoice,
   ]);
 
