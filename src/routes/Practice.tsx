@@ -13,7 +13,7 @@ import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
-import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { formatMmSs, summarizeSetup } from "../lib/format";
 import {
   isValidOperation,
@@ -27,7 +27,11 @@ import {
   type Problem,
 } from "../lib/problemGen";
 import { getSetup } from "../lib/setup";
-import { isSpeechRecognitionSupported, parseSpokenNumber } from "../lib/speech";
+import {
+  isSpeechRecognitionSupported,
+  parseSpokenNumber,
+  speechLangTag,
+} from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import type {
   LastSession,
@@ -237,9 +241,6 @@ function HorizontalPractice({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  // User-controlled pause. When the mic is denied or the user taps the
-  // mic button to mute, we set this so the auto-restart effect stops trying.
-  const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -257,12 +258,12 @@ function HorizontalPractice({
 
   const handleVoiceError = useCallback(
     (err: string) => {
-      // "no-speech" / "aborted" / "audio-capture" are recoverable — the
-      // auto-restart effect picks it back up. Permission errors are fatal:
-      // every retry would just fail again, so pause to break the loop.
+      // Hold-to-speak runs at most one session per press, so no retry storm
+      // to worry about — we just surface the user-visible errors and let the
+      // button visuals (rose ring) communicate the state until the kid lets
+      // go and presses again.
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
-        setVoicePaused(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -275,42 +276,20 @@ function HorizontalPractice({
     interim,
     start: startVoice,
     stop: stopVoice,
-    modelLoaded,
-    downloadProgress,
-  } = useVoiceRecognition({
-    language: settings.language,
-    useWhisper: voiceEnabled && (settings.useWhisper ?? false),
+  } = useSpeechRecognition({
+    lang: speechLangTag(settings.language),
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
 
-  // While the Whisper model is still downloading, suppress auto-start so we
-  // don't open the mic and then immediately drop frames the worker isn't
-  // ready to consume. The download-progress label takes over the mic pill.
-  const voiceReady = modelLoaded;
+  const onMicHoldStart = useCallback(() => {
+    setVoiceError(null);
+    startVoice();
+  }, [startVoice]);
 
-  // Auto-start: whenever voice is enabled, not paused, not currently flashing
-  // a result, and not already listening, kick a new recognition session. The
-  // small delay debounces restart storms (e.g. if onend fires repeatedly).
-  useEffect(() => {
-    if (!voiceEnabled) return;
-    if (voicePaused) return;
-    if (flash) return;
-    if (listening) return;
-    if (!voiceReady) return;
-    const id = window.setTimeout(() => startVoice(), 150);
-    return () => window.clearTimeout(id);
-  }, [voiceEnabled, voicePaused, flash, listening, voiceReady, startVoice]);
-
-  const onMicPress = useCallback(() => {
-    if (voicePaused) {
-      setVoiceError(null);
-      setVoicePaused(false);
-    } else {
-      setVoicePaused(true);
-      stopVoice();
-    }
-  }, [voicePaused, stopVoice]);
+  const onMicHoldEnd = useCallback(() => {
+    stopVoice();
+  }, [stopVoice]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -458,12 +437,11 @@ function HorizontalPractice({
         {voiceEnabled && (
           <VoiceButton
             listening={listening}
-            paused={voicePaused}
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
-            loadingPercent={downloadProgress}
-            onPress={onMicPress}
+            onHoldStart={onMicHoldStart}
+            onHoldEnd={onMicHoldEnd}
             theme={theme}
           />
         )}

@@ -208,6 +208,7 @@
   },
   "voice": {
     "listening": "Listening…",
+    "holdToSpeak": "Hold to speak",
     "paused": "Tap for microphone",
     "notUnderstood": "Didn't catch that",
     "micDenied": "Microphone blocked",

@@ -214,6 +214,7 @@
   },
   "voice": {
     "listening": "Slušam…",
+    "holdToSpeak": "Drži za govor",
     "paused": "Dodirni za mikrofon",
     "notUnderstood": "Nisam razumio",
     "micDenied": "Mikrofon nije dopušten",

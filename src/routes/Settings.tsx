@@ -10,6 +10,12 @@ import type { Language, Profile, ThemeKey } from "../lib/types";
 
 const THEME_KEYS: ThemeKey[] = ["warmPurple", "coral", "teal", "indigoPlum"];
 
+// Gates the experimental on-device Whisper engine. Flip to true to expose
+// the toggle + download progress UI again. The engine code (worker,
+// singleton, hook) is kept around behind this flag so it can be re-enabled
+// without re-implementation.
+const SHOW_WHISPER_TOGGLE = false;
+
 export function SettingsRoute() {
   const { t } = useTranslation();
   const {
@@ -107,7 +113,7 @@ export function SettingsRoute() {
               onChange={setVoiceInput}
               label={t("settings.voiceInputHint")}
             />
-            {(settings.voiceInput ?? false) && (
+            {SHOW_WHISPER_TOGGLE && (settings.voiceInput ?? false) && (
               <div className="mt-2.5">
                 <ToggleRow
                   checked={settings.useWhisper ?? false}

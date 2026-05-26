@@ -13,11 +13,15 @@ import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
-import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { formatMmSs } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
 import { operationForWordKind, TONE_CHIP, wordChip } from "../lib/operations";
-import { isSpeechRecognitionSupported, parseSpokenNumber } from "../lib/speech";
+import {
+  isSpeechRecognitionSupported,
+  parseSpokenNumber,
+  speechLangTag,
+} from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type ProblemAttempt,
@@ -402,7 +406,6 @@ function WordPracticeRound({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -422,7 +425,6 @@ function WordPracticeRound({
     (err: string) => {
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
-        setVoicePaused(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -435,45 +437,21 @@ function WordPracticeRound({
     interim,
     start: startVoice,
     stop: stopVoice,
-    modelLoaded,
-    downloadProgress,
-  } = useVoiceRecognition({
-    language: settings.language,
-    useWhisper: voiceEnabled && (settings.useWhisper ?? false),
+  } = useSpeechRecognition({
+    lang: speechLangTag(settings.language),
     onResult: handleVoiceResult,
     onError: handleVoiceError,
   });
 
-  const voiceReady = modelLoaded;
-
-  useEffect(() => {
-    if (!voiceEnabled) return;
-    if (voicePaused) return;
-    if (flash) return;
-    if (listening) return;
+  const onMicHoldStart = useCallback(() => {
     if (!isNumberPhase) return;
-    if (!voiceReady) return;
-    const id = window.setTimeout(() => startVoice(), 150);
-    return () => window.clearTimeout(id);
-  }, [
-    voiceEnabled,
-    voicePaused,
-    flash,
-    listening,
-    isNumberPhase,
-    voiceReady,
-    startVoice,
-  ]);
+    setVoiceError(null);
+    startVoice();
+  }, [isNumberPhase, startVoice]);
 
-  const onMicPress = useCallback(() => {
-    if (voicePaused) {
-      setVoiceError(null);
-      setVoicePaused(false);
-    } else {
-      setVoicePaused(true);
-      stopVoice();
-    }
-  }, [voicePaused, stopVoice]);
+  const onMicHoldEnd = useCallback(() => {
+    stopVoice();
+  }, [stopVoice]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -622,12 +600,11 @@ function WordPracticeRound({
         {voiceEnabled && isNumberPhase && (
           <VoiceButton
             listening={listening}
-            paused={voicePaused}
             speechActive={speechActive}
             interim={interim}
             error={voiceError}
-            loadingPercent={downloadProgress}
-            onPress={onMicPress}
+            onHoldStart={onMicHoldStart}
+            onHoldEnd={onMicHoldEnd}
             theme={theme}
           />
         )}
