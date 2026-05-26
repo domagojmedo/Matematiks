@@ -241,6 +241,10 @@ function HorizontalPractice({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  // Sticky "user denied the mic prompt" flag. Auto-listen respects this so
+  // we don't loop the permission prompt; cleared when the user manually
+  // presses the button (treating that as a fresh retry request).
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -258,12 +262,9 @@ function HorizontalPractice({
 
   const handleVoiceError = useCallback(
     (err: string) => {
-      // Hold-to-speak runs at most one session per press, so no retry storm
-      // to worry about — we just surface the user-visible errors and let the
-      // button visuals (rose ring) communicate the state until the kid lets
-      // go and presses again.
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
+        setVoiceBlocked(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -284,11 +285,33 @@ function HorizontalPractice({
 
   const onMicHoldStart = useCallback(() => {
     setVoiceError(null);
+    setVoiceBlocked(false);
     startVoice();
   }, [startVoice]);
 
   const onMicHoldEnd = useCallback(() => {
     stopVoice();
+  }, [stopVoice]);
+
+  // Simulate the kid holding the mic button the whole time they're on this
+  // screen. The engine on Android Chrome closes single-utterance sessions
+  // on its own, so we re-press whenever it goes idle. This may bring back
+  // ghost-utterance cycling on noisy mics — opt-in trade-off for not making
+  // the kid hold the button manually.
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    if (voiceBlocked) return;
+    if (flash) return;
+    if (listening) return;
+    const id = window.setTimeout(() => {
+      setVoiceError(null);
+      startVoice();
+    }, 150);
+    return () => window.clearTimeout(id);
+  }, [voiceEnabled, voiceBlocked, flash, listening, startVoice]);
+
+  useEffect(() => {
+    return () => stopVoice();
   }, [stopVoice]);
 
   useEffect(() => {

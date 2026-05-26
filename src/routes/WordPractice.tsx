@@ -406,6 +406,8 @@ function WordPracticeRound({
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  // Sticky "user denied the mic prompt" flag. See Practice.tsx for context.
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
 
   const handleVoiceResult = useCallback(
     (transcript: string) => {
@@ -425,6 +427,7 @@ function WordPracticeRound({
     (err: string) => {
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
+        setVoiceBlocked(true);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -446,11 +449,39 @@ function WordPracticeRound({
   const onMicHoldStart = useCallback(() => {
     if (!isNumberPhase) return;
     setVoiceError(null);
+    setVoiceBlocked(false);
     startVoice();
   }, [isNumberPhase, startVoice]);
 
   const onMicHoldEnd = useCallback(() => {
     stopVoice();
+  }, [stopVoice]);
+
+  // Auto-press: simulate the kid holding the mic button while on this
+  // screen, but only when the current phase actually accepts a number
+  // answer (not during the pickOp phase of mixed word problems).
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    if (voiceBlocked) return;
+    if (!isNumberPhase) return;
+    if (flash) return;
+    if (listening) return;
+    const id = window.setTimeout(() => {
+      setVoiceError(null);
+      startVoice();
+    }, 150);
+    return () => window.clearTimeout(id);
+  }, [
+    voiceEnabled,
+    voiceBlocked,
+    isNumberPhase,
+    flash,
+    listening,
+    startVoice,
+  ]);
+
+  useEffect(() => {
+    return () => stopVoice();
   }, [stopVoice]);
 
   useEffect(() => {
