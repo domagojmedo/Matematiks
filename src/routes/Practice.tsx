@@ -44,6 +44,11 @@ import { ColumnPractice } from "./ColumnPractice";
 
 const FLASH_MS = 400;
 const MAX_DIGITS = 4;
+// Bounded auto-listen retries per problem. One shot often dies on a tablet
+// (weak mic, no-speech, a mic-on chime read as noise ending the session); a
+// few backed-off retries recover that without the unbounded chime loop a
+// `listening`-driven restart used to cause.
+const MAX_VOICE_ATTEMPTS = 3;
 
 type Flash = "correct" | "wrong" | null;
 
@@ -248,15 +253,19 @@ function HorizontalPractice({
   const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
-    (transcript: string) => {
-      const parsed = parseSpokenNumber(transcript, settings.language);
-      if (parsed === null) {
-        setVoiceError(t("voice.notUnderstood"));
-        trackedTimeout(() => setVoiceError(null), 1500);
-        return;
+    (candidates: string[]) => {
+      // Accept the first alternative that parses to a number — the top guess
+      // is often a near-miss on Croatian number words.
+      for (const candidate of candidates) {
+        const parsed = parseSpokenNumber(candidate, settings.language);
+        if (parsed !== null) {
+          setVoiceError(null);
+          submitFullAnswer(parsed);
+          return;
+        }
       }
-      setVoiceError(null);
-      submitFullAnswer(parsed);
+      setVoiceError(t("voice.notUnderstood"));
+      trackedTimeout(() => setVoiceError(null), 1500);
     },
     [settings.language, submitFullAnswer, trackedTimeout, t],
   );
@@ -266,6 +275,22 @@ function HorizontalPractice({
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
         setVoicePaused(true);
+        trackedTimeout(() => setVoiceError(null), 2400);
+        return;
+      }
+      // Surface diagnosable failures so a flaky tablet shows a reason instead
+      // of silence. `no-speech` / `aborted` are normal session ends and stay
+      // quiet. These don't pause — the retry loop will try again.
+      const hint =
+        err === "network"
+          ? t("voice.network")
+          : err === "language-not-supported"
+            ? t("voice.langUnsupported")
+            : err === "audio-capture"
+              ? t("voice.noMic")
+              : null;
+      if (hint) {
+        setVoiceError(hint);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -284,33 +309,47 @@ function HorizontalPractice({
     onError: handleVoiceError,
   });
 
+  const voiceAttemptsRef = useRef(0);
+
   const onMicPress = useCallback(() => {
     setVoiceError(null);
     setVoicePaused((prev) => !prev);
     // When toggling off, also tear down the current session immediately so
     // the kid sees the engine go quiet right away rather than waiting for
-    // it to close itself.
+    // it to close itself. When toggling back on, give it a fresh budget of
+    // attempts even if the previous problem had exhausted them.
     if (!voicePaused) stopVoice();
+    else voiceAttemptsRef.current = 0;
   }, [voicePaused, stopVoice]);
 
-  // Auto-listen exactly once per problem. Critically, the dep is `problem`,
-  // not `listening` — if the engine closes itself (silence timeout, or the
-  // android mic-on chime getting picked up as non-speech audio and ending
-  // the session) we deliberately do NOT reopen for the same problem.
-  // Otherwise the chime triggers another start → another chime → another
-  // session-end, looping until the kid leaves the screen. We accept that
-  // losing voice for the current problem is the lesser evil; the kid can
-  // type or wait for the next problem to retry by voice.
+  // Reset the per-problem attempt budget whenever the problem changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `problem` is the intended reset trigger, not a value read in the body
+  useEffect(() => {
+    voiceAttemptsRef.current = 0;
+  }, [problem]);
+
+  // Auto-listen with a small, BOUNDED number of attempts per problem. Unlike
+  // the old one-shot, the dep set includes `listening`, so a session that
+  // closes itself (silence timeout, or the Android/MIUI mic-on chime read as
+  // noise ending it) triggers a retry — but only up to MAX_VOICE_ATTEMPTS,
+  // with a growing backoff. The cap is what prevents the old chime → start →
+  // chime → end loop; after it, voice goes quiet until the next problem.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `problem` re-arms the attempt budget on each new problem
   useEffect(() => {
     if (!voiceEnabled) return;
     if (voicePaused) return;
     if (flash) return;
+    if (listening) return;
+    if (voiceAttemptsRef.current >= MAX_VOICE_ATTEMPTS) return;
+    const attempt = voiceAttemptsRef.current;
+    const delay = attempt === 0 ? 150 : 500 + attempt * 300;
     const id = window.setTimeout(() => {
+      voiceAttemptsRef.current += 1;
       setVoiceError(null);
       startVoice();
-    }, 150);
+    }, delay);
     return () => window.clearTimeout(id);
-  }, [voiceEnabled, voicePaused, flash, problem, startVoice]);
+  }, [voiceEnabled, voicePaused, flash, listening, problem, startVoice]);
 
   useEffect(() => {
     return () => stopVoice();

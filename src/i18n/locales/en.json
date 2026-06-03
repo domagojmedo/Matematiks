@@ -213,6 +213,9 @@
     "paused": "Tap for microphone",
     "notUnderstood": "Didn't catch that",
     "micDenied": "Microphone blocked",
+    "network": "No network for voice",
+    "langUnsupported": "Voice not available for this language",
+    "noMic": "No microphone found",
     "toggleAria": "Toggle microphone",
     "loadingModel": "Loading speech model… {{percent}}%",
     "modelReady": "Listening…"

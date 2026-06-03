@@ -42,6 +42,8 @@ import {
 } from "../lib/wordTypes";
 
 const FLASH_MS = 400;
+// Bounded auto-listen retries per problem/phase — see Practice.tsx.
+const MAX_VOICE_ATTEMPTS = 3;
 // Largest answer across word lessons is a 5-digit convert (10 kg → 10000 g).
 // Arith word phases peak at 2 digits — extra digits there get rejected by the
 // length check anyway, so a single cap covers both.
@@ -410,15 +412,19 @@ function WordPracticeRound({
   const [voicePaused, setVoicePaused] = useState(false);
 
   const handleVoiceResult = useCallback(
-    (transcript: string) => {
-      const parsed = parseSpokenNumber(transcript, settings.language);
-      if (parsed === null) {
-        setVoiceError(t("voice.notUnderstood"));
-        trackedTimeout(() => setVoiceError(null), 1500);
-        return;
+    (candidates: string[]) => {
+      // Accept the first alternative that parses to a number — the top guess
+      // is often a near-miss on Croatian number words.
+      for (const candidate of candidates) {
+        const parsed = parseSpokenNumber(candidate, settings.language);
+        if (parsed !== null) {
+          setVoiceError(null);
+          submitFullAnswer(parsed);
+          return;
+        }
       }
-      setVoiceError(null);
-      submitFullAnswer(parsed);
+      setVoiceError(t("voice.notUnderstood"));
+      trackedTimeout(() => setVoiceError(null), 1500);
     },
     [settings.language, submitFullAnswer, trackedTimeout, t],
   );
@@ -428,6 +434,22 @@ function WordPracticeRound({
       if (err === "not-allowed" || err === "service-not-allowed") {
         setVoiceError(t("voice.micDenied"));
         setVoicePaused(true);
+        trackedTimeout(() => setVoiceError(null), 2400);
+        return;
+      }
+      // Surface diagnosable failures so a flaky tablet shows a reason instead
+      // of silence. `no-speech` / `aborted` are normal session ends and stay
+      // quiet. These don't pause — the retry loop will try again.
+      const hint =
+        err === "network"
+          ? t("voice.network")
+          : err === "language-not-supported"
+            ? t("voice.langUnsupported")
+            : err === "audio-capture"
+              ? t("voice.noMic")
+              : null;
+      if (hint) {
+        setVoiceError(hint);
         trackedTimeout(() => setVoiceError(null), 2400);
       }
     },
@@ -446,32 +468,47 @@ function WordPracticeRound({
     onError: handleVoiceError,
   });
 
+  const voiceAttemptsRef = useRef(0);
+
   const onMicPress = useCallback(() => {
     setVoiceError(null);
     setVoicePaused((prev) => !prev);
     if (!voicePaused) stopVoice();
+    else voiceAttemptsRef.current = 0;
   }, [voicePaused, stopVoice]);
 
-  // Auto-listen one session per problem (and per phase change, since a
-  // multi-phase word problem may have several answer phases). The dep is
-  // `problem` + `currentPhase`, not `listening`, so the engine doesn't
-  // reopen if it closes itself — see Practice.tsx for the chime-loop
-  // explanation.
+  // Reset the attempt budget on every problem AND phase change — a multi-phase
+  // word problem has several answer phases, each its own listening window.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: problem/currentPhase are the intended reset triggers, not values read in the body
+  useEffect(() => {
+    voiceAttemptsRef.current = 0;
+  }, [problem, currentPhase]);
+
+  // Auto-listen with a small, BOUNDED number of attempts per problem/phase.
+  // The cap (not a `listening`-free dep set) is what keeps a self-closing
+  // session from looping — see Practice.tsx for the chime-loop explanation.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: problem/currentPhase re-arm the attempt budget on each new problem/phase
   useEffect(() => {
     if (!voiceEnabled) return;
     if (voicePaused) return;
     if (!isNumberPhase) return;
     if (flash) return;
+    if (listening) return;
+    if (voiceAttemptsRef.current >= MAX_VOICE_ATTEMPTS) return;
+    const attempt = voiceAttemptsRef.current;
+    const delay = attempt === 0 ? 150 : 500 + attempt * 300;
     const id = window.setTimeout(() => {
+      voiceAttemptsRef.current += 1;
       setVoiceError(null);
       startVoice();
-    }, 150);
+    }, delay);
     return () => window.clearTimeout(id);
   }, [
     voiceEnabled,
     voicePaused,
     isNumberPhase,
     flash,
+    listening,
     problem,
     currentPhase,
     startVoice,

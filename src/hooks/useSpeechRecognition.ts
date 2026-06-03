@@ -3,8 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type RecognitionAlternative = { transcript: string; confidence: number };
 type RecognitionResult = {
   isFinal: boolean;
-  0: RecognitionAlternative;
   length: number;
+  [index: number]: RecognitionAlternative;
 };
 type RecognitionResultList = {
   length: number;
@@ -44,7 +44,14 @@ function getCtor(): SpeechRecognitionCtor | null {
 
 export type SpeechHookOptions = {
   lang: string;
-  onResult: (transcript: string) => void;
+  /**
+   * Called with the final transcript candidates, best-first. The engine
+   * returns up to `maxAlternatives` guesses per utterance and the right
+   * number is often not the top one (Croatian number words are easily
+   * confused), so the caller should try parsing each and accept the first
+   * that yields a valid number.
+   */
+  onResult: (candidates: string[]) => void;
   onError?: (error: string) => void;
 };
 
@@ -97,20 +104,32 @@ export function useSpeechRecognition({
     rec.onresult = (e) => {
       // The event's results[] grows across firings within one session.
       // Aggregate everything from resultIndex onward, separating the
-      // in-progress (interim) chunks from the engine's finalized text.
+      // in-progress (interim) chunks from the engine's finalized results.
       let interimText = "";
-      let finalText = "";
+      const finals: RecognitionResult[] = [];
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const result = e.results[i];
-        const text = result[0]?.transcript ?? "";
-        if (result.isFinal) finalText += text;
-        else interimText += text;
+        if (result.isFinal) finals.push(result);
+        else interimText += result[0]?.transcript ?? "";
       }
       if (interimText) setInterim(interimText.trim());
-      if (finalText) {
-        setInterim("");
-        onResultRef.current(finalText);
+      if (finals.length === 0) return;
+      setInterim("");
+      // Build one candidate string per alternative rank, concatenating that
+      // rank across the final results (utterances are usually a single
+      // result, so this is just its 1–3 alternatives). Dedupe and hand the
+      // best-first list to the caller to parse.
+      const maxAlts = Math.max(...finals.map((r) => r.length));
+      const candidates: string[] = [];
+      for (let k = 0; k < maxAlts; k++) {
+        let text = "";
+        for (const r of finals) {
+          text += (r[k] ?? r[0])?.transcript ?? "";
+        }
+        const trimmed = text.trim();
+        if (trimmed && !candidates.includes(trimmed)) candidates.push(trimmed);
       }
+      if (candidates.length > 0) onResultRef.current(candidates);
     };
     rec.onerror = (e) => {
       onErrorRef.current?.(e.error);

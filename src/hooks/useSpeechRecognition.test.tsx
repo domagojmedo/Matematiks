@@ -58,6 +58,19 @@ function buildResultEvent(transcript: string, isFinal: boolean) {
   };
 }
 
+// A single final result carrying several ranked alternatives, as the engine
+// emits when maxAlternatives > 1.
+function buildAlternativesEvent(transcripts: string[]) {
+  const result: Record<number | string, unknown> = {
+    isFinal: true,
+    length: transcripts.length,
+  };
+  transcripts.forEach((transcript, i) => {
+    result[i] = { transcript, confidence: 0.9 - i * 0.1 };
+  });
+  return { resultIndex: 0, results: { length: 1, 0: result } };
+}
+
 function Harness({
   lang,
   onResult,
@@ -65,7 +78,7 @@ function Harness({
   exposeHook,
 }: {
   lang: string;
-  onResult: (t: string) => void;
+  onResult: (c: string[]) => void;
   onError?: (e: string) => void;
   exposeHook: (h: ReturnType<typeof useSpeechRecognition>) => void;
 }) {
@@ -134,7 +147,30 @@ describe("useSpeechRecognition", () => {
       lastRec?.onresult?.(buildResultEvent("twenty three", true));
     });
     expect(onResult).toHaveBeenCalledTimes(1);
-    expect(onResult).toHaveBeenCalledWith("twenty three");
+    expect(onResult).toHaveBeenCalledWith(["twenty three"]);
+  });
+
+  it("delivers all ranked alternatives, best-first and deduped", () => {
+    const onResult = vi.fn();
+    const hookRef: { current: ReturnType<typeof useSpeechRecognition> | null } =
+      { current: null };
+    render(
+      <Harness
+        lang="hr-HR"
+        onResult={onResult}
+        exposeHook={(h) => {
+          hookRef.current = h;
+        }}
+      />,
+    );
+    act(() => {
+      hookRef.current?.start();
+    });
+    act(() => {
+      lastRec?.onresult?.(buildAlternativesEvent(["dva", "dvije", "dva"]));
+    });
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onResult).toHaveBeenCalledWith(["dva", "dvije"]);
   });
 
   it("does not call onResult for interim chunks; exposes them as interim", () => {

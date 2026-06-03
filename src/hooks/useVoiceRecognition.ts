@@ -1,13 +1,14 @@
-import { useSpeechRecognition } from "./useSpeechRecognition";
-import { useWhisperRecognition } from "./useWhisperRecognition";
 import { speechLangTag } from "../lib/speech";
 import type { Language } from "../lib/types";
+import { useSpeechRecognition } from "./useSpeechRecognition";
+import { useWhisperRecognition } from "./useWhisperRecognition";
 
 export type VoiceRecognitionOptions = {
   language: Language;
   /** When true, use the on-device Whisper engine; otherwise Web Speech. */
   useWhisper: boolean;
-  onResult: (transcript: string) => void;
+  /** Final transcript candidates, best-first — see useSpeechRecognition. */
+  onResult: (candidates: string[]) => void;
   onError?: (error: string) => void;
 };
 
@@ -40,7 +41,9 @@ export function useVoiceRecognition({
   const wh = useWhisperRecognition({
     lang: language,
     enabled: useWhisper,
-    onResult,
+    // Whisper yields a single transcript; wrap it as a one-element candidate
+    // list so both backends share the same onResult contract.
+    onResult: (transcript: string) => onResult([transcript]),
     onError,
   });
 

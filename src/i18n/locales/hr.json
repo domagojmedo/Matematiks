@@ -221,6 +221,9 @@
     "paused": "Dodirni za mikrofon",
     "notUnderstood": "Nisam razumio",
     "micDenied": "Mikrofon nije dopušten",
+    "network": "Nema mreže za glas",
+    "langUnsupported": "Glas nije dostupan za ovaj jezik",
+    "noMic": "Mikrofon nije dostupan",
     "toggleAria": "Uključi/isključi mikrofon",
     "loadingModel": "Učitavam model… {{percent}}%",
     "modelReady": "Slušam…"
