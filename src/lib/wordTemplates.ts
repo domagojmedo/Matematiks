@@ -562,9 +562,9 @@ const storyMore: WordTemplate = {
 };
 
 // ---------------------------------------------------------------------------
-// Unit-conversion templates (mass). Each template fixes the from/to units and
-// generates a whole-number source value so the answer is also whole. Prose is
-// uniform across directions: "Pretvori N <unit> u <unit>.".
+// Unit-conversion templates (mass + volume). Each template fixes the from/to
+// units and generates a whole-number source value so the answer is also whole.
+// Prose is uniform across directions: "Pretvori N <unit> u <unit>.".
 // ---------------------------------------------------------------------------
 
 function buildConvertTemplate(
@@ -574,10 +574,11 @@ function buildConvertTemplate(
   pickValue: () => number,
   factor: number,
   direction: "expand" | "compress",
+  family: "convertMass" | "convertVolume",
 ): WordTemplate {
   return {
     id,
-    type: "convert",
+    type: family,
     generate: () => {
       const value = pickValue();
       const expected = direction === "expand" ? value * factor : value / factor;
@@ -607,6 +608,7 @@ const convertKgToG = buildConvertTemplate(
   () => randInt(1, 10),
   1000,
   "expand",
+  "convertMass",
 );
 
 const convertGToKg = buildConvertTemplate(
@@ -616,6 +618,7 @@ const convertGToKg = buildConvertTemplate(
   () => randInt(1, 10) * 1000,
   1000,
   "compress",
+  "convertMass",
 );
 
 const convertKgToDag = buildConvertTemplate(
@@ -625,6 +628,7 @@ const convertKgToDag = buildConvertTemplate(
   () => randInt(1, 10),
   100,
   "expand",
+  "convertMass",
 );
 
 const convertDagToKg = buildConvertTemplate(
@@ -634,6 +638,7 @@ const convertDagToKg = buildConvertTemplate(
   () => randInt(1, 10) * 100,
   100,
   "compress",
+  "convertMass",
 );
 
 const convertDagToG = buildConvertTemplate(
@@ -643,6 +648,7 @@ const convertDagToG = buildConvertTemplate(
   () => randInt(2, 10),
   10,
   "expand",
+  "convertMass",
 );
 
 const convertGToDag = buildConvertTemplate(
@@ -652,6 +658,7 @@ const convertGToDag = buildConvertTemplate(
   () => randInt(2, 10) * 10,
   10,
   "compress",
+  "convertMass",
 );
 
 const convertTToKg = buildConvertTemplate(
@@ -661,6 +668,7 @@ const convertTToKg = buildConvertTemplate(
   () => randInt(1, 10),
   1000,
   "expand",
+  "convertMass",
 );
 
 const convertKgToT = buildConvertTemplate(
@@ -670,9 +678,10 @@ const convertKgToT = buildConvertTemplate(
   () => randInt(1, 10) * 1000,
   1000,
   "compress",
+  "convertMass",
 );
 
-const CONVERT_TEMPLATES: readonly WordTemplate[] = [
+const MASS_CONVERT_TEMPLATES: readonly WordTemplate[] = [
   convertKgToG,
   convertGToKg,
   convertKgToDag,
@@ -681,6 +690,35 @@ const CONVERT_TEMPLATES: readonly WordTemplate[] = [
   convertGToDag,
   convertTToKg,
   convertKgToT,
+];
+
+// Volume conversions stay within the 3rd-grade scope: just litres and
+// decilitres, 1 l = 10 dl. Same whole-number guarantees — the small-count side
+// is capped at 10 and the big-count side is always its exact multiple.
+
+const convertLToDl = buildConvertTemplate(
+  "convert_l_to_dl",
+  "l",
+  "dl",
+  () => randInt(2, 10),
+  10,
+  "expand",
+  "convertVolume",
+);
+
+const convertDlToL = buildConvertTemplate(
+  "convert_dl_to_l",
+  "dl",
+  "l",
+  () => randInt(2, 10) * 10,
+  10,
+  "compress",
+  "convertVolume",
+);
+
+const VOLUME_CONVERT_TEMPLATES: readonly WordTemplate[] = [
+  convertLToDl,
+  convertDlToL,
 ];
 
 // ---------------------------------------------------------------------------
@@ -709,10 +747,15 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [convertGToDag.id]: convertGToDag,
   [convertTToKg.id]: convertTToKg,
   [convertKgToT.id]: convertKgToT,
+  [convertLToDl.id]: convertLToDl,
+  [convertDlToL.id]: convertDlToL,
 };
 
+// Keyed by every WordKind that maps to a fixed template list. "mixed" and
+// "convertMix" are aggregate kinds — they pool other lists in `poolFor` and so
+// have no entry here.
 export const TEMPLATES_BY_TYPE: Record<
-  Exclude<WordKind, "mixed">,
+  Exclude<WordKind, "mixed" | "convertMix">,
   readonly WordTemplate[]
 > = {
   vocab: [vocabSum, vocabDiff],
@@ -729,7 +772,8 @@ export const TEMPLATES_BY_TYPE: Record<
     compoundNumMinusSum,
   ],
   story: [storyFewer, storyMore],
-  convert: CONVERT_TEMPLATES,
+  convertMass: MASS_CONVERT_TEMPLATES,
+  convertVolume: VOLUME_CONVERT_TEMPLATES,
 };
 
 export function findTemplate(id: string): WordTemplate | undefined {

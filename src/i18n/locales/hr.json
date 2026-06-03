@@ -75,7 +75,9 @@
       "mulSingleDigit": "Množenje jednoznamenkastim",
       "divSingleDigit": "Dijeljenje jednoznamenkastim",
       "muldivSingleDigit": "Množenje i dijeljenje (mješano)",
-      "unitsMass": "Mjerne jedinice — masa"
+      "unitsMass": "Mjerne jedinice — masa",
+      "unitsVolume": "Mjerne jedinice — obujam",
+      "unitsMassVolume": "Mjerne jedinice — masa i obujam"
     },
     "g4": {
       "addLarge": "Pisano zbrajanje (veći brojevi)",

@@ -42,12 +42,21 @@ function poolFor(wordKind: WordKind): readonly WordTemplate[] {
     // "mixed" is the catch-all word-problem lesson — explicitly the four
     // arithmetic word-problem types. Unit-conversion templates are a different
     // pedagogical genre (no operator picking, no equation prose) and are
-    // launched only from a dedicated `wordKind: "convert"` lesson.
+    // launched only from the dedicated `convertMass`/`convertVolume`/
+    // `convertMix` lessons.
     return [
       ...TEMPLATES_BY_TYPE.vocab,
       ...TEMPLATES_BY_TYPE.missing,
       ...TEMPLATES_BY_TYPE.compound,
       ...TEMPLATES_BY_TYPE.story,
+    ];
+  }
+  if (wordKind === "convertMix") {
+    // "convertMix" pools both unit families so a round interleaves mass and
+    // volume conversions.
+    return [
+      ...TEMPLATES_BY_TYPE.convertMass,
+      ...TEMPLATES_BY_TYPE.convertVolume,
     ];
   }
   return TEMPLATES_BY_TYPE[wordKind];

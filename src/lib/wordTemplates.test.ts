@@ -237,8 +237,13 @@ describe("story templates — 4 phases, names + noun + total ≤ 20", () => {
   });
 });
 
-describe("convert (mass) templates — whole-number conversions only", () => {
-  for (const t of TEMPLATES_BY_TYPE.convert) {
+const ALL_CONVERT_TEMPLATES = [
+  ...TEMPLATES_BY_TYPE.convertMass,
+  ...TEMPLATES_BY_TYPE.convertVolume,
+];
+
+describe("convert templates (mass + volume) — whole-number conversions only", () => {
+  for (const t of ALL_CONVERT_TEMPLATES) {
     it(`${t.id}: single convert phase, expected is a whole number`, () => {
       for (let i = 0; i < ITER; i++) {
         const p = t.generate();
@@ -286,7 +291,7 @@ describe("convert (mass) templates — whole-number conversions only", () => {
     // Catches future range-widening that would put a kid in front of "37 kg
     // in g" or "420 dag in g". The small-count side is whichever of
     // value/expected is the smaller-magnitude number.
-    for (const t of TEMPLATES_BY_TYPE.convert) {
+    for (const t of ALL_CONVERT_TEMPLATES) {
       for (let i = 0; i < ITER; i++) {
         const p = t.generate();
         const phase = p.phases[0];
@@ -321,6 +326,27 @@ describe("convert (mass) templates — whole-number conversions only", () => {
       }
     }
   });
+
+  it("volume l ↔ dl round-trips on whole numbers", () => {
+    const checks: Array<[string, number, "expand" | "compress"]> = [
+      ["convert_l_to_dl", 10, "expand"],
+      ["convert_dl_to_l", 10, "compress"],
+    ];
+    for (const [id, factor, dir] of checks) {
+      const t = TEMPLATES[id] as WordTemplate;
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "convert") throw new Error("expected convert");
+        if (dir === "expand") {
+          expect(phase.expected).toBe(phase.value * factor);
+        } else {
+          expect(phase.value % factor).toBe(0);
+          expect(phase.expected).toBe(phase.value / factor);
+        }
+      }
+    }
+  });
 });
 
 describe("findTemplate", () => {
@@ -336,13 +362,14 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 20 templates across 5 types (4 arith + 1 convert)", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(20);
+  it("includes 22 templates across 6 types (4 arith + mass + volume convert)", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(22);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.story).toHaveLength(2);
-    expect(TEMPLATES_BY_TYPE.convert).toHaveLength(8);
+    expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
+    expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
   });
 
   it("every template id is unique", () => {

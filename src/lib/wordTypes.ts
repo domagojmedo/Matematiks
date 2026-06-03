@@ -38,7 +38,14 @@ export type WordAnswerPhase = {
 };
 
 /** Mass-unit symbols used by conversion problems. */
-export type Unit = "g" | "dag" | "kg" | "t";
+export type MassUnit = "g" | "dag" | "kg" | "t";
+
+/** Volume-unit symbols used by conversion problems. 3rd-grade scope is just
+ * litres and decilitres (1 l = 10 dl). */
+export type VolumeUnit = "dl" | "l";
+
+/** Any unit a conversion problem can quiz. */
+export type Unit = MassUnit | VolumeUnit;
 
 /**
  * Unit-conversion phase. The kid sees `value <fromUnit> = ? <toUnit>` and

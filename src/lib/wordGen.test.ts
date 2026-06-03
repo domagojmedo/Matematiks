@@ -79,7 +79,7 @@ describe("WordGenerator", () => {
     }
     // "mixed" pools the four arith word-problem types (vocab/missing/
     // compound/story = 12 templates). Convert templates are deliberately
-    // excluded — they're launched only from a dedicated "convert" lesson.
+    // excluded — they're launched only from the dedicated convert lessons.
     const mixedIds = [
       ...TEMPLATES_BY_TYPE.vocab,
       ...TEMPLATES_BY_TYPE.missing,
@@ -89,13 +89,16 @@ describe("WordGenerator", () => {
     for (const id of mixedIds) {
       expect(seen.has(id)).toBe(true);
     }
-    for (const t of TEMPLATES_BY_TYPE.convert) {
+    for (const t of [
+      ...TEMPLATES_BY_TYPE.convertMass,
+      ...TEMPLATES_BY_TYPE.convertVolume,
+    ]) {
       expect(seen.has(t.id)).toBe(false);
     }
   });
 
-  it("convert lesson stratifies across the 8 mass-conversion templates", () => {
-    const gen = new WordGenerator(makeSetup("convert", 16));
+  it("convertMass lesson stratifies across the 8 mass-conversion templates", () => {
+    const gen = new WordGenerator(makeSetup("convertMass", 16));
     const counts: Record<string, number> = {};
     let prev = null;
     for (let i = 0; i < 16; i++) {
@@ -104,8 +107,40 @@ describe("WordGenerator", () => {
       prev = p;
     }
     // 16 rounds / 8 templates → exactly 2 each.
-    for (const t of TEMPLATES_BY_TYPE.convert) {
+    for (const t of TEMPLATES_BY_TYPE.convertMass) {
       expect(counts[t.id]).toBe(2);
+    }
+  });
+
+  it("convertVolume lesson stratifies across the 2 volume-conversion templates", () => {
+    const gen = new WordGenerator(makeSetup("convertVolume", 16));
+    const counts: Record<string, number> = {};
+    let prev = null;
+    for (let i = 0; i < 16; i++) {
+      const p: ReturnType<typeof gen.next> = gen.next(prev);
+      counts[p.templateId] = (counts[p.templateId] ?? 0) + 1;
+      prev = p;
+    }
+    // 16 rounds / 2 templates → exactly 8 each.
+    for (const t of TEMPLATES_BY_TYPE.convertVolume) {
+      expect(counts[t.id]).toBe(8);
+    }
+  });
+
+  it("convertMix lesson pools both mass and volume conversions", () => {
+    const gen = new WordGenerator(makeSetup("convertMix", 32));
+    const seen = new Set<string>();
+    let prev = null;
+    for (let i = 0; i < 32; i++) {
+      const p: ReturnType<typeof gen.next> = gen.next(prev);
+      seen.add(p.templateId);
+      prev = p;
+    }
+    for (const t of [
+      ...TEMPLATES_BY_TYPE.convertMass,
+      ...TEMPLATES_BY_TYPE.convertVolume,
+    ]) {
+      expect(seen.has(t.id)).toBe(true);
     }
   });
 

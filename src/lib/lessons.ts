@@ -332,7 +332,19 @@ export const LESSONS: Lesson[] = [
     id: "g3-units-mass",
     grade: 3,
     nameKey: "lessons.g3.unitsMass",
-    wordKind: "convert",
+    wordKind: "convertMass",
+  }),
+  word({
+    id: "g3-units-volume",
+    grade: 3,
+    nameKey: "lessons.g3.unitsVolume",
+    wordKind: "convertVolume",
+  }),
+  word({
+    id: "g3-units-mass-volume",
+    grade: 3,
+    nameKey: "lessons.g3.unitsMassVolume",
+    wordKind: "convertMix",
   }),
 
   // 4. razred

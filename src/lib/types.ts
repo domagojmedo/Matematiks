@@ -50,7 +50,9 @@ export type WordKind =
   | "compound"
   | "story"
   | "mixed"
-  | "convert";
+  | "convertMass"
+  | "convertVolume"
+  | "convertMix";
 
 export type WordLessonSetup = {
   kind: typeof SetupKind.Word;

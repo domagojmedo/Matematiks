@@ -46,13 +46,22 @@ export function isValidOperation(s: string): s is Operation {
   return (OPERATIONS as readonly string[]).includes(s);
 }
 
+/** True for any unit-conversion word kind (mass, volume, or the mix). */
+export function isConvertKind(wordKind: WordKind): boolean {
+  return (
+    wordKind === "convertMass" ||
+    wordKind === "convertVolume" ||
+    wordKind === "convertMix"
+  );
+}
+
 /**
  * Visual chip (tone + symbol) for a word-problem lesson. Unit-conversion
  * lessons get the muldiv color/symbol since the underlying math is ×/÷ by a
  * power of ten; other word kinds keep the generic "Az" prose chip.
  */
 export function wordChip(wordKind: WordKind): { tone: Tone; symbol: string } {
-  if (wordKind === "convert") {
+  if (isConvertKind(wordKind)) {
     return { tone: OPERATION_TONE.muldiv, symbol: OPERATION_SYMBOL.muldiv };
   }
   return { tone: "fuchsia", symbol: "Az" };
@@ -64,5 +73,5 @@ export function wordChip(wordKind: WordKind): { tone: Tone; symbol: string } {
  * are ×/÷ by construction; arith-prose lessons exercise +/−.
  */
 export function operationForWordKind(wordKind: WordKind): Operation {
-  return wordKind === "convert" ? "muldiv" : "addsub";
+  return isConvertKind(wordKind) ? "muldiv" : "addsub";
 }
