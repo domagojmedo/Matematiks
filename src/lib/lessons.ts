@@ -40,8 +40,8 @@ export type WordLesson = {
   id: string;
   grade: Grade;
   nameKey: string;
-  /** Mirrored on `setup.wordKind`; kept here for ergonomic access. */
-  wordKind: WordKind;
+  /** Mirrored on `setup.wordKinds`; kept here for ergonomic access. */
+  wordKinds: WordKind[];
   setup: WordLessonSetup;
   languages?: Language[];
 };
@@ -63,25 +63,35 @@ const arith = (l: Omit<ArithLesson, "kind">): ArithLesson => ({
   ...l,
 });
 
-const word = (
-  l: Omit<WordLesson, "kind" | "setup"> & {
-    rounds?: number;
-    timeMs?: number;
-  },
-): WordLesson => ({
-  kind: LessonKind.Word,
-  id: l.id,
-  grade: l.grade,
-  nameKey: l.nameKey,
-  wordKind: l.wordKind,
-  languages: l.languages ?? ["hr"],
-  setup: {
-    kind: SetupKind.Word,
-    wordKind: l.wordKind,
-    rounds: l.rounds ?? ROUNDS,
-    ...(l.timeMs !== undefined ? { timeMs: l.timeMs } : {}),
-  },
-});
+const word = (l: {
+  id: string;
+  grade: Grade;
+  nameKey: string;
+  /** One kind, or several to pool into one combined round. */
+  wordKind: WordKind | WordKind[];
+  languages?: Language[];
+  rounds?: number;
+  timeMs?: number;
+  /** Grade-scoping bound for range-aware templates (vocab, muldiv). */
+  maxNumber?: number;
+}): WordLesson => {
+  const wordKinds = Array.isArray(l.wordKind) ? l.wordKind : [l.wordKind];
+  return {
+    kind: LessonKind.Word,
+    id: l.id,
+    grade: l.grade,
+    nameKey: l.nameKey,
+    wordKinds,
+    languages: l.languages ?? ["hr"],
+    setup: {
+      kind: SetupKind.Word,
+      wordKinds,
+      rounds: l.rounds ?? ROUNDS,
+      ...(l.timeMs !== undefined ? { timeMs: l.timeMs } : {}),
+      ...(l.maxNumber !== undefined ? { maxNumber: l.maxNumber } : {}),
+    },
+  };
+};
 
 export const LESSONS: Lesson[] = [
   // 1. razred
@@ -198,7 +208,7 @@ export const LESSONS: Lesson[] = [
     id: "g1-word-mixed",
     grade: 1,
     nameKey: "lessons.g1.wordMixed",
-    wordKind: "mixed",
+    wordKind: ["vocab", "missing", "compound", "story"],
   }),
 
   // 2. razred
@@ -266,6 +276,21 @@ export const LESSONS: Lesson[] = [
     grade: 2,
     nameKey: "lessons.g2.unitsMoney",
     wordKind: "convertMoney",
+  }),
+
+  // 2. razred — zadaci s riječima (HR only)
+  word({
+    id: "g2-word-vocab",
+    grade: 2,
+    nameKey: "lessons.g2.wordVocab",
+    wordKind: "vocab",
+    maxNumber: 100,
+  }),
+  word({
+    id: "g2-word-muldiv",
+    grade: 2,
+    nameKey: "lessons.g2.wordMulDiv",
+    wordKind: "muldivword",
   }),
 
   // 3. razred
@@ -352,7 +377,7 @@ export const LESSONS: Lesson[] = [
     id: "g3-units-mass-volume",
     grade: 3,
     nameKey: "lessons.g3.unitsMassVolume",
-    wordKind: "convertMix",
+    wordKind: ["convertMass", "convertVolume"],
   }),
   word({
     id: "g3-units-length",
@@ -365,6 +390,20 @@ export const LESSONS: Lesson[] = [
     grade: 3,
     nameKey: "lessons.g3.unitsTime",
     wordKind: "convertTime",
+  }),
+  word({
+    id: "g3-word-vocab",
+    grade: 3,
+    nameKey: "lessons.g3.wordVocab",
+    wordKind: "vocab",
+    maxNumber: 1000,
+  }),
+  word({
+    id: "g3-word-muldiv",
+    grade: 3,
+    nameKey: "lessons.g3.wordMulDiv",
+    wordKind: "muldivword",
+    maxNumber: 1000,
   }),
 
   // 4. razred
@@ -432,6 +471,22 @@ export const LESSONS: Lesson[] = [
       format: "column",
       rounds: ROUNDS,
     },
+  }),
+
+  // 4. razred — zadaci s riječima (HR only)
+  word({
+    id: "g4-word-vocab",
+    grade: 4,
+    nameKey: "lessons.g4.wordVocab",
+    wordKind: "vocab",
+    maxNumber: 1000,
+  }),
+  word({
+    id: "g4-word-muldiv",
+    grade: 4,
+    nameKey: "lessons.g4.wordMulDiv",
+    wordKind: "muldivword",
+    maxNumber: 1000,
   }),
 ];
 

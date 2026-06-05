@@ -131,7 +131,7 @@ export function Home() {
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-lg font-black"
             >
               {lastIsWord && isWordLesson(lastLesson)
-                ? wordChip(lastLesson.wordKind).symbol
+                ? wordChip(lastLesson.wordKinds).symbol
                 : OPERATION_SYMBOL[last.operation]}
             </span>
             <div className="flex-1 text-left">

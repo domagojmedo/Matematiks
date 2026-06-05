@@ -44,7 +44,7 @@ function pickKeyExcept<T>(
  */
 export type WordTemplate = {
   id: string;
-  type: Exclude<WordKind, "mixed" | "convertMix">;
+  type: WordKind;
   /**
    * Generate a complete problem. `ctx` is optional grade-scoping context;
    * templates that don't scale by grade ignore it (a no-arg generator stays
@@ -62,9 +62,12 @@ export type WordTemplate = {
 const vocabSum: WordTemplate = {
   id: "vocab_sum",
   type: "vocab",
-  generate: () => {
-    const a = randInt(2, 18);
-    const bMax = Math.min(18, 20 - a);
+  generate: (ctx) => {
+    // Grade-scoped: default 20 (grade 1); grade 2+ lessons pass a larger
+    // maxNumber so the same template covers sums to 100 / 1000.
+    const max = ctx?.maxNumber ?? 20;
+    const a = randInt(2, Math.max(2, max - 2));
+    const bMax = max - a;
     const b = randInt(2, Math.max(2, bMax));
     const phases: WordPhase[] = [
       { kind: "pickOp", a, b, expected: "+" },
@@ -87,8 +90,9 @@ const vocabSum: WordTemplate = {
 const vocabDiff: WordTemplate = {
   id: "vocab_diff",
   type: "vocab",
-  generate: () => {
-    const a = randInt(3, 20);
+  generate: (ctx) => {
+    const max = ctx?.maxNumber ?? 20;
+    const a = randInt(3, max);
     const b = randInt(1, a - 1);
     const phases: WordPhase[] = [
       { kind: "pickOp", a, b, expected: "-" },
@@ -567,6 +571,127 @@ const storyMore: WordTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// Multiplication / division word templates (grade 2+). Equation/phrase style,
+// no noun declension. Single `answer` phase with op "*" / "/" — no pickOp, the
+// operation is named in the prose. Whole-number guaranteed: division builds the
+// dividend as divisor × quotient. `ctx.maxNumber >= 1000` widens one factor to
+// two digits (grade 3/4); otherwise factors stay in the table range.
+// ---------------------------------------------------------------------------
+
+function mulMaxFactor(ctx?: GenContext): number {
+  return ctx?.maxNumber !== undefined && ctx.maxNumber >= 1000 ? 20 : 10;
+}
+
+const mulProduct: WordTemplate = {
+  id: "muldiv_product",
+  type: "muldivword",
+  generate: (ctx) => {
+    const a = randInt(2, mulMaxFactor(ctx));
+    const b = randInt(2, 10);
+    const phases: WordPhase[] = [
+      {
+        kind: "answer",
+        slot: "result",
+        a,
+        b,
+        op: "*",
+        result: a * b,
+        expected: a * b,
+      },
+    ];
+    return { templateId: mulProduct.id, numbers: [a, b], phases };
+  },
+  renderProse: (p) =>
+    `Izračunaj umnožak brojeva ${p.numbers[0]} i ${p.numbers[1]}.`,
+};
+
+const mulRepeated: WordTemplate = {
+  id: "muldiv_repeated",
+  type: "muldivword",
+  generate: (ctx) => {
+    const a = randInt(2, mulMaxFactor(ctx));
+    const b = randInt(2, 10);
+    const phases: WordPhase[] = [
+      {
+        kind: "answer",
+        slot: "result",
+        a,
+        b,
+        op: "*",
+        result: a * b,
+        expected: a * b,
+      },
+    ];
+    return { templateId: mulRepeated.id, numbers: [a, b], phases };
+  },
+  renderProse: (p) => `Koliko je ${p.numbers[0]} puta po ${p.numbers[1]}?`,
+};
+
+const divQuotient: WordTemplate = {
+  id: "muldiv_quotient",
+  type: "muldivword",
+  generate: (ctx) => {
+    const b = randInt(2, 10);
+    const q = randInt(2, mulMaxFactor(ctx));
+    const a = b * q; // exact division by construction
+    const phases: WordPhase[] = [
+      { kind: "answer", slot: "result", a, b, op: "/", result: q, expected: q },
+    ];
+    return { templateId: divQuotient.id, numbers: [a, b], phases };
+  },
+  renderProse: (p) =>
+    `Izračunaj količnik brojeva ${p.numbers[0]} i ${p.numbers[1]}.`,
+};
+
+const divShare: WordTemplate = {
+  id: "muldiv_share",
+  type: "muldivword",
+  generate: (ctx) => {
+    const b = randInt(2, 10);
+    const q = randInt(2, mulMaxFactor(ctx));
+    const a = b * q;
+    const phases: WordPhase[] = [
+      { kind: "answer", slot: "result", a, b, op: "/", result: q, expected: q },
+    ];
+    return { templateId: divShare.id, numbers: [a, b], phases };
+  },
+  renderProse: (p) =>
+    `Podijeli ${p.numbers[0]} na ${p.numbers[1]} jednakih dijelova. Koliko je u svakom dijelu?`,
+};
+
+const missingFactor: WordTemplate = {
+  id: "muldiv_missing_factor",
+  type: "muldivword",
+  generate: (ctx) => {
+    const a = randInt(2, mulMaxFactor(ctx));
+    const b = randInt(2, 10);
+    const product = a * b;
+    const phases: WordPhase[] = [
+      {
+        kind: "answer",
+        slot: "a",
+        a,
+        b,
+        op: "*",
+        result: product,
+        expected: a,
+      },
+    ];
+    return { templateId: missingFactor.id, numbers: [product, b], phases };
+  },
+  renderProse: (p) =>
+    `Koji broj pomnožen s ${p.numbers[1]} daje ${p.numbers[0]}?`,
+};
+
+const MULDIV_WORD_TEMPLATES: readonly WordTemplate[] = [
+  mulProduct,
+  mulRepeated,
+  divQuotient,
+  divShare,
+  missingFactor,
+];
+
+// ---------------------------------------------------------------------------
 // Unit-conversion templates (mass + volume). Each template fixes the from/to
 // units and generates a whole-number source value so the answer is also whole.
 // Prose is uniform across directions: "Pretvori N <unit> u <unit>.".
@@ -966,6 +1091,11 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [compoundNumMinusSum.id]: compoundNumMinusSum,
   [storyFewer.id]: storyFewer,
   [storyMore.id]: storyMore,
+  [mulProduct.id]: mulProduct,
+  [mulRepeated.id]: mulRepeated,
+  [divQuotient.id]: divQuotient,
+  [divShare.id]: divShare,
+  [missingFactor.id]: missingFactor,
   [convertKgToG.id]: convertKgToG,
   [convertGToKg.id]: convertGToKg,
   [convertKgToDag.id]: convertKgToDag,
@@ -998,13 +1128,9 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [convertDanToTjedan.id]: convertDanToTjedan,
 };
 
-// Keyed by every WordKind that maps to a fixed template list. "mixed" and
-// "convertMix" are aggregate kinds — they pool other lists in `poolFor` and so
-// have no entry here.
-export const TEMPLATES_BY_TYPE: Record<
-  Exclude<WordKind, "mixed" | "convertMix">,
-  readonly WordTemplate[]
-> = {
+// One entry per WordKind (every kind is a leaf family). Lessons that mix types
+// list several kinds in `wordKinds`; `poolFor` unions their template lists.
+export const TEMPLATES_BY_TYPE: Record<WordKind, readonly WordTemplate[]> = {
   vocab: [vocabSum, vocabDiff],
   missing: [
     missingFirstAddend,
@@ -1019,6 +1145,7 @@ export const TEMPLATES_BY_TYPE: Record<
     compoundNumMinusSum,
   ],
   story: [storyFewer, storyMore],
+  muldivword: MULDIV_WORD_TEMPLATES,
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
   convertLength: LENGTH_CONVERT_TEMPLATES,

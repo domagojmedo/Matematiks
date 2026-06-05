@@ -84,7 +84,7 @@ export function Grade() {
 
 function lessonChip(lesson: Lesson): { tone: Tone; symbol: string } {
   if (isWordLesson(lesson)) {
-    return wordChip(lesson.wordKind);
+    return wordChip(lesson.wordKinds);
   }
   return {
     tone: OPERATION_TONE[lesson.op],

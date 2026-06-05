@@ -4,10 +4,11 @@ import { WordGenerator } from "./wordGen";
 import { TEMPLATES_BY_TYPE } from "./wordTemplates";
 
 function makeSetup(
-  wordKind: WordLessonSetup["wordKind"],
+  wordKind: WordLessonSetup["wordKinds"][number] | WordLessonSetup["wordKinds"],
   rounds = 20,
 ): WordLessonSetup {
-  return { kind: SetupKind.Word, wordKind, rounds };
+  const wordKinds = Array.isArray(wordKind) ? wordKind : [wordKind];
+  return { kind: SetupKind.Word, wordKinds, rounds };
 }
 
 describe("WordGenerator", () => {
@@ -68,8 +69,10 @@ describe("WordGenerator", () => {
     }
   });
 
-  it("mixed lesson covers all 12 arith word templates over a round", () => {
-    const gen = new WordGenerator(makeSetup("mixed", 20));
+  it("a multi-kind word lesson pools exactly the listed families", () => {
+    const gen = new WordGenerator(
+      makeSetup(["vocab", "missing", "compound", "story"], 20),
+    );
     const seen = new Set<string>();
     let prev = null;
     for (let i = 0; i < 20; i++) {
@@ -77,16 +80,15 @@ describe("WordGenerator", () => {
       seen.add(p.templateId);
       prev = p;
     }
-    // "mixed" pools the four arith word-problem types (vocab/missing/
-    // compound/story = 12 templates). Convert templates are deliberately
-    // excluded — they're launched only from the dedicated convert lessons.
-    const mixedIds = [
+    // The four listed arith word-problem types (12 templates) all appear;
+    // unlisted families (conversions) never do.
+    const listedIds = [
       ...TEMPLATES_BY_TYPE.vocab,
       ...TEMPLATES_BY_TYPE.missing,
       ...TEMPLATES_BY_TYPE.compound,
       ...TEMPLATES_BY_TYPE.story,
     ].map((t) => t.id);
-    for (const id of mixedIds) {
+    for (const id of listedIds) {
       expect(seen.has(id)).toBe(true);
     }
     for (const t of [
@@ -143,8 +145,10 @@ describe("WordGenerator", () => {
     }
   });
 
-  it("convertMix lesson pools both mass and volume conversions", () => {
-    const gen = new WordGenerator(makeSetup("convertMix", 32));
+  it("a mass+volume multi-kind lesson interleaves both conversion families", () => {
+    const gen = new WordGenerator(
+      makeSetup(["convertMass", "convertVolume"], 32),
+    );
     const seen = new Set<string>();
     let prev = null;
     for (let i = 0; i < 32; i++) {
@@ -157,6 +161,17 @@ describe("WordGenerator", () => {
       ...TEMPLATES_BY_TYPE.convertVolume,
     ]) {
       expect(seen.has(t.id)).toBe(true);
+    }
+  });
+
+  it("de-duplicates templates when a kind is listed twice", () => {
+    const gen = new WordGenerator(makeSetup(["vocab", "vocab"], 6));
+    // Pool is still just the 2 vocab templates, not 4.
+    let prev = null;
+    for (let i = 0; i < 6; i++) {
+      const p: ReturnType<typeof gen.next> = gen.next(prev);
+      expect(p.templateId).toMatch(/^vocab_/);
+      prev = p;
     }
   });
 

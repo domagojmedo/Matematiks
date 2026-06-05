@@ -68,7 +68,9 @@
       "mul10": "Tablica množenja s 10",
       "mulMixed": "Tablica množenja (mješano)",
       "divTable": "Dijeljenje (tablica)",
-      "unitsMoney": "Mjerne jedinice — novac"
+      "unitsMoney": "Mjerne jedinice — novac",
+      "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
+      "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)"
     },
     "g3": {
       "add1000": "Pisano zbrajanje do 1000",
@@ -80,14 +82,18 @@
       "unitsVolume": "Mjerne jedinice — obujam",
       "unitsMassVolume": "Mjerne jedinice — masa i obujam",
       "unitsLength": "Mjerne jedinice — duljina",
-      "unitsTime": "Mjerne jedinice — vrijeme"
+      "unitsTime": "Mjerne jedinice — vrijeme",
+      "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
+      "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)"
     },
     "g4": {
       "addLarge": "Pisano zbrajanje (veći brojevi)",
       "subLarge": "Pisano oduzimanje (veći brojevi)",
       "mul2x2": "Pisano množenje (dvoznamenkasti)",
       "div2Digit": "Pisano dijeljenje (dvoznamenkasti)",
-      "addsubLarge": "Zbrajanje i oduzimanje (veći brojevi)"
+      "addsubLarge": "Zbrajanje i oduzimanje (veći brojevi)",
+      "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
+      "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)"
     }
   },
   "operations": {

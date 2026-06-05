@@ -53,18 +53,20 @@ export function isConvertKind(wordKind: WordKind): boolean {
     wordKind === "convertVolume" ||
     wordKind === "convertLength" ||
     wordKind === "convertMoney" ||
-    wordKind === "convertTime" ||
-    wordKind === "convertMix"
+    wordKind === "convertTime"
   );
 }
 
 /**
- * Visual chip (tone + symbol) for a word-problem lesson. Unit-conversion
- * lessons get the muldiv color/symbol since the underlying math is ×/÷ by a
- * power of ten; other word kinds keep the generic "Az" prose chip.
+ * Visual chip (tone + symbol) for a word-problem lesson. A lesson made up
+ * entirely of unit-conversion families gets the muldiv color/symbol (the math
+ * is ×/÷ by a power of ten); anything else keeps the generic "Az" prose chip.
  */
-export function wordChip(wordKind: WordKind): { tone: Tone; symbol: string } {
-  if (isConvertKind(wordKind)) {
+export function wordChip(wordKinds: readonly WordKind[]): {
+  tone: Tone;
+  symbol: string;
+} {
+  if (wordKinds.length > 0 && wordKinds.every(isConvertKind)) {
     return { tone: OPERATION_TONE.muldiv, symbol: OPERATION_SYMBOL.muldiv };
   }
   return { tone: "fuchsia", symbol: "Az" };
@@ -72,9 +74,13 @@ export function wordChip(wordKind: WordKind): { tone: Tone; symbol: string } {
 
 /**
  * Which `Operation` tag to stamp on session records for a word lesson. Drives
- * tone + symbol on the Sessions list and "Quick Start" replay. Convert lessons
- * are ×/÷ by construction; arith-prose lessons exercise +/−.
+ * tone + symbol on the Sessions list and "Quick Start" replay. All-conversion
+ * lessons are ×/÷ by construction; anything else is tagged +/−.
  */
-export function operationForWordKind(wordKind: WordKind): Operation {
-  return isConvertKind(wordKind) ? "muldiv" : "addsub";
+export function operationForWordKinds(
+  wordKinds: readonly WordKind[],
+): Operation {
+  return wordKinds.length > 0 && wordKinds.every(isConvertKind)
+    ? "muldiv"
+    : "addsub";
 }

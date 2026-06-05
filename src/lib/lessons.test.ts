@@ -73,10 +73,11 @@ describe("lessons catalog integrity", () => {
           expect(lesson.setup.values2.length).toBeGreaterThan(0);
         }
       } else {
-        // word lesson — wordKind matches its parent
+        // word lesson — wordKinds matches its parent and is non-empty
         expect(lesson.kind).toBe(LessonKind.Word);
         if (isWordLesson(lesson)) {
-          expect(lesson.setup.wordKind).toBe(lesson.wordKind);
+          expect(lesson.setup.wordKinds).toEqual(lesson.wordKinds);
+          expect(lesson.wordKinds.length).toBeGreaterThan(0);
         }
       }
     }

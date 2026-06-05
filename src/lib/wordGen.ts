@@ -37,29 +37,24 @@ function balancedQueue(
   return shuffle(list);
 }
 
-function poolFor(wordKind: WordKind): readonly WordTemplate[] {
-  if (wordKind === "mixed") {
-    // "mixed" is the catch-all word-problem lesson — explicitly the four
-    // arithmetic word-problem types. Unit-conversion templates are a different
-    // pedagogical genre (no operator picking, no equation prose) and are
-    // launched only from the dedicated `convertMass`/`convertVolume`/
-    // `convertMix` lessons.
-    return [
-      ...TEMPLATES_BY_TYPE.vocab,
-      ...TEMPLATES_BY_TYPE.missing,
-      ...TEMPLATES_BY_TYPE.compound,
-      ...TEMPLATES_BY_TYPE.story,
-    ];
+/**
+ * Pool the template families for every selected kind, de-duplicated and in the
+ * order given. A single-kind lesson passes a one-element list; a "mixed" lesson
+ * (e.g. mass + volume, or several word-problem types) just lists them all —
+ * there are no special combo kinds.
+ */
+function poolFor(wordKinds: readonly WordKind[]): readonly WordTemplate[] {
+  const seen = new Set<string>();
+  const pool: WordTemplate[] = [];
+  for (const kind of wordKinds) {
+    for (const t of TEMPLATES_BY_TYPE[kind]) {
+      if (!seen.has(t.id)) {
+        seen.add(t.id);
+        pool.push(t);
+      }
+    }
   }
-  if (wordKind === "convertMix") {
-    // "convertMix" pools both unit families so a round interleaves mass and
-    // volume conversions.
-    return [
-      ...TEMPLATES_BY_TYPE.convertMass,
-      ...TEMPLATES_BY_TYPE.convertVolume,
-    ];
-  }
-  return TEMPLATES_BY_TYPE[wordKind];
+  return pool;
 }
 
 function isSameProblem(a: WordProblem, b: WordProblem): boolean {
@@ -89,7 +84,7 @@ export class WordGenerator {
   private queue: WordTemplate[];
 
   constructor(setup: WordLessonSetup) {
-    this.pool = poolFor(setup.wordKind);
+    this.pool = poolFor(setup.wordKinds);
     this.rounds = setup.rounds;
     // Grade-scoping context, if the lesson declares one. Passed to every
     // template's generate() so range-aware templates can scale.

@@ -44,22 +44,27 @@ export type OperationSetup =
       timeMs?: number;
     };
 
+/**
+ * A single problem-type family. There are no "combo" kinds — a lesson that
+ * mixes types lists several of these in `wordKinds` and the generator pools
+ * problems from all of them (see WordGenerator).
+ */
 export type WordKind =
   | "vocab"
   | "missing"
   | "compound"
   | "story"
-  | "mixed"
+  | "muldivword"
   | "convertMass"
   | "convertVolume"
   | "convertLength"
   | "convertMoney"
-  | "convertTime"
-  | "convertMix";
+  | "convertTime";
 
 export type WordLessonSetup = {
   kind: typeof SetupKind.Word;
-  wordKind: WordKind;
+  /** One or more problem-type families; the round draws from all of them. */
+  wordKinds: WordKind[];
   rounds: number;
   timeMs?: number;
   /** Optional grade-scoping bound passed to range-aware templates (Tier 2+). */

@@ -394,12 +394,13 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 42 templates across arith + 5 conversion families", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(42);
+  it("includes 47 templates across arith + muldiv + 5 conversion families", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(47);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.story).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.muldivword).toHaveLength(5);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
@@ -410,5 +411,59 @@ describe("template registry coverage", () => {
   it("every template id is unique", () => {
     const ids = Object.values(TEMPLATES).map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("muldiv word templates — whole-number products/quotients", () => {
+  for (const t of TEMPLATES_BY_TYPE.muldivword) {
+    it(`${t.id}: single answer phase, integer operands and answer`, () => {
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        expect(p.phases).toHaveLength(1);
+        const phase = p.phases[0];
+        if (phase?.kind !== "answer") throw new Error("expected answer");
+        expect(["*", "/"]).toContain(phase.op);
+        expect(Number.isInteger(phase.a)).toBe(true);
+        expect(Number.isInteger(phase.b)).toBe(true);
+        expect(Number.isInteger(phase.expected)).toBe(true);
+        // The equation a op b = result must hold exactly.
+        const computed =
+          phase.op === "*" ? phase.a * phase.b : phase.a / phase.b;
+        expect(computed).toBe(phase.result);
+        if (phase.op === "/") expect(phase.a % phase.b).toBe(0);
+      }
+    });
+  }
+});
+
+describe("range scoping via GenContext", () => {
+  it("vocab templates scale their numbers with ctx.maxNumber", () => {
+    let maxSeen = 0;
+    for (let i = 0; i < ITER; i++) {
+      const p = (TEMPLATES.vocab_sum as WordTemplate).generate({
+        maxNumber: 300,
+      });
+      const phase = p.phases.find((ph) => ph.kind === "answer");
+      if (phase?.kind === "answer") maxSeen = Math.max(maxSeen, phase.result);
+    }
+    // Grade-1 default caps at 20; with maxNumber 300 sums must exceed that.
+    expect(maxSeen).toBeGreaterThan(50);
+  });
+
+  it("muldiv widens a factor only for grade 3/4 (maxNumber >= 1000)", () => {
+    let g2Max = 0;
+    let g34Max = 0;
+    for (let i = 0; i < ITER; i++) {
+      const g2 = (TEMPLATES.muldiv_product as WordTemplate).generate();
+      const g34 = (TEMPLATES.muldiv_product as WordTemplate).generate({
+        maxNumber: 1000,
+      });
+      const a2 = g2.phases[0];
+      const a34 = g34.phases[0];
+      if (a2?.kind === "answer") g2Max = Math.max(g2Max, a2.a);
+      if (a34?.kind === "answer") g34Max = Math.max(g34Max, a34.a);
+    }
+    expect(g2Max).toBeLessThanOrEqual(10);
+    expect(g34Max).toBeGreaterThan(10);
   });
 });

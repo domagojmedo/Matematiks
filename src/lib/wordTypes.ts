@@ -30,7 +30,7 @@ export type WordAnswerPhase = {
   slot: "a" | "b" | "result";
   a: number;
   b: number;
-  op: "+" | "-";
+  op: "+" | "-" | "*" | "/";
   result: number;
   expected: number;
   stepStart?: boolean;

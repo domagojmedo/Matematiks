@@ -36,7 +36,7 @@ function Wrap({ children }: { children: React.ReactNode }) {
 
 const SETUP: WordLessonSetup = {
   kind: SetupKind.Word,
-  wordKind: "vocab",
+  wordKinds: ["vocab"],
   rounds: 5,
 };
 
@@ -166,7 +166,7 @@ describe("useRoundMechanics — multi-problem lifecycle", () => {
     // 2-round setup so we can exhaust it quickly.
     const tiny: WordLessonSetup = {
       kind: SetupKind.Word,
-      wordKind: "vocab",
+      wordKinds: ["vocab"],
       rounds: 2,
     };
     let nextId = 0;

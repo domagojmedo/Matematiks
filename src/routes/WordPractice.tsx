@@ -16,7 +16,7 @@ import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { formatMmSs } from "../lib/format";
 import { findLesson, isWordLesson } from "../lib/lessons";
-import { operationForWordKind, TONE_CHIP, wordChip } from "../lib/operations";
+import { operationForWordKinds, TONE_CHIP, wordChip } from "../lib/operations";
 import {
   isSpeechRecognitionSupported,
   parseSpokenNumber,
@@ -80,8 +80,8 @@ function WordPracticeRound({
   const { theme, settings } = useSettings();
   const { profileId } = useProfiles();
 
-  const sessionOp = operationForWordKind(setup.wordKind);
-  const chip = wordChip(setup.wordKind);
+  const sessionOp = operationForWordKinds(setup.wordKinds);
+  const chip = wordChip(setup.wordKinds);
 
   // Stamp this round as the new "last session" so Home's Quick Start can
   // replay it. Without this, finishing a word lesson leaves Quick Start
@@ -787,16 +787,10 @@ function StepLine({
   // hide the operator too — and pending steps in general blank out their
   // operands (see slotDisplay) to avoid spoiling intermediate results that
   // are passed forward from earlier steps.
+  const opGlyph = (op: "+" | "-" | "*" | "/"): string =>
+    op === "+" ? "+" : op === "-" ? "−" : op === "*" ? "×" : "÷";
   const opDisplay: string =
-    isPickOpActive || isPending
-      ? "?"
-      : step.pickOpIdx === null
-        ? answer.op === "+"
-          ? "+"
-          : "−"
-        : answer.op === "+"
-          ? "+"
-          : "−";
+    isPickOpActive || isPending ? "?" : opGlyph(answer.op);
 
   const dim = isCompleted || isPending ? "muted" : "live";
 
