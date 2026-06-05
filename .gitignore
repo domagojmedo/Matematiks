@@ -32,3 +32,10 @@ playwright-report/
 *.njsproj
 *.sw?
 
+
+# MTK workflow scratch (keep tasks/lessons.md tracked)
+tasks/todo.md
+.claude.local.md
+.claude/.mtk-cache/
+.claude/references.index
+.mtk/

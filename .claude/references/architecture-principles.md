@@ -1,0 +1,28 @@
+# Architecture Principles — Matematiks
+
+> Descriptive audit of patterns actually present (2026-06-05). Regenerate with `/mtk-setup --audit`.
+> ⚠️ flags mark places the codebase disagrees with itself or with the generic stack guide.
+
+## What this is
+A client-only React 19 SPA: a Croatian primary-school (1.–4. razred) math practice app for kids. No backend, no database, no auth, no network calls in the core flow. State persists to `localStorage` per child profile.
+
+## Layering (observed, consistent)
+- **`src/lib/`** — pure logic, framework-free, heavily unit-tested. Problem generation (`problemGen.ts`), word problems (`wordGen.ts`, `wordTemplates.ts`, `wordTypes.ts`, `wordDeclension.ts`), declarative lesson catalog (`lessons.ts`), operation metadata (`operations.ts`), column-arithmetic phases (`columnPhases.ts`), speech parsing (`speech.ts`), persistence (`storage.ts`, `profiles.ts`, `setup.ts`), formatting, themes, types.
+- **`src/routes/`** — one screen per file: Home, Grade, Practice (+ ColumnPractice), WordPractice, Setup, Settings, Sessions, SessionDetail, Summary, NotFound.
+- **`src/components/`** — shared presentational UI (PracticeUI, Mascot, ProfilePicker, layouts).
+- **`src/contexts/`** — `SettingsContext`, `ProfilesContext`.
+- **`src/hooks/`** — `useRoundMechanics`, `usePerProblemReset`, and the voice stack (`useSpeechRecognition`, plus the dormant `useVoiceRecognition`/`useWhisperRecognition`/`useWhisperEngine`).
+- **`src/i18n/`** — i18next setup + `src/i18n/locales/hr.json` and `src/i18n/locales/en.json`.
+- **`src/workers/` + `src/audio/`** — the hidden on-device Whisper worker and PCM-capture audio worklet.
+
+## Core design patterns
+1. **Content-as-data.** Lessons are declarative entries in `lessons.ts`; problems are generated, not authored. The practice screens render generically off a generated phase list (`pickOp`/`answer`/`convert`). Adding a problem type = type + generator/template + lesson entry, not a new screen.
+2. **Pure core / thin shell.** All math and content logic is in `lib/` with co-located tests; React is the rendering shell. This keeps the valuable logic deterministic and test-covered.
+3. **Whole-number invariant.** Every generated operand and answer is an integer; conversions are constructed so division stays whole. Encoded in generators and asserted in tests.
+4. **Bilingual, HR-first.** UI is i18next hr+en; the Croatian-specific word/conversion lessons are gated HR-only via a `languages` field rather than forked code.
+5. **Local-first persistence.** `storage.ts` wraps `localStorage` with per-profile keys; there is no remote sync.
+
+## Inconsistencies / notes
+- ⚠️ **`strict` is not explicitly set** in any `tsconfig*.json`, yet the code is written strict-clean. Treat strictness as the de-facto standard; consider enabling `strict: true` deliberately.
+- ⚠️ **Voice has two engines, one live.** Web Speech (`useSpeechRecognition`) is wired into screens; the Whisper stack (`useVoiceRecognition` dispatcher + worker) is fully built but intentionally unreferenced and gated behind `SHOW_WHISPER_TOGGLE = false`. Don't mistake the dormant path for dead code to delete — it's deliberately parked.
+- File naming splits by role: camelCase for `lib/`/`hooks/` modules, PascalCase for components/routes (consistent, but differs from the generic kebab-case guidance).
