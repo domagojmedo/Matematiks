@@ -7,7 +7,7 @@ import {
   NOUNS,
   nounPlural,
 } from "./wordDeclension";
-import type { Unit, WordPhase, WordProblem } from "./wordTypes";
+import type { GenContext, Unit, WordPhase, WordProblem } from "./wordTypes";
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -44,8 +44,13 @@ function pickKeyExcept<T>(
  */
 export type WordTemplate = {
   id: string;
-  type: Exclude<WordKind, "mixed">;
-  generate: () => WordProblem;
+  type: Exclude<WordKind, "mixed" | "convertMix">;
+  /**
+   * Generate a complete problem. `ctx` is optional grade-scoping context;
+   * templates that don't scale by grade ignore it (a no-arg generator stays
+   * assignable here).
+   */
+  generate: (ctx?: GenContext) => WordProblem;
   /** Render the problem prose (excluding per-step labels carried by phases). */
   renderProse: (problem: WordProblem) => string;
 };

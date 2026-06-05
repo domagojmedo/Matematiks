@@ -1,6 +1,6 @@
 import type { WordKind, WordLessonSetup } from "./types";
 import { TEMPLATES_BY_TYPE, type WordTemplate } from "./wordTemplates";
-import type { WordProblem } from "./wordTypes";
+import type { GenContext, WordProblem } from "./wordTypes";
 
 function shuffle<T>(arr: T[]): T[] {
   // Fisher-Yates, mutates a copy.
@@ -85,11 +85,18 @@ function isSameProblem(a: WordProblem, b: WordProblem): boolean {
 export class WordGenerator {
   private readonly pool: readonly WordTemplate[];
   private readonly rounds: number;
+  private readonly ctx: GenContext | undefined;
   private queue: WordTemplate[];
 
   constructor(setup: WordLessonSetup) {
     this.pool = poolFor(setup.wordKind);
     this.rounds = setup.rounds;
+    // Grade-scoping context, if the lesson declares one. Passed to every
+    // template's generate() so range-aware templates can scale.
+    this.ctx =
+      setup.maxNumber !== undefined
+        ? { maxNumber: setup.maxNumber }
+        : undefined;
     this.queue = balancedQueue(this.pool, this.rounds);
   }
 
@@ -99,13 +106,13 @@ export class WordGenerator {
       this.queue = balancedQueue(this.pool, Math.max(1, this.pool.length));
     }
     const template = this.queue.shift() as WordTemplate;
-    let candidate = template.generate();
+    let candidate = template.generate(this.ctx);
     // Try a few resamples of the same template to dodge an immediate repeat.
     // We don't switch templates here because that would skew the stratified
     // queue we just promised.
     for (let tries = 0; tries < 20; tries++) {
       if (!prev || !isSameProblem(candidate, prev)) return candidate;
-      candidate = template.generate();
+      candidate = template.generate(this.ctx);
     }
     return candidate;
   }

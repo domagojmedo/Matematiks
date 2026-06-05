@@ -38,6 +38,7 @@ import {
   type WordPhase,
   type WordPickOpPhase,
   type WordProblem,
+  type WordSolvePhase,
   type WordStepView,
 } from "../lib/wordTypes";
 
@@ -169,7 +170,7 @@ function WordPracticeRound({
         b = finalPhase.b;
         op = finalPhase.op;
         answer = finalPhase.result;
-      } else {
+      } else if (finalPhase.kind === "convert") {
         a = finalPhase.value;
         // Invariant: every convert template multiplies/divides by a factor > 1,
         // so `value !== expected` and one strict branch always applies.
@@ -181,6 +182,14 @@ function WordPracticeRound({
           b = finalPhase.value / finalPhase.expected;
           op = "/";
         }
+        answer = finalPhase.expected;
+      } else {
+        // solve: prompt-driven single answer with no a/b equation. Synthesize a
+        // trivial one so the Sessions list / SessionDetail row still renders;
+        // the real content is the template prose, carried by templateId/numbers.
+        a = finalPhase.expected;
+        b = 0;
+        op = "+";
         answer = finalPhase.expected;
       }
       return {
@@ -277,16 +286,19 @@ function WordPracticeRound({
       if (flash) return;
       if (
         !currentPhase ||
-        (currentPhase.kind !== "answer" && currentPhase.kind !== "convert")
+        (currentPhase.kind !== "answer" &&
+          currentPhase.kind !== "convert" &&
+          currentPhase.kind !== "solve")
       )
         return;
       if (typed.length >= MAX_DIGITS) return;
       const next = typed + String(n);
       setTyped(next);
-      // Convert phases use an explicit confirm key — the kid types the full
-      // answer and presses ✓. Without that, the auto-submit-on-match below
+      // Convert and solve phases use an explicit confirm key — the kid types the
+      // full answer and presses ✓. Without that, the auto-submit-on-match below
       // would mark "200" correct even when the kid was about to type "2000".
-      if (currentPhase.kind === "convert") return;
+      if (currentPhase.kind === "convert" || currentPhase.kind === "solve")
+        return;
       const parsed = Number.parseInt(next, 10);
       const expected = currentPhase.expected;
       const expectedLen = String(expected).length;
@@ -322,14 +334,18 @@ function WordPracticeRound({
 
   const handleConfirm = useCallback(() => {
     if (flash) return;
-    if (!currentPhase || currentPhase.kind !== "convert") return;
+    if (
+      !currentPhase ||
+      (currentPhase.kind !== "convert" && currentPhase.kind !== "solve")
+    )
+      return;
     if (typed.length === 0) return;
     const parsed = Number.parseInt(typed, 10);
     const expected = currentPhase.expected;
     if (Number.isFinite(parsed) && parsed === expected) {
       attemptsRef.current.push({
         phaseIndex: phaseIdx,
-        phaseKind: "convert",
+        phaseKind: currentPhase.kind,
         given: parsed,
         expected,
         correct: true,
@@ -341,7 +357,7 @@ function WordPracticeRound({
         advancePhase();
       }, FLASH_MS);
     } else {
-      handleWrong(parsed, expected, "convert");
+      handleWrong(parsed, expected, currentPhase.kind);
     }
   }, [
     flash,
@@ -363,13 +379,19 @@ function WordPracticeRound({
   // — we don't recognize "plus" / "minus" — so voice stays idle there and
   // the kid uses the on-screen + / − pad.
   const isNumberPhase =
-    currentPhase?.kind === "answer" || currentPhase?.kind === "convert";
+    currentPhase?.kind === "answer" ||
+    currentPhase?.kind === "convert" ||
+    currentPhase?.kind === "solve";
 
   const submitFullAnswer = useCallback(
     (n: number) => {
       if (flash) return;
       if (!currentPhase) return;
-      if (currentPhase.kind !== "answer" && currentPhase.kind !== "convert") {
+      if (
+        currentPhase.kind !== "answer" &&
+        currentPhase.kind !== "convert" &&
+        currentPhase.kind !== "solve"
+      ) {
         return;
       }
       const str = String(n);
@@ -537,7 +559,10 @@ function WordPracticeRound({
       } else if (e.key === "Backspace" || e.key === "Delete") {
         e.preventDefault();
         handleDelete();
-      } else if (e.key === "Enter" && currentPhase?.kind === "convert") {
+      } else if (
+        e.key === "Enter" &&
+        (currentPhase?.kind === "convert" || currentPhase?.kind === "solve")
+      ) {
         e.preventDefault();
         handleConfirm();
       }
@@ -676,7 +701,8 @@ function WordPracticeRound({
 
         {currentPhase?.kind === "pickOp" ? (
           <PickOpPad onPick={handlePickOp} theme={theme} />
-        ) : currentPhase?.kind === "convert" ? (
+        ) : currentPhase?.kind === "convert" ||
+          currentPhase?.kind === "solve" ? (
           <NumPad
             onDigit={handleDigit}
             onDelete={handleDelete}
@@ -719,6 +745,18 @@ function StepLine({
   if (inputPhase.kind === "convert") {
     return (
       <ConvertStepLine
+        phase={inputPhase}
+        isActive={phaseIdx === step.answerIdx}
+        isCompleted={phaseIdx > step.answerIdx}
+        typed={typed}
+        flash={flash}
+        theme={theme}
+      />
+    );
+  }
+  if (inputPhase.kind === "solve") {
+    return (
+      <SolveStepLine
         phase={inputPhase}
         isActive={phaseIdx === step.answerIdx}
         isCompleted={phaseIdx > step.answerIdx}
@@ -896,6 +934,55 @@ function ConvertStepLine({
         <span className={`${unitClass} text-2xl sm:text-3xl`}>
           {phase.toUnit}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function SolveStepLine({
+  phase,
+  isActive,
+  isCompleted,
+  typed,
+  flash,
+  theme,
+}: {
+  phase: WordSolvePhase;
+  isActive: boolean;
+  isCompleted: boolean;
+  typed: string;
+  flash: Flash;
+  theme: import("../lib/themes").Theme;
+}) {
+  const dim = isCompleted ? "muted" : "live";
+  const promptClass =
+    dim === "muted"
+      ? "text-stone-400 dark:text-stone-500"
+      : "text-stone-900 dark:text-white";
+  const slotClass =
+    flash === "correct"
+      ? "text-emerald-500"
+      : flash === "wrong" && isActive
+        ? "text-rose-500"
+        : `${theme.primaryText} ${theme.primaryTextDark}`;
+
+  const slotText = isCompleted
+    ? String(phase.expected)
+    : isActive
+      ? typed || "?"
+      : "?";
+  const slotIsSlot = isActive && !isCompleted;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline gap-1.5 px-1 text-3xl font-black tabular-nums sm:gap-2.5 sm:text-4xl">
+        {phase.prompt && (
+          <span className={`${promptClass} text-2xl sm:text-3xl`}>
+            {phase.prompt}
+          </span>
+        )}
+        <span className="text-stone-300 dark:text-stone-600">=</span>
+        <span className={slotIsSlot ? slotClass : promptClass}>{slotText}</span>
       </div>
     </div>
   );

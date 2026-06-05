@@ -4,6 +4,8 @@ import { TEMPLATES } from "./wordTemplates";
 import {
   buildSteps,
   finalAnswerPhase,
+  finalInputPhase,
+  phaseAtStep,
   totalAnswerPhases,
   type WordPhase,
 } from "./wordTypes";
@@ -111,6 +113,28 @@ describe("buildSteps groups phases into equation lines", () => {
       /Tomo|Maro|Ivan|Marko|Luka|Ana|Lana|Iva|Ema|Mia/,
     );
     expect(steps[1]?.label).toMatch(/zajedno/);
+  });
+
+  it("treats a solve phase as a step terminator and carries its label", () => {
+    const phases: WordPhase[] = [
+      { kind: "solve", expected: 50, prompt: "stotice", stepLabel: "Stotice" },
+      { kind: "solve", expected: 7, prompt: "jedinice", stepLabel: "Jedinice" },
+    ];
+    const steps = buildSteps(phases);
+    expect(steps).toHaveLength(2);
+    expect(steps[0]).toMatchObject({ pickOpIdx: null, answerIdx: 0 });
+    expect(steps[0]?.label).toBe("Stotice");
+    expect(steps[1]?.label).toBe("Jedinice");
+  });
+
+  it("phaseAtStep returns a solve phase; finalInputPhase finds it", () => {
+    const phases: WordPhase[] = [{ kind: "solve", expected: 40 }];
+    const steps = buildSteps(phases);
+    const phase = phaseAtStep(phases, steps[0] as (typeof steps)[number]);
+    expect(phase.kind).toBe("solve");
+    const final = finalInputPhase({ templateId: "x", numbers: [], phases });
+    expect(final.kind).toBe("solve");
+    if (final.kind === "solve") expect(final.expected).toBe(40);
   });
 
   it("treats every answer phase as a step terminator", () => {

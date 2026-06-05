@@ -59,7 +59,45 @@ export type WordConvertPhase = {
   expected: number;
 };
 
-export type WordPhase = WordPickOpPhase | WordAnswerPhase | WordConvertPhase;
+/**
+ * Prompt-driven single numeric answer. The question lives in the template's
+ * top-level prose (single-step) or in `prompt`/`stepLabel` (multi-step, e.g.
+ * place-value decomposition asks for stotice/desetice/jedinice in turn). The
+ * kid types `expected` and confirms — same input flow as `convert`. This is the
+ * workhorse phase for rounding, parts-of-a-whole, perimeter/area and chart
+ * reading; anything that's "read the prompt, type one number".
+ */
+export type WordSolvePhase = {
+  kind: "solve";
+  expected: number;
+  /** Optional per-step sub-question, rendered before the answer slot. */
+  prompt?: string;
+  stepStart?: boolean;
+  stepLabel?: string;
+};
+
+export type WordPhase =
+  | WordPickOpPhase
+  | WordAnswerPhase
+  | WordConvertPhase
+  | WordSolvePhase;
+
+/** Phases that take user input and end a step (never `pickOp`). */
+export type WordInputPhase =
+  | WordAnswerPhase
+  | WordConvertPhase
+  | WordSolvePhase;
+
+/**
+ * Optional generation context threaded from `WordLessonSetup` into each
+ * template's `generate()`, letting one template family scale by grade (e.g.
+ * the same word-problem template draws bigger numbers in grade 4 than grade 2).
+ * Templates that don't care simply ignore it.
+ */
+export type GenContext = {
+  /** Upper bound for generated operands/results, if the lesson scopes one. */
+  maxNumber?: number;
+};
 
 export type WordProblem = {
   templateId: string;
@@ -89,12 +127,15 @@ export function finalAnswerPhase(problem: WordProblem): WordAnswerPhase {
  * round ends to build a ProblemRecord, since convert-only templates have no
  * `answer` phase to fall back on.
  */
-export function finalInputPhase(
-  problem: WordProblem,
-): WordAnswerPhase | WordConvertPhase {
+export function finalInputPhase(problem: WordProblem): WordInputPhase {
   for (let i = problem.phases.length - 1; i >= 0; i--) {
     const phase = problem.phases[i];
-    if (phase && (phase.kind === "answer" || phase.kind === "convert"))
+    if (
+      phase &&
+      (phase.kind === "answer" ||
+        phase.kind === "convert" ||
+        phase.kind === "solve")
+    )
       return phase;
   }
   throw new Error(
@@ -124,11 +165,11 @@ export type WordStepView = {
 export function phaseAtStep(
   phases: WordPhase[],
   step: WordStepView,
-): WordAnswerPhase | WordConvertPhase {
+): WordInputPhase {
   const phase = phases[step.answerIdx];
   if (!phase || phase.kind === "pickOp") {
     throw new Error(
-      `Step input phase at index ${step.answerIdx} is not answer/convert — buildSteps invariant violated.`,
+      `Step input phase at index ${step.answerIdx} is not an input phase — buildSteps invariant violated.`,
     );
   }
   return phase;
@@ -144,7 +185,10 @@ export function buildSteps(phases: WordPhase[]): WordStepView[] {
       pickOpIdx = i;
       pendingLabel = phase.stepLabel ?? pendingLabel;
     } else {
-      const ownLabel = phase.kind === "answer" ? phase.stepLabel : undefined;
+      const ownLabel =
+        phase.kind === "answer" || phase.kind === "solve"
+          ? phase.stepLabel
+          : undefined;
       steps.push({
         label: pendingLabel ?? ownLabel,
         pickOpIdx,

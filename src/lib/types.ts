@@ -59,6 +59,8 @@ export type WordLessonSetup = {
   wordKind: WordKind;
   rounds: number;
   timeMs?: number;
+  /** Optional grade-scoping bound passed to range-aware templates (Tier 2+). */
+  maxNumber?: number;
 };
 
 export type AnyLessonSetup = OperationSetup | WordLessonSetup;
