@@ -36,9 +36,13 @@
     "g4": "4. razred"
   },
   "grade": {
-    "problems": "zadataka"
+    "problems": "zadataka",
+    "combine": "Kombiniraj",
+    "startCombined": "Pokreni zajedno",
+    "selectedCount": "Odabrano: {{count}}"
   },
   "lessons": {
+    "combined": "Kombinirano vježbanje",
     "g1": {
       "add10": "Zbrajanje do 10",
       "sub10": "Oduzimanje do 10",

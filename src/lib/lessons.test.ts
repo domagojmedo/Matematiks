@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import en from "../i18n/locales/en.json";
 import hr from "../i18n/locales/hr.json";
 import {
+  combinedWordSetup,
   findLesson,
   GRADES,
   isArithLesson,
@@ -10,6 +11,7 @@ import {
   LESSONS,
   type Lesson,
   lessonsByGrade,
+  type WordLesson,
 } from "./lessons";
 import { generateProblem } from "./problemGen";
 import { type Language, LessonKind, SetupKind } from "./types";
@@ -154,5 +156,38 @@ describe("g1 no-cross lessons exercise the teens", () => {
       expect(p.answer).toBeGreaterThanOrEqual(10);
       expect(p.answer).toBeLessThanOrEqual(18);
     }
+  });
+});
+
+describe("combinedWordSetup", () => {
+  const wl = (id: string): WordLesson => {
+    const l = findLesson(id);
+    if (!l || !isWordLesson(l)) throw new Error(`no word lesson ${id}`);
+    return l;
+  };
+
+  it("unions wordKinds across selected lessons, de-duplicated", () => {
+    const setup = combinedWordSetup([
+      wl("g3-units-mass"),
+      wl("g3-units-volume"),
+    ]);
+    expect(setup.kind).toBe(SetupKind.Word);
+    expect(setup.wordKinds).toEqual(["convertMass", "convertVolume"]);
+  });
+
+  it("de-dupes a repeated kind and takes the largest maxNumber", () => {
+    // both vocab; g2 caps at 100, g3 at 1000 → union [vocab], maxNumber 1000
+    const setup = combinedWordSetup([wl("g2-word-vocab"), wl("g3-word-vocab")]);
+    expect(setup.wordKinds).toEqual(["vocab"]);
+    expect(setup.maxNumber).toBe(1000);
+  });
+
+  it("omits maxNumber when no selected lesson declares one", () => {
+    const setup = combinedWordSetup([
+      wl("g3-units-mass"),
+      wl("g3-units-length"),
+    ]);
+    expect(setup.maxNumber).toBeUndefined();
+    expect(setup.wordKinds).toEqual(["convertMass", "convertLength"]);
   });
 });

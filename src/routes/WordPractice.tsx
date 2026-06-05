@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import { Mascot } from "../components/Mascot";
 import {
   CounterStrip,
@@ -54,6 +54,22 @@ type Flash = "correct" | "wrong" | null;
 
 export function WordPractice() {
   const { lessonId } = useParams<{ lessonId: string }>();
+  const location = useLocation();
+  // A combined multi-select round (and Quick Start replay) arrives with the
+  // setup on router state and no resolvable lesson id. Prefer it.
+  const state = location.state as {
+    setup?: import("../lib/types").WordLessonSetup;
+    title?: string;
+  } | null;
+  if (state?.setup) {
+    return (
+      <WordPracticeRound
+        lessonId={lessonId ?? "combined"}
+        setup={state.setup}
+        nameKey={state.title ?? "lessons.combined"}
+      />
+    );
+  }
   const lesson = lessonId ? findLesson(lessonId) : undefined;
   if (!isWordLesson(lesson)) {
     return <Navigate to="/" replace />;

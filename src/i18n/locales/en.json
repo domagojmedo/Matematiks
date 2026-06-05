@@ -36,9 +36,13 @@
     "g4": "4th grade"
   },
   "grade": {
-    "problems": "problems"
+    "problems": "problems",
+    "combine": "Combine",
+    "startCombined": "Start combined",
+    "selectedCount": "Selected: {{count}}"
   },
   "lessons": {
+    "combined": "Combined practice",
     "g1": {
       "add10": "Addition to 10",
       "sub10": "Subtraction to 10",
