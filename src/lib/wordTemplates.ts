@@ -838,6 +838,86 @@ const fractionNumerator: WordTemplate = {
 
 const FRACTION_TEMPLATES: readonly WordTemplate[] = [fractionNumerator];
 
+// Perimeter & area (grade 3/4): a rectangle/square drawn via the solve phase's
+// `shape` field; the kid types the result in cm (perimeter) or cm² (area).
+const perimeterRect: WordTemplate = {
+  id: "perimeter_rect",
+  type: "perimeter",
+  generate: () => {
+    const w = randInt(2, 12);
+    let h = randInt(2, 12);
+    while (h === w) h = randInt(2, 12); // a real rectangle, not a square
+    const phases: WordPhase[] = [
+      {
+        kind: "solve",
+        expected: 2 * (w + h),
+        shape: { width: w, height: h, measure: "perimeter" },
+      },
+    ];
+    return { templateId: perimeterRect.id, numbers: [w, h], phases };
+  },
+  renderProse: () => "Izračunaj opseg pravokutnika (u cm).",
+};
+
+const perimeterSquare: WordTemplate = {
+  id: "perimeter_square",
+  type: "perimeter",
+  generate: () => {
+    const s = randInt(2, 12);
+    const phases: WordPhase[] = [
+      {
+        kind: "solve",
+        expected: 4 * s,
+        shape: { width: s, height: s, measure: "perimeter" },
+      },
+    ];
+    return { templateId: perimeterSquare.id, numbers: [s], phases };
+  },
+  renderProse: () => "Izračunaj opseg kvadrata (u cm).",
+};
+
+const areaRect: WordTemplate = {
+  id: "area_rect",
+  type: "area",
+  generate: () => {
+    const w = randInt(2, 12);
+    let h = randInt(2, 12);
+    while (h === w) h = randInt(2, 12);
+    const phases: WordPhase[] = [
+      {
+        kind: "solve",
+        expected: w * h,
+        shape: { width: w, height: h, measure: "area" },
+      },
+    ];
+    return { templateId: areaRect.id, numbers: [w, h], phases };
+  },
+  renderProse: () => "Izračunaj površinu pravokutnika (u cm²).",
+};
+
+const areaSquare: WordTemplate = {
+  id: "area_square",
+  type: "area",
+  generate: () => {
+    const s = randInt(2, 12);
+    const phases: WordPhase[] = [
+      {
+        kind: "solve",
+        expected: s * s,
+        shape: { width: s, height: s, measure: "area" },
+      },
+    ];
+    return { templateId: areaSquare.id, numbers: [s], phases };
+  },
+  renderProse: () => "Izračunaj površinu kvadrata (u cm²).",
+};
+
+const PERIMETER_TEMPLATES: readonly WordTemplate[] = [
+  perimeterRect,
+  perimeterSquare,
+];
+const AREA_TEMPLATES: readonly WordTemplate[] = [areaRect, areaSquare];
+
 // ---------------------------------------------------------------------------
 // Unit-conversion templates (mass + volume). Each template fixes the from/to
 // units and generates a whole-number source value so the answer is also whole.
@@ -1251,6 +1331,10 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [quarterOf.id]: quarterOf,
   [placeValueDecompose.id]: placeValueDecompose,
   [fractionNumerator.id]: fractionNumerator,
+  [perimeterRect.id]: perimeterRect,
+  [perimeterSquare.id]: perimeterSquare,
+  [areaRect.id]: areaRect,
+  [areaSquare.id]: areaSquare,
   [convertKgToG.id]: convertKgToG,
   [convertGToKg.id]: convertGToKg,
   [convertKgToDag.id]: convertKgToDag,
@@ -1306,6 +1390,8 @@ export const TEMPLATES_BY_TYPE: Record<WordKind, readonly WordTemplate[]> = {
   partsOfWhole: PARTS_OF_WHOLE_TEMPLATES,
   placeValue: PLACE_VALUE_TEMPLATES,
   fraction: FRACTION_TEMPLATES,
+  perimeter: PERIMETER_TEMPLATES,
+  area: AREA_TEMPLATES,
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
   convertLength: LENGTH_CONVERT_TEMPLATES,

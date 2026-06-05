@@ -81,6 +81,15 @@ export type WordSolvePhase = {
   expected: number;
   /** Optional per-step sub-question, rendered before the answer slot. */
   prompt?: string;
+  /**
+   * Optional rectangle to draw above the answer (perimeter/area lessons). The
+   * `measure` tells the renderer which dimension labels to emphasise.
+   */
+  shape?: {
+    width: number;
+    height: number;
+    measure: "perimeter" | "area";
+  };
   stepStart?: boolean;
   stepLabel?: string;
 };

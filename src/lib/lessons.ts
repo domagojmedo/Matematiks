@@ -430,6 +430,12 @@ export const LESSONS: Lesson[] = [
     nameKey: "lessons.g3.placeValue",
     wordKind: "placeValue",
   }),
+  word({
+    id: "g3-perimeter",
+    grade: 3,
+    nameKey: "lessons.g3.perimeter",
+    wordKind: "perimeter",
+  }),
 
   // 4. razred
   arith({
@@ -532,6 +538,12 @@ export const LESSONS: Lesson[] = [
     grade: 4,
     nameKey: "lessons.g4.fractions",
     wordKind: "fraction",
+  }),
+  word({
+    id: "g4-perimeter-area",
+    grade: 4,
+    nameKey: "lessons.g4.perimeterArea",
+    wordKind: ["perimeter", "area"],
   }),
 ];
 

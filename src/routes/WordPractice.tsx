@@ -10,6 +10,7 @@ import {
   ProgressBar,
   VoiceButton,
 } from "../components/PracticeUI";
+import { ShapeDiagram } from "../components/ShapeDiagram";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
@@ -1089,7 +1090,10 @@ function SolveStepLine({
   const slotIsSlot = isActive && !isCompleted;
 
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-3">
+      {phase.shape && (
+        <ShapeDiagram width={phase.shape.width} height={phase.shape.height} />
+      )}
       <div className="flex items-baseline gap-1.5 px-1 text-3xl font-black tabular-nums sm:gap-2.5 sm:text-4xl">
         {phase.prompt && (
           <span className={`${promptClass} text-2xl sm:text-3xl`}>

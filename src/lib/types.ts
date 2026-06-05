@@ -60,6 +60,8 @@ export type WordKind =
   | "partsOfWhole"
   | "placeValue"
   | "fraction"
+  | "perimeter"
+  | "area"
   | "convertMass"
   | "convertVolume"
   | "convertLength"

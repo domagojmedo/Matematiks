@@ -394,8 +394,8 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 55 templates across arith + number-sense + conversions", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(55);
+  it("includes 59 templates across arith + number-sense + conversions", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(59);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
@@ -406,6 +406,8 @@ describe("template registry coverage", () => {
     expect(TEMPLATES_BY_TYPE.partsOfWhole).toHaveLength(3);
     expect(TEMPLATES_BY_TYPE.placeValue).toHaveLength(1);
     expect(TEMPLATES_BY_TYPE.fraction).toHaveLength(1);
+    expect(TEMPLATES_BY_TYPE.perimeter).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.area).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
@@ -546,6 +548,36 @@ describe("fraction templates", () => {
       expect(phase.shaded).toBeGreaterThanOrEqual(1);
       expect(phase.shaded).toBeLessThan(phase.parts);
       expect([2, 3, 4, 6, 8]).toContain(phase.parts);
+    }
+  });
+});
+
+describe("perimeter & area templates", () => {
+  it("perimeter: solve answer = 2*(w+h) (rect) or 4*s (square), with a shape", () => {
+    for (const t of TEMPLATES_BY_TYPE.perimeter) {
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "solve") throw new Error("expected solve");
+        const shape = phase.shape;
+        if (!shape) throw new Error("expected shape");
+        expect(shape.measure).toBe("perimeter");
+        expect(phase.expected).toBe(2 * (shape.width + shape.height));
+      }
+    }
+  });
+
+  it("area: solve answer = w*h, with an area shape", () => {
+    for (const t of TEMPLATES_BY_TYPE.area) {
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "solve") throw new Error("expected solve");
+        const shape = phase.shape;
+        if (!shape) throw new Error("expected shape");
+        expect(shape.measure).toBe("area");
+        expect(phase.expected).toBe(shape.width * shape.height);
+      }
     }
   });
 });
