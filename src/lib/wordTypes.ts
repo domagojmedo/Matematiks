@@ -85,17 +85,33 @@ export type WordSolvePhase = {
   stepLabel?: string;
 };
 
+/**
+ * Compare two numbers: the kid taps `<`, `=`, or `>`. Non-numeric, so voice
+ * input stays idle on it (like `pickOp`). Used by the comparison/ordering
+ * number-sense lessons.
+ */
+export type WordComparePhase = {
+  kind: "compare";
+  a: number;
+  b: number;
+  expected: "<" | "=" | ">";
+  stepStart?: boolean;
+  stepLabel?: string;
+};
+
 export type WordPhase =
   | WordPickOpPhase
   | WordAnswerPhase
   | WordConvertPhase
-  | WordSolvePhase;
+  | WordSolvePhase
+  | WordComparePhase;
 
 /** Phases that take user input and end a step (never `pickOp`). */
 export type WordInputPhase =
   | WordAnswerPhase
   | WordConvertPhase
-  | WordSolvePhase;
+  | WordSolvePhase
+  | WordComparePhase;
 
 /**
  * Optional generation context threaded from `WordLessonSetup` into each
@@ -143,7 +159,8 @@ export function finalInputPhase(problem: WordProblem): WordInputPhase {
       phase &&
       (phase.kind === "answer" ||
         phase.kind === "convert" ||
-        phase.kind === "solve")
+        phase.kind === "solve" ||
+        phase.kind === "compare")
     )
       return phase;
   }
@@ -195,7 +212,9 @@ export function buildSteps(phases: WordPhase[]): WordStepView[] {
       pendingLabel = phase.stepLabel ?? pendingLabel;
     } else {
       const ownLabel =
-        phase.kind === "answer" || phase.kind === "solve"
+        phase.kind === "answer" ||
+        phase.kind === "solve" ||
+        phase.kind === "compare"
           ? phase.stepLabel
           : undefined;
       steps.push({

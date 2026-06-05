@@ -210,6 +210,12 @@ export const LESSONS: Lesson[] = [
     nameKey: "lessons.g1.wordMixed",
     wordKind: ["vocab", "missing", "compound", "story"],
   }),
+  word({
+    id: "g1-compare",
+    grade: 1,
+    nameKey: "lessons.g1.compare",
+    wordKind: "compare",
+  }),
 
   // 2. razred
   arith({
@@ -291,6 +297,19 @@ export const LESSONS: Lesson[] = [
     grade: 2,
     nameKey: "lessons.g2.wordMulDiv",
     wordKind: "muldivword",
+  }),
+  word({
+    id: "g2-compare",
+    grade: 2,
+    nameKey: "lessons.g2.compare",
+    wordKind: "compare",
+    maxNumber: 100,
+  }),
+  word({
+    id: "g2-parts",
+    grade: 2,
+    nameKey: "lessons.g2.parts",
+    wordKind: "partsOfWhole",
   }),
 
   // 3. razred
@@ -405,6 +424,12 @@ export const LESSONS: Lesson[] = [
     wordKind: "muldivword",
     maxNumber: 1000,
   }),
+  word({
+    id: "g3-place-value",
+    grade: 3,
+    nameKey: "lessons.g3.placeValue",
+    wordKind: "placeValue",
+  }),
 
   // 4. razred
   arith({
@@ -486,6 +511,20 @@ export const LESSONS: Lesson[] = [
     grade: 4,
     nameKey: "lessons.g4.wordMulDiv",
     wordKind: "muldivword",
+    maxNumber: 1000,
+  }),
+  word({
+    id: "g4-rounding",
+    grade: 4,
+    nameKey: "lessons.g4.rounding",
+    wordKind: "rounding",
+    maxNumber: 1000,
+  }),
+  word({
+    id: "g4-place-value",
+    grade: 4,
+    nameKey: "lessons.g4.placeValue",
+    wordKind: "placeValue",
     maxNumber: 1000,
   }),
 ];

@@ -692,6 +692,130 @@ const MULDIV_WORD_TEMPLATES: readonly WordTemplate[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Number-sense templates (grade 1-4): comparison, rounding, parts-of-a-whole,
+// and place-value decomposition. Comparison uses the `compare` phase (tap
+// </=/>); the rest use the prompt-driven `solve` phase (type one number).
+// ---------------------------------------------------------------------------
+
+const compareNumbers: WordTemplate = {
+  id: "compare_numbers",
+  type: "compare",
+  generate: (ctx) => {
+    const max = ctx?.maxNumber ?? 20;
+    const a = randInt(1, max);
+    let b: number;
+    // ~1 in 4 are equal so "=" actually shows up; otherwise distinct.
+    if (randInt(1, 4) === 1) {
+      b = a;
+    } else {
+      do {
+        b = randInt(1, max);
+      } while (b === a);
+    }
+    const expected = a < b ? "<" : a > b ? ">" : "=";
+    const phases: WordPhase[] = [{ kind: "compare", a, b, expected }];
+    return { templateId: compareNumbers.id, numbers: [a, b], phases };
+  },
+  renderProse: () => "Usporedi brojeve. Upiši <, = ili >.",
+};
+
+const COMPARE_TEMPLATES: readonly WordTemplate[] = [compareNumbers];
+
+function roundTemplate(
+  id: string,
+  unit: 10 | 100,
+  label: string,
+): WordTemplate {
+  return {
+    id,
+    type: "rounding",
+    generate: (ctx) => {
+      const max = Math.max(
+        unit * 2,
+        ctx?.maxNumber ?? (unit === 10 ? 100 : 1000),
+      );
+      let n = randInt(unit + 1, max);
+      // Skip exact multiples — rounding them is a no-op, not a question.
+      while (n % unit === 0) n = randInt(unit + 1, max);
+      const expected = Math.round(n / unit) * unit;
+      const phases: WordPhase[] = [{ kind: "solve", expected }];
+      return { templateId: id, numbers: [n, expected], phases };
+    },
+    renderProse: (p) => `Zaokruži broj ${p.numbers[0]} na najbližu ${label}.`,
+  };
+}
+
+const roundToTen = roundTemplate("round_to_ten", 10, "deseticu");
+const roundToHundred = roundTemplate("round_to_hundred", 100, "stoticu");
+
+const ROUNDING_TEMPLATES: readonly WordTemplate[] = [
+  roundToTen,
+  roundToHundred,
+];
+
+function partOfTemplate(
+  id: string,
+  divisor: number,
+  label: string,
+): WordTemplate {
+  return {
+    id,
+    type: "partsOfWhole",
+    generate: (ctx) => {
+      const maxK =
+        ctx?.maxNumber !== undefined && ctx.maxNumber >= 1000 ? 50 : 10;
+      const k = randInt(2, maxK);
+      const n = divisor * k; // divisible by construction → whole answer
+      const phases: WordPhase[] = [{ kind: "solve", expected: k }];
+      return { templateId: id, numbers: [n, divisor], phases };
+    },
+    renderProse: (p) => `Koliko je ${label} od ${p.numbers[0]}?`,
+  };
+}
+
+const halfOf = partOfTemplate("part_half", 2, "polovina");
+const thirdOf = partOfTemplate("part_third", 3, "trećina");
+const quarterOf = partOfTemplate("part_quarter", 4, "četvrtina");
+
+const PARTS_OF_WHOLE_TEMPLATES: readonly WordTemplate[] = [
+  halfOf,
+  thirdOf,
+  quarterOf,
+];
+
+const placeValueDecompose: WordTemplate = {
+  id: "place_value_decompose",
+  type: "placeValue",
+  generate: (ctx) => {
+    const big = ctx?.maxNumber !== undefined && ctx.maxNumber >= 1000;
+    const n = big ? randInt(1000, 9999) : randInt(100, 999);
+    const digits: { value: number; label: string }[] = big
+      ? [
+          { value: Math.floor(n / 1000) % 10, label: "Tisućice" },
+          { value: Math.floor(n / 100) % 10, label: "Stotice" },
+          { value: Math.floor(n / 10) % 10, label: "Desetice" },
+          { value: n % 10, label: "Jedinice" },
+        ]
+      : [
+          { value: Math.floor(n / 100) % 10, label: "Stotice" },
+          { value: Math.floor(n / 10) % 10, label: "Desetice" },
+          { value: n % 10, label: "Jedinice" },
+        ];
+    const phases: WordPhase[] = digits.map((d, i) => ({
+      kind: "solve",
+      expected: d.value,
+      prompt: d.label.toLowerCase(),
+      stepLabel: d.label,
+      ...(i === 0 ? { stepStart: true } : {}),
+    }));
+    return { templateId: placeValueDecompose.id, numbers: [n], phases };
+  },
+  renderProse: (p) => `Rastavi broj ${p.numbers[0]} po mjesnim vrijednostima.`,
+};
+
+const PLACE_VALUE_TEMPLATES: readonly WordTemplate[] = [placeValueDecompose];
+
+// ---------------------------------------------------------------------------
 // Unit-conversion templates (mass + volume). Each template fixes the from/to
 // units and generates a whole-number source value so the answer is also whole.
 // Prose is uniform across directions: "Pretvori N <unit> u <unit>.".
@@ -1096,6 +1220,13 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [divQuotient.id]: divQuotient,
   [divShare.id]: divShare,
   [missingFactor.id]: missingFactor,
+  [compareNumbers.id]: compareNumbers,
+  [roundToTen.id]: roundToTen,
+  [roundToHundred.id]: roundToHundred,
+  [halfOf.id]: halfOf,
+  [thirdOf.id]: thirdOf,
+  [quarterOf.id]: quarterOf,
+  [placeValueDecompose.id]: placeValueDecompose,
   [convertKgToG.id]: convertKgToG,
   [convertGToKg.id]: convertGToKg,
   [convertKgToDag.id]: convertKgToDag,
@@ -1146,6 +1277,10 @@ export const TEMPLATES_BY_TYPE: Record<WordKind, readonly WordTemplate[]> = {
   ],
   story: [storyFewer, storyMore],
   muldivword: MULDIV_WORD_TEMPLATES,
+  compare: COMPARE_TEMPLATES,
+  rounding: ROUNDING_TEMPLATES,
+  partsOfWhole: PARTS_OF_WHOLE_TEMPLATES,
+  placeValue: PLACE_VALUE_TEMPLATES,
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
   convertLength: LENGTH_CONVERT_TEMPLATES,

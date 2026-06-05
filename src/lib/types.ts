@@ -55,6 +55,10 @@ export type WordKind =
   | "compound"
   | "story"
   | "muldivword"
+  | "compare"
+  | "rounding"
+  | "partsOfWhole"
+  | "placeValue"
   | "convertMass"
   | "convertVolume"
   | "convertLength"
@@ -106,11 +110,14 @@ export type AppSettings = {
  * multiple phases (pickOp + answer, partial products, etc.) there is one
  * attempt per try per phase. Both correct and incorrect attempts are recorded.
  */
+/** Operator/relation tokens an attempt can carry alongside numeric answers. */
+export type AttemptToken = "+" | "-" | "*" | "/" | "<" | "=" | ">";
+
 export type ProblemAttempt = {
   phaseIndex: number;
   phaseKind: string;
-  given: number | "+" | "-" | "*" | "/";
-  expected: number | "+" | "-" | "*" | "/";
+  given: number | AttemptToken;
+  expected: number | AttemptToken;
   correct: boolean;
   /** ms since round start */
   atMs: number;

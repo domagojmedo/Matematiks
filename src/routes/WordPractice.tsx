@@ -24,6 +24,7 @@ import {
 } from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
+  type AttemptToken,
   type ProblemAttempt,
   type ProblemRecord,
   SetupKind,
@@ -34,6 +35,7 @@ import {
   buildSteps,
   finalInputPhase,
   phaseAtStep,
+  type WordComparePhase,
   type WordConvertPhase,
   type WordPhase,
   type WordPickOpPhase,
@@ -181,11 +183,13 @@ function WordPracticeRound({
       let b: number;
       let op: "+" | "-" | "*" | "/";
       let answer: number;
+      let userAnswer: number;
       if (finalPhase.kind === "answer") {
         a = finalPhase.a;
         b = finalPhase.b;
         op = finalPhase.op;
         answer = finalPhase.result;
+        userAnswer = finalPhase.expected;
       } else if (finalPhase.kind === "convert") {
         a = finalPhase.value;
         // Invariant: every convert template multiplies/divides by a factor > 1,
@@ -199,7 +203,8 @@ function WordPracticeRound({
           op = "/";
         }
         answer = finalPhase.expected;
-      } else {
+        userAnswer = finalPhase.expected;
+      } else if (finalPhase.kind === "solve") {
         // solve: prompt-driven single answer with no a/b equation. Synthesize a
         // trivial one so the Sessions list / SessionDetail row still renders;
         // the real content is the template prose, carried by templateId/numbers.
@@ -207,13 +212,22 @@ function WordPracticeRound({
         b = 0;
         op = "+";
         answer = finalPhase.expected;
+        userAnswer = finalPhase.expected;
+      } else {
+        // compare: non-numeric (</=/>). Record the difference so the history row
+        // still has a sensible numeric equation; correctness lives in attempts.
+        a = finalPhase.a;
+        b = finalPhase.b;
+        op = "-";
+        answer = finalPhase.a - finalPhase.b;
+        userAnswer = answer;
       }
       return {
         a,
         b,
         op,
         answer,
-        userAnswer: finalPhase.expected,
+        userAnswer,
         tookMs: Math.round(nowMs() - startedAtRef.current),
         retries: wrongCount,
         startedAtMs: Math.round(startedAtRef.current),
@@ -229,8 +243,8 @@ function WordPracticeRound({
 
   const handleWrong = useCallback(
     (
-      given: number | "+" | "-",
-      expected: number | "+" | "-",
+      given: number | AttemptToken,
+      expected: number | AttemptToken,
       kind: WordPhase["kind"],
     ) => {
       attemptsRef.current.push({
@@ -390,6 +404,40 @@ function WordPracticeRound({
     if (flash) return;
     setTyped("");
   }, [flash]);
+
+  const handleCompare = useCallback(
+    (rel: "<" | "=" | ">") => {
+      if (flash) return;
+      if (!currentPhase || currentPhase.kind !== "compare") return;
+      const expected = currentPhase.expected;
+      if (rel === expected) {
+        attemptsRef.current.push({
+          phaseIndex: phaseIdx,
+          phaseKind: "compare",
+          given: rel,
+          expected,
+          correct: true,
+          atMs: nowMs(),
+        });
+        setFlash("correct");
+        trackedTimeout(() => {
+          setFlash(null);
+          advancePhase();
+        }, FLASH_MS);
+      } else {
+        handleWrong(rel, expected, "compare");
+      }
+    },
+    [
+      flash,
+      currentPhase,
+      phaseIdx,
+      advancePhase,
+      handleWrong,
+      trackedTimeout,
+      nowMs,
+    ],
+  );
 
   // Voice input: submits the current phase only. pickOp phases are skipped
   // — we don't recognize "plus" / "minus" — so voice stays idle there and
@@ -569,6 +617,13 @@ function WordPracticeRound({
         }
         return;
       }
+      if (currentPhase?.kind === "compare") {
+        if (e.key === "<" || e.key === "=" || e.key === ">") {
+          e.preventDefault();
+          handleCompare(e.key);
+        }
+        return;
+      }
       if (e.key >= "0" && e.key <= "9") {
         e.preventDefault();
         handleDigit(Number(e.key));
@@ -585,7 +640,14 @@ function WordPracticeRound({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleDigit, handleDelete, handlePickOp, handleConfirm, currentPhase]);
+  }, [
+    handleDigit,
+    handleDelete,
+    handlePickOp,
+    handleConfirm,
+    handleCompare,
+    currentPhase,
+  ]);
 
   // ----- Rendering ----------------------------------------------------------
 
@@ -717,6 +779,8 @@ function WordPracticeRound({
 
         {currentPhase?.kind === "pickOp" ? (
           <PickOpPad onPick={handlePickOp} theme={theme} />
+        ) : currentPhase?.kind === "compare" ? (
+          <ComparePad onPick={handleCompare} theme={theme} />
         ) : currentPhase?.kind === "convert" ||
           currentPhase?.kind === "solve" ? (
           <NumPad
@@ -777,6 +841,17 @@ function StepLine({
         isActive={phaseIdx === step.answerIdx}
         isCompleted={phaseIdx > step.answerIdx}
         typed={typed}
+        flash={flash}
+        theme={theme}
+      />
+    );
+  }
+  if (inputPhase.kind === "compare") {
+    return (
+      <CompareStepLine
+        phase={inputPhase}
+        isActive={phaseIdx === step.answerIdx}
+        isCompleted={phaseIdx > step.answerIdx}
         flash={flash}
         theme={theme}
       />
@@ -993,6 +1068,75 @@ function SolveStepLine({
         )}
         <span className="text-stone-300 dark:text-stone-600">=</span>
         <span className={slotIsSlot ? slotClass : promptClass}>{slotText}</span>
+      </div>
+    </div>
+  );
+}
+
+function CompareStepLine({
+  phase,
+  isActive,
+  isCompleted,
+  flash,
+  theme,
+}: {
+  phase: WordComparePhase;
+  isActive: boolean;
+  isCompleted: boolean;
+  flash: Flash;
+  theme: import("../lib/themes").Theme;
+}) {
+  const dim = isCompleted ? "muted" : "live";
+  const numClass =
+    dim === "muted"
+      ? "text-stone-400 dark:text-stone-500"
+      : "text-stone-900 dark:text-white";
+  const relClass =
+    flash === "correct"
+      ? "text-emerald-500"
+      : flash === "wrong" && isActive
+        ? "text-rose-500"
+        : `${theme.primaryText} ${theme.primaryTextDark}`;
+  const relText = isCompleted ? phase.expected : "?";
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline gap-1.5 px-1 text-3xl font-black tabular-nums sm:gap-2.5 sm:text-4xl">
+        <span className={numClass}>{phase.a}</span>
+        <span className={isCompleted ? numClass : relClass}>{relText}</span>
+        <span className={numClass}>{phase.b}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Compare pad: three relation buttons, shown during compare phases.
+// ---------------------------------------------------------------------------
+
+function ComparePad({
+  onPick,
+  theme,
+}: {
+  onPick: (rel: "<" | "=" | ">") => void;
+  theme: import("../lib/themes").Theme;
+}) {
+  const padHeight = "h-[15.875rem] sm:h-[17.875rem]";
+  const btnClass = `flex ${padHeight} items-center justify-center rounded-2xl bg-white text-6xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition tabular-nums hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`;
+  const rels: Array<"<" | "=" | ">"> = ["<", "=", ">"];
+  return (
+    <div className="px-4 pt-2 pb-3 sm:pb-5">
+      <div className="grid grid-cols-3 gap-2.5">
+        {rels.map((rel) => (
+          <button
+            key={rel}
+            type="button"
+            onClick={() => onPick(rel)}
+            aria-label={rel}
+            className={btnClass}
+          >
+            {rel}
+          </button>
+        ))}
       </div>
     </div>
   );

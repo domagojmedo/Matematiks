@@ -394,13 +394,17 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 47 templates across arith + muldiv + 5 conversion families", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(47);
+  it("includes 54 templates across arith + number-sense + conversions", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(54);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.story).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.muldivword).toHaveLength(5);
+    expect(TEMPLATES_BY_TYPE.compare).toHaveLength(1);
+    expect(TEMPLATES_BY_TYPE.rounding).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.partsOfWhole).toHaveLength(3);
+    expect(TEMPLATES_BY_TYPE.placeValue).toHaveLength(1);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
@@ -465,5 +469,67 @@ describe("range scoping via GenContext", () => {
     }
     expect(g2Max).toBeLessThanOrEqual(10);
     expect(g34Max).toBeGreaterThan(10);
+  });
+});
+
+describe("number-sense templates", () => {
+  it("compare: exactly one correct relation, matching a vs b", () => {
+    const t = TEMPLATES.compare_numbers as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "compare") throw new Error("expected compare");
+      const want = phase.a < phase.b ? "<" : phase.a > phase.b ? ">" : "=";
+      expect(phase.expected).toBe(want);
+    }
+  });
+
+  it("rounding: solve answer is the value rounded to the unit", () => {
+    for (const [id, unit] of [
+      ["round_to_ten", 10],
+      ["round_to_hundred", 100],
+    ] as const) {
+      const t = TEMPLATES[id] as WordTemplate;
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "solve") throw new Error("expected solve");
+        const n = p.numbers[0] as number;
+        expect(n % unit).not.toBe(0); // never a trivial no-op
+        expect(phase.expected).toBe(Math.round(n / unit) * unit);
+      }
+    }
+  });
+
+  it("parts-of-whole: whole answer = n / divisor", () => {
+    for (const [id, d] of [
+      ["part_half", 2],
+      ["part_third", 3],
+      ["part_quarter", 4],
+    ] as const) {
+      const t = TEMPLATES[id] as WordTemplate;
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "solve") throw new Error("expected solve");
+        const n = p.numbers[0] as number;
+        expect(n % d).toBe(0);
+        expect(phase.expected).toBe(n / d);
+      }
+    }
+  });
+
+  it("place-value: one solve step per digit, each expects that digit", () => {
+    const t = TEMPLATES.place_value_decompose as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const n = p.numbers[0] as number;
+      const digits = String(n).split("").map(Number);
+      expect(p.phases).toHaveLength(digits.length);
+      p.phases.forEach((ph, idx) => {
+        if (ph.kind !== "solve") throw new Error("expected solve");
+        expect(ph.expected).toBe(digits[idx]);
+      });
+    }
   });
 });

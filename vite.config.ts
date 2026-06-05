@@ -21,5 +21,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss()],
   test: {
     environment: "jsdom",
+    // Playwright specs under e2e/ are run by `npm run test:e2e`, not Vitest.
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
   },
 }));
