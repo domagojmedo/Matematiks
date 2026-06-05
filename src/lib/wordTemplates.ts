@@ -815,6 +815,29 @@ const placeValueDecompose: WordTemplate = {
 
 const PLACE_VALUE_TEMPLATES: readonly WordTemplate[] = [placeValueDecompose];
 
+// Fractions (grade 4): a bar split into `parts` with `shaded` filled; the kid
+// types the numerator (= shaded). Denominators stay in the kid-friendly set.
+const fractionNumerator: WordTemplate = {
+  id: "fraction_numerator",
+  type: "fraction",
+  generate: () => {
+    const parts = pick([2, 3, 4, 6, 8]);
+    const shaded = randInt(1, parts - 1);
+    const phases: WordPhase[] = [
+      { kind: "fraction", parts, shaded, expected: shaded },
+    ];
+    return {
+      templateId: fractionNumerator.id,
+      numbers: [shaded, parts],
+      phases,
+    };
+  },
+  renderProse: (p) =>
+    `Koliko je dijelova obojano? Nazivnik je ${p.numbers[1]}.`,
+};
+
+const FRACTION_TEMPLATES: readonly WordTemplate[] = [fractionNumerator];
+
 // ---------------------------------------------------------------------------
 // Unit-conversion templates (mass + volume). Each template fixes the from/to
 // units and generates a whole-number source value so the answer is also whole.
@@ -1227,6 +1250,7 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [thirdOf.id]: thirdOf,
   [quarterOf.id]: quarterOf,
   [placeValueDecompose.id]: placeValueDecompose,
+  [fractionNumerator.id]: fractionNumerator,
   [convertKgToG.id]: convertKgToG,
   [convertGToKg.id]: convertGToKg,
   [convertKgToDag.id]: convertKgToDag,
@@ -1281,6 +1305,7 @@ export const TEMPLATES_BY_TYPE: Record<WordKind, readonly WordTemplate[]> = {
   rounding: ROUNDING_TEMPLATES,
   partsOfWhole: PARTS_OF_WHOLE_TEMPLATES,
   placeValue: PLACE_VALUE_TEMPLATES,
+  fraction: FRACTION_TEMPLATES,
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
   convertLength: LENGTH_CONVERT_TEMPLATES,

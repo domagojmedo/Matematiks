@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
+import { FractionVisual } from "../components/FractionVisual";
 import { Mascot } from "../components/Mascot";
 import {
   CounterStrip,
@@ -37,6 +38,7 @@ import {
   phaseAtStep,
   type WordComparePhase,
   type WordConvertPhase,
+  type WordFractionPhase,
   type WordPhase,
   type WordPickOpPhase,
   type WordProblem,
@@ -204,8 +206,12 @@ function WordPracticeRound({
         }
         answer = finalPhase.expected;
         userAnswer = finalPhase.expected;
-      } else if (finalPhase.kind === "solve") {
-        // solve: prompt-driven single answer with no a/b equation. Synthesize a
+      } else if (
+        finalPhase.kind === "solve" ||
+        finalPhase.kind === "fraction"
+      ) {
+        // solve/fraction: prompt-driven single answer with no a/b equation.
+        // Synthesize a
         // trivial one so the Sessions list / SessionDetail row still renders;
         // the real content is the template prose, carried by templateId/numbers.
         a = finalPhase.expected;
@@ -318,16 +324,21 @@ function WordPracticeRound({
         !currentPhase ||
         (currentPhase.kind !== "answer" &&
           currentPhase.kind !== "convert" &&
-          currentPhase.kind !== "solve")
+          currentPhase.kind !== "solve" &&
+          currentPhase.kind !== "fraction")
       )
         return;
       if (typed.length >= MAX_DIGITS) return;
       const next = typed + String(n);
       setTyped(next);
-      // Convert and solve phases use an explicit confirm key — the kid types the
-      // full answer and presses ✓. Without that, the auto-submit-on-match below
-      // would mark "200" correct even when the kid was about to type "2000".
-      if (currentPhase.kind === "convert" || currentPhase.kind === "solve")
+      // Convert/solve/fraction phases use an explicit confirm key — the kid types
+      // the full answer and presses ✓. Without that, the auto-submit-on-match
+      // below would mark "200" correct when they meant to type "2000".
+      if (
+        currentPhase.kind === "convert" ||
+        currentPhase.kind === "solve" ||
+        currentPhase.kind === "fraction"
+      )
         return;
       const parsed = Number.parseInt(next, 10);
       const expected = currentPhase.expected;
@@ -366,7 +377,9 @@ function WordPracticeRound({
     if (flash) return;
     if (
       !currentPhase ||
-      (currentPhase.kind !== "convert" && currentPhase.kind !== "solve")
+      (currentPhase.kind !== "convert" &&
+        currentPhase.kind !== "solve" &&
+        currentPhase.kind !== "fraction")
     )
       return;
     if (typed.length === 0) return;
@@ -445,7 +458,8 @@ function WordPracticeRound({
   const isNumberPhase =
     currentPhase?.kind === "answer" ||
     currentPhase?.kind === "convert" ||
-    currentPhase?.kind === "solve";
+    currentPhase?.kind === "solve" ||
+    currentPhase?.kind === "fraction";
 
   const submitFullAnswer = useCallback(
     (n: number) => {
@@ -454,7 +468,8 @@ function WordPracticeRound({
       if (
         currentPhase.kind !== "answer" &&
         currentPhase.kind !== "convert" &&
-        currentPhase.kind !== "solve"
+        currentPhase.kind !== "solve" &&
+        currentPhase.kind !== "fraction"
       ) {
         return;
       }
@@ -632,7 +647,9 @@ function WordPracticeRound({
         handleDelete();
       } else if (
         e.key === "Enter" &&
-        (currentPhase?.kind === "convert" || currentPhase?.kind === "solve")
+        (currentPhase?.kind === "convert" ||
+          currentPhase?.kind === "solve" ||
+          currentPhase?.kind === "fraction")
       ) {
         e.preventDefault();
         handleConfirm();
@@ -782,7 +799,8 @@ function WordPracticeRound({
         ) : currentPhase?.kind === "compare" ? (
           <ComparePad onPick={handleCompare} theme={theme} />
         ) : currentPhase?.kind === "convert" ||
-          currentPhase?.kind === "solve" ? (
+          currentPhase?.kind === "solve" ||
+          currentPhase?.kind === "fraction" ? (
           <NumPad
             onDigit={handleDigit}
             onDelete={handleDelete}
@@ -852,6 +870,18 @@ function StepLine({
         phase={inputPhase}
         isActive={phaseIdx === step.answerIdx}
         isCompleted={phaseIdx > step.answerIdx}
+        flash={flash}
+        theme={theme}
+      />
+    );
+  }
+  if (inputPhase.kind === "fraction") {
+    return (
+      <FractionStepLine
+        phase={inputPhase}
+        isActive={phaseIdx === step.answerIdx}
+        isCompleted={phaseIdx > step.answerIdx}
+        typed={typed}
         flash={flash}
         theme={theme}
       />
@@ -1068,6 +1098,50 @@ function SolveStepLine({
         )}
         <span className="text-stone-300 dark:text-stone-600">=</span>
         <span className={slotIsSlot ? slotClass : promptClass}>{slotText}</span>
+      </div>
+    </div>
+  );
+}
+
+function FractionStepLine({
+  phase,
+  isActive,
+  isCompleted,
+  typed,
+  flash,
+  theme,
+}: {
+  phase: WordFractionPhase;
+  isActive: boolean;
+  isCompleted: boolean;
+  typed: string;
+  flash: Flash;
+  theme: import("../lib/themes").Theme;
+}) {
+  const numClass = isCompleted
+    ? "text-stone-400 dark:text-stone-500"
+    : "text-stone-900 dark:text-white";
+  const slotClass =
+    flash === "correct"
+      ? "text-emerald-500"
+      : flash === "wrong" && isActive
+        ? "text-rose-500"
+        : `${theme.primaryText} ${theme.primaryTextDark}`;
+  const slotText = isCompleted
+    ? String(phase.expected)
+    : isActive
+      ? typed || "?"
+      : "?";
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <FractionVisual parts={phase.parts} shaded={phase.shaded} theme={theme} />
+      {/* numerator / denominator: kid types the numerator */}
+      <div className="flex flex-col items-center text-3xl font-black tabular-nums sm:text-4xl">
+        <span className={isActive && !isCompleted ? slotClass : numClass}>
+          {slotText}
+        </span>
+        <span className="my-0.5 h-0.5 w-8 rounded bg-stone-400 dark:bg-stone-500" />
+        <span className={numClass}>{phase.parts}</span>
       </div>
     </div>
   );

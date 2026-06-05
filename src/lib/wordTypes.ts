@@ -99,19 +99,35 @@ export type WordComparePhase = {
   stepLabel?: string;
 };
 
+/**
+ * Fraction recognition: a shape split into `parts` with `shaded` filled. The
+ * kid types the numerator (`expected === shaded`); the denominator is shown by
+ * the visual. Numeric input like `solve`, but rendered with a FractionVisual.
+ */
+export type WordFractionPhase = {
+  kind: "fraction";
+  parts: number;
+  shaded: number;
+  expected: number;
+  stepStart?: boolean;
+  stepLabel?: string;
+};
+
 export type WordPhase =
   | WordPickOpPhase
   | WordAnswerPhase
   | WordConvertPhase
   | WordSolvePhase
-  | WordComparePhase;
+  | WordComparePhase
+  | WordFractionPhase;
 
 /** Phases that take user input and end a step (never `pickOp`). */
 export type WordInputPhase =
   | WordAnswerPhase
   | WordConvertPhase
   | WordSolvePhase
-  | WordComparePhase;
+  | WordComparePhase
+  | WordFractionPhase;
 
 /**
  * Optional generation context threaded from `WordLessonSetup` into each
@@ -160,7 +176,8 @@ export function finalInputPhase(problem: WordProblem): WordInputPhase {
       (phase.kind === "answer" ||
         phase.kind === "convert" ||
         phase.kind === "solve" ||
-        phase.kind === "compare")
+        phase.kind === "compare" ||
+        phase.kind === "fraction")
     )
       return phase;
   }
@@ -214,7 +231,8 @@ export function buildSteps(phases: WordPhase[]): WordStepView[] {
       const ownLabel =
         phase.kind === "answer" ||
         phase.kind === "solve" ||
-        phase.kind === "compare"
+        phase.kind === "compare" ||
+        phase.kind === "fraction"
           ? phase.stepLabel
           : undefined;
       steps.push({

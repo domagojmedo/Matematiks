@@ -394,8 +394,8 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 54 templates across arith + number-sense + conversions", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(54);
+  it("includes 55 templates across arith + number-sense + conversions", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(55);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
@@ -405,6 +405,7 @@ describe("template registry coverage", () => {
     expect(TEMPLATES_BY_TYPE.rounding).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.partsOfWhole).toHaveLength(3);
     expect(TEMPLATES_BY_TYPE.placeValue).toHaveLength(1);
+    expect(TEMPLATES_BY_TYPE.fraction).toHaveLength(1);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
@@ -530,6 +531,21 @@ describe("number-sense templates", () => {
         if (ph.kind !== "solve") throw new Error("expected solve");
         expect(ph.expected).toBe(digits[idx]);
       });
+    }
+  });
+});
+
+describe("fraction templates", () => {
+  it("fraction_numerator: expected = shaded, 1 ≤ shaded < parts", () => {
+    const t = TEMPLATES.fraction_numerator as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "fraction") throw new Error("expected fraction");
+      expect(phase.expected).toBe(phase.shaded);
+      expect(phase.shaded).toBeGreaterThanOrEqual(1);
+      expect(phase.shaded).toBeLessThan(phase.parts);
+      expect([2, 3, 4, 6, 8]).toContain(phase.parts);
     }
   });
 });

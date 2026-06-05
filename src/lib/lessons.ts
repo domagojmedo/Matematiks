@@ -527,6 +527,12 @@ export const LESSONS: Lesson[] = [
     wordKind: "placeValue",
     maxNumber: 1000,
   }),
+  word({
+    id: "g4-fractions",
+    grade: 4,
+    nameKey: "lessons.g4.fractions",
+    wordKind: "fraction",
+  }),
 ];
 
 export function lessonsByGrade(grade: Grade, language?: Language): Lesson[] {

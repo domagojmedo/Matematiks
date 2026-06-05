@@ -59,6 +59,7 @@ export type WordKind =
   | "rounding"
   | "partsOfWhole"
   | "placeValue"
+  | "fraction"
   | "convertMass"
   | "convertVolume"
   | "convertLength"

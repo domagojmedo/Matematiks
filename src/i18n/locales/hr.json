@@ -103,7 +103,8 @@
       "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
       "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)",
       "rounding": "Zaokruživanje (deseticu, stoticu)",
-      "placeValue": "Mjesne vrijednosti (rastavljanje)"
+      "placeValue": "Mjesne vrijednosti (rastavljanje)",
+      "fractions": "Razlomci (prepoznavanje)"
     }
   },
   "operations": {
