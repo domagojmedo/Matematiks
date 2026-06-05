@@ -51,6 +51,9 @@ export function isConvertKind(wordKind: WordKind): boolean {
   return (
     wordKind === "convertMass" ||
     wordKind === "convertVolume" ||
+    wordKind === "convertLength" ||
+    wordKind === "convertMoney" ||
+    wordKind === "convertTime" ||
     wordKind === "convertMix"
   );
 }

@@ -44,8 +44,17 @@ export type MassUnit = "g" | "dag" | "kg" | "t";
  * litres and decilitres (1 l = 10 dl). */
 export type VolumeUnit = "dl" | "l";
 
+/** Length-unit symbols (1 km = 1000 m, 1 m = 100 cm = 10 dm, 1 cm = 10 mm). */
+export type LengthUnit = "mm" | "cm" | "dm" | "m" | "km";
+
+/** Money-unit symbols — euro only, never kuna (1 € = 100 cent). */
+export type MoneyUnit = "€" | "cent";
+
+/** Time-unit symbols (1 h = 60 min, 1 min = 60 s, 1 dan = 24 h, 1 tjedan = 7 dana). */
+export type TimeUnit = "s" | "min" | "h" | "dan" | "tjedan";
+
 /** Any unit a conversion problem can quiz. */
-export type Unit = MassUnit | VolumeUnit;
+export type Unit = MassUnit | VolumeUnit | LengthUnit | MoneyUnit | TimeUnit;
 
 /**
  * Unit-conversion phase. The kid sees `value <fromUnit> = ? <toUnit>` and

@@ -579,7 +579,12 @@ function buildConvertTemplate(
   pickValue: () => number,
   factor: number,
   direction: "expand" | "compress",
-  family: "convertMass" | "convertVolume",
+  family:
+    | "convertMass"
+    | "convertVolume"
+    | "convertLength"
+    | "convertMoney"
+    | "convertTime",
 ): WordTemplate {
   return {
     id,
@@ -726,6 +731,223 @@ const VOLUME_CONVERT_TEMPLATES: readonly WordTemplate[] = [
   convertDlToL,
 ];
 
+// Length conversions: mm/cm/dm/m/km. Same whole-number guarantee — small side
+// ≤10, big side an exact multiple. Pairs: cm↔mm, dm↔cm, m↔dm (×10), m↔cm (×100),
+// km↔m (×1000).
+const convertCmToMm = buildConvertTemplate(
+  "convert_cm_to_mm",
+  "cm",
+  "mm",
+  () => randInt(2, 10),
+  10,
+  "expand",
+  "convertLength",
+);
+const convertMmToCm = buildConvertTemplate(
+  "convert_mm_to_cm",
+  "mm",
+  "cm",
+  () => randInt(2, 10) * 10,
+  10,
+  "compress",
+  "convertLength",
+);
+const convertDmToCm = buildConvertTemplate(
+  "convert_dm_to_cm",
+  "dm",
+  "cm",
+  () => randInt(2, 10),
+  10,
+  "expand",
+  "convertLength",
+);
+const convertCmToDm = buildConvertTemplate(
+  "convert_cm_to_dm",
+  "cm",
+  "dm",
+  () => randInt(2, 10) * 10,
+  10,
+  "compress",
+  "convertLength",
+);
+const convertMToDm = buildConvertTemplate(
+  "convert_m_to_dm",
+  "m",
+  "dm",
+  () => randInt(2, 10),
+  10,
+  "expand",
+  "convertLength",
+);
+const convertDmToM = buildConvertTemplate(
+  "convert_dm_to_m",
+  "dm",
+  "m",
+  () => randInt(2, 10) * 10,
+  10,
+  "compress",
+  "convertLength",
+);
+const convertMToCm = buildConvertTemplate(
+  "convert_m_to_cm",
+  "m",
+  "cm",
+  () => randInt(1, 10),
+  100,
+  "expand",
+  "convertLength",
+);
+const convertCmToM = buildConvertTemplate(
+  "convert_cm_to_m",
+  "cm",
+  "m",
+  () => randInt(1, 10) * 100,
+  100,
+  "compress",
+  "convertLength",
+);
+const convertKmToM = buildConvertTemplate(
+  "convert_km_to_m",
+  "km",
+  "m",
+  () => randInt(1, 10),
+  1000,
+  "expand",
+  "convertLength",
+);
+const convertMToKm = buildConvertTemplate(
+  "convert_m_to_km",
+  "m",
+  "km",
+  () => randInt(1, 10) * 1000,
+  1000,
+  "compress",
+  "convertLength",
+);
+
+const LENGTH_CONVERT_TEMPLATES: readonly WordTemplate[] = [
+  convertCmToMm,
+  convertMmToCm,
+  convertDmToCm,
+  convertCmToDm,
+  convertMToDm,
+  convertDmToM,
+  convertMToCm,
+  convertCmToM,
+  convertKmToM,
+  convertMToKm,
+];
+
+// Money conversions: euro ↔ cent (1 € = 100 cent). Euro only — never kuna.
+const convertEurToCent = buildConvertTemplate(
+  "convert_eur_to_cent",
+  "€",
+  "cent",
+  () => randInt(1, 10),
+  100,
+  "expand",
+  "convertMoney",
+);
+const convertCentToEur = buildConvertTemplate(
+  "convert_cent_to_eur",
+  "cent",
+  "€",
+  () => randInt(1, 10) * 100,
+  100,
+  "compress",
+  "convertMoney",
+);
+
+const MONEY_CONVERT_TEMPLATES: readonly WordTemplate[] = [
+  convertEurToCent,
+  convertCentToEur,
+];
+
+// Time conversions: h↔min, min↔s (×60), dan↔h (×24), tjedan↔dan (×7).
+const convertHToMin = buildConvertTemplate(
+  "convert_h_to_min",
+  "h",
+  "min",
+  () => randInt(2, 10),
+  60,
+  "expand",
+  "convertTime",
+);
+const convertMinToH = buildConvertTemplate(
+  "convert_min_to_h",
+  "min",
+  "h",
+  () => randInt(2, 10) * 60,
+  60,
+  "compress",
+  "convertTime",
+);
+const convertMinToS = buildConvertTemplate(
+  "convert_min_to_s",
+  "min",
+  "s",
+  () => randInt(2, 10),
+  60,
+  "expand",
+  "convertTime",
+);
+const convertSToMin = buildConvertTemplate(
+  "convert_s_to_min",
+  "s",
+  "min",
+  () => randInt(2, 10) * 60,
+  60,
+  "compress",
+  "convertTime",
+);
+const convertDanToH = buildConvertTemplate(
+  "convert_dan_to_h",
+  "dan",
+  "h",
+  () => randInt(1, 10),
+  24,
+  "expand",
+  "convertTime",
+);
+const convertHToDan = buildConvertTemplate(
+  "convert_h_to_dan",
+  "h",
+  "dan",
+  () => randInt(1, 10) * 24,
+  24,
+  "compress",
+  "convertTime",
+);
+const convertTjedanToDan = buildConvertTemplate(
+  "convert_tjedan_to_dan",
+  "tjedan",
+  "dan",
+  () => randInt(1, 10),
+  7,
+  "expand",
+  "convertTime",
+);
+const convertDanToTjedan = buildConvertTemplate(
+  "convert_dan_to_tjedan",
+  "dan",
+  "tjedan",
+  () => randInt(1, 10) * 7,
+  7,
+  "compress",
+  "convertTime",
+);
+
+const TIME_CONVERT_TEMPLATES: readonly WordTemplate[] = [
+  convertHToMin,
+  convertMinToH,
+  convertMinToS,
+  convertSToMin,
+  convertDanToH,
+  convertHToDan,
+  convertTjedanToDan,
+  convertDanToTjedan,
+];
+
 // ---------------------------------------------------------------------------
 // Registry — keyed by templateId for lookup, grouped by type for stratified
 // per-lesson selection.
@@ -754,6 +976,26 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [convertKgToT.id]: convertKgToT,
   [convertLToDl.id]: convertLToDl,
   [convertDlToL.id]: convertDlToL,
+  [convertCmToMm.id]: convertCmToMm,
+  [convertMmToCm.id]: convertMmToCm,
+  [convertDmToCm.id]: convertDmToCm,
+  [convertCmToDm.id]: convertCmToDm,
+  [convertMToDm.id]: convertMToDm,
+  [convertDmToM.id]: convertDmToM,
+  [convertMToCm.id]: convertMToCm,
+  [convertCmToM.id]: convertCmToM,
+  [convertKmToM.id]: convertKmToM,
+  [convertMToKm.id]: convertMToKm,
+  [convertEurToCent.id]: convertEurToCent,
+  [convertCentToEur.id]: convertCentToEur,
+  [convertHToMin.id]: convertHToMin,
+  [convertMinToH.id]: convertMinToH,
+  [convertMinToS.id]: convertMinToS,
+  [convertSToMin.id]: convertSToMin,
+  [convertDanToH.id]: convertDanToH,
+  [convertHToDan.id]: convertHToDan,
+  [convertTjedanToDan.id]: convertTjedanToDan,
+  [convertDanToTjedan.id]: convertDanToTjedan,
 };
 
 // Keyed by every WordKind that maps to a fixed template list. "mixed" and
@@ -779,6 +1021,9 @@ export const TEMPLATES_BY_TYPE: Record<
   story: [storyFewer, storyMore],
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
+  convertLength: LENGTH_CONVERT_TEMPLATES,
+  convertMoney: MONEY_CONVERT_TEMPLATES,
+  convertTime: TIME_CONVERT_TEMPLATES,
 };
 
 export function findTemplate(id: string): WordTemplate | undefined {

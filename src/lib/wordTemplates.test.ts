@@ -240,6 +240,9 @@ describe("story templates — 4 phases, names + noun + total ≤ 20", () => {
 const ALL_CONVERT_TEMPLATES = [
   ...TEMPLATES_BY_TYPE.convertMass,
   ...TEMPLATES_BY_TYPE.convertVolume,
+  ...TEMPLATES_BY_TYPE.convertLength,
+  ...TEMPLATES_BY_TYPE.convertMoney,
+  ...TEMPLATES_BY_TYPE.convertTime,
 ];
 
 describe("convert templates (mass + volume) — whole-number conversions only", () => {
@@ -347,6 +350,35 @@ describe("convert templates (mass + volume) — whole-number conversions only", 
       }
     }
   });
+
+  it("length / money / time conversions round-trip on whole numbers", () => {
+    const checks: Array<[string, number, "expand" | "compress"]> = [
+      ["convert_cm_to_mm", 10, "expand"],
+      ["convert_m_to_cm", 100, "expand"],
+      ["convert_km_to_m", 1000, "expand"],
+      ["convert_m_to_km", 1000, "compress"],
+      ["convert_eur_to_cent", 100, "expand"],
+      ["convert_cent_to_eur", 100, "compress"],
+      ["convert_h_to_min", 60, "expand"],
+      ["convert_s_to_min", 60, "compress"],
+      ["convert_dan_to_h", 24, "expand"],
+      ["convert_tjedan_to_dan", 7, "expand"],
+    ];
+    for (const [id, factor, dir] of checks) {
+      const t = TEMPLATES[id] as WordTemplate;
+      for (let i = 0; i < ITER; i++) {
+        const p = t.generate();
+        const phase = p.phases[0];
+        if (phase?.kind !== "convert") throw new Error("expected convert");
+        if (dir === "expand") {
+          expect(phase.expected).toBe(phase.value * factor);
+        } else {
+          expect(phase.value % factor).toBe(0);
+          expect(phase.expected).toBe(phase.value / factor);
+        }
+      }
+    }
+  });
 });
 
 describe("findTemplate", () => {
@@ -362,14 +394,17 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 22 templates across 6 types (4 arith + mass + volume convert)", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(22);
+  it("includes 42 templates across arith + 5 conversion families", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(42);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.story).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
+    expect(TEMPLATES_BY_TYPE.convertMoney).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.convertTime).toHaveLength(8);
   });
 
   it("every template id is unique", () => {

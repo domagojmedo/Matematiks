@@ -260,6 +260,14 @@ export const LESSONS: Lesson[] = [
     },
   }),
 
+  // 2. razred — pretvaranje novca (HR only)
+  word({
+    id: "g2-units-money",
+    grade: 2,
+    nameKey: "lessons.g2.unitsMoney",
+    wordKind: "convertMoney",
+  }),
+
   // 3. razred
   arith({
     id: "g3-add-1000",
@@ -345,6 +353,18 @@ export const LESSONS: Lesson[] = [
     grade: 3,
     nameKey: "lessons.g3.unitsMassVolume",
     wordKind: "convertMix",
+  }),
+  word({
+    id: "g3-units-length",
+    grade: 3,
+    nameKey: "lessons.g3.unitsLength",
+    wordKind: "convertLength",
+  }),
+  word({
+    id: "g3-units-time",
+    grade: 3,
+    nameKey: "lessons.g3.unitsTime",
+    wordKind: "convertTime",
   }),
 
   // 4. razred

@@ -67,7 +67,8 @@
       "mul9": "Tablica množenja s 9",
       "mul10": "Tablica množenja s 10",
       "mulMixed": "Tablica množenja (mješano)",
-      "divTable": "Dijeljenje (tablica)"
+      "divTable": "Dijeljenje (tablica)",
+      "unitsMoney": "Mjerne jedinice — novac"
     },
     "g3": {
       "add1000": "Pisano zbrajanje do 1000",
@@ -77,7 +78,9 @@
       "muldivSingleDigit": "Množenje i dijeljenje (mješano)",
       "unitsMass": "Mjerne jedinice — masa",
       "unitsVolume": "Mjerne jedinice — obujam",
-      "unitsMassVolume": "Mjerne jedinice — masa i obujam"
+      "unitsMassVolume": "Mjerne jedinice — masa i obujam",
+      "unitsLength": "Mjerne jedinice — duljina",
+      "unitsTime": "Mjerne jedinice — vrijeme"
     },
     "g4": {
       "addLarge": "Pisano zbrajanje (veći brojevi)",

@@ -52,6 +52,9 @@ export type WordKind =
   | "mixed"
   | "convertMass"
   | "convertVolume"
+  | "convertLength"
+  | "convertMoney"
+  | "convertTime"
   | "convertMix";
 
 export type WordLessonSetup = {

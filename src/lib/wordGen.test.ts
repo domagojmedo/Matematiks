@@ -127,6 +127,22 @@ describe("WordGenerator", () => {
     }
   });
 
+  it.each([
+    ["convertLength", 10],
+    ["convertMoney", 2],
+    ["convertTime", 8],
+  ] as const)("%s lesson only draws templates from its own family", (kind, size) => {
+    expect(TEMPLATES_BY_TYPE[kind]).toHaveLength(size);
+    const familyIds = new Set(TEMPLATES_BY_TYPE[kind].map((t) => t.id));
+    const gen = new WordGenerator(makeSetup(kind, 30));
+    let prev = null;
+    for (let i = 0; i < 30; i++) {
+      const p: ReturnType<typeof gen.next> = gen.next(prev);
+      expect(familyIds.has(p.templateId)).toBe(true);
+      prev = p;
+    }
+  });
+
   it("convertMix lesson pools both mass and volume conversions", () => {
     const gen = new WordGenerator(makeSetup("convertMix", 32));
     const seen = new Set<string>();
