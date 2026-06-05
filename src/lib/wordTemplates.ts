@@ -7,7 +7,13 @@ import {
   NOUNS,
   nounPlural,
 } from "./wordDeclension";
-import type { GenContext, Unit, WordPhase, WordProblem } from "./wordTypes";
+import type {
+  GenContext,
+  ShapeGlyphKind,
+  Unit,
+  WordPhase,
+  WordProblem,
+} from "./wordTypes";
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -918,6 +924,112 @@ const PERIMETER_TEMPLATES: readonly WordTemplate[] = [
 ];
 const AREA_TEMPLATES: readonly WordTemplate[] = [areaRect, areaSquare];
 
+// Geometry recognition (grade 1+): a shape glyph + four name options (choice).
+const SHAPE_KINDS: readonly ShapeGlyphKind[] = [
+  "circle",
+  "square",
+  "rectangle",
+  "triangle",
+];
+const SHAPE_NAME: Record<ShapeGlyphKind, string> = {
+  circle: "krug",
+  square: "kvadrat",
+  rectangle: "pravokutnik",
+  triangle: "trokut",
+};
+
+function shuffled<T>(arr: readonly T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i] as T;
+    out[i] = out[j] as T;
+    out[j] = tmp;
+  }
+  return out;
+}
+
+const shapeRecognize: WordTemplate = {
+  id: "shape_recognize",
+  type: "shapes",
+  generate: () => {
+    const target = pick(SHAPE_KINDS);
+    const options = shuffled(SHAPE_KINDS.map((k) => SHAPE_NAME[k]));
+    const expectedIndex = options.indexOf(SHAPE_NAME[target]);
+    const phases: WordPhase[] = [
+      { kind: "choice", options, expectedIndex, glyph: target },
+    ];
+    return {
+      templateId: shapeRecognize.id,
+      numbers: [SHAPE_KINDS.indexOf(target)],
+      phases,
+    };
+  },
+  renderProse: () => "Koji je ovo lik?",
+};
+
+const SHAPE_TEMPLATES: readonly WordTemplate[] = [shapeRecognize];
+
+// Probability vocabulary (grade 2/4): classify an everyday event (choice).
+const PROB_OPTIONS = ["sigurno", "moguće", "nemoguće"];
+const PROB_SCENARIOS: { text: string; ans: number }[] = [
+  { text: "Sutra će biti dan nakon noći.", ans: 0 },
+  { text: "Ako baciš novčić, past će na pismo.", ans: 1 },
+  { text: "Mačka će progovoriti hrvatski.", ans: 2 },
+  { text: "Iz vrećice s crvenim kuglicama izvući ćeš crvenu.", ans: 0 },
+  { text: "Sutra će padati snijeg u srpnju.", ans: 2 },
+  { text: "Kocka će pokazati broj 4.", ans: 1 },
+];
+
+const probabilityVocab: WordTemplate = {
+  id: "probability_vocab",
+  type: "probability",
+  generate: () => {
+    const idx = randInt(0, PROB_SCENARIOS.length - 1);
+    const sc = PROB_SCENARIOS[idx] as (typeof PROB_SCENARIOS)[number];
+    const phases: WordPhase[] = [
+      { kind: "choice", options: PROB_OPTIONS, expectedIndex: sc.ans },
+    ];
+    return {
+      templateId: probabilityVocab.id,
+      numbers: [idx],
+      vars: { text: sc.text },
+      phases,
+    };
+  },
+  renderProse: (p) =>
+    `${p.vars?.text ?? ""} Je li to siguran, moguć ili nemoguć događaj?`,
+};
+
+const PROBABILITY_TEMPLATES: readonly WordTemplate[] = [probabilityVocab];
+
+// Data / bar charts (grade 3): read a value off a small bar chart (solve).
+const CHART_LABELS = ["pon", "uto", "sri", "čet", "pet"];
+
+const dataChartRead: WordTemplate = {
+  id: "data_chart_read",
+  type: "dataChart",
+  generate: () => {
+    const labels = shuffled(CHART_LABELS).slice(0, 4);
+    const values = labels.map(() => randInt(1, 10));
+    const askIndex = randInt(0, labels.length - 1);
+    const expected = values[askIndex] as number;
+    const phases: WordPhase[] = [
+      { kind: "solve", expected, chart: { labels, values, askIndex } },
+    ];
+    return {
+      templateId: dataChartRead.id,
+      numbers: [expected, askIndex],
+      vars: { ask: labels[askIndex] as string },
+      phases,
+    };
+  },
+  renderProse: (p) =>
+    `Koliko prikazuje stupac „${p.vars?.ask ?? ""}” na dijagramu?`,
+};
+
+const DATA_CHART_TEMPLATES: readonly WordTemplate[] = [dataChartRead];
+
 // ---------------------------------------------------------------------------
 // Unit-conversion templates (mass + volume). Each template fixes the from/to
 // units and generates a whole-number source value so the answer is also whole.
@@ -1335,6 +1447,9 @@ export const TEMPLATES: Record<string, WordTemplate> = {
   [perimeterSquare.id]: perimeterSquare,
   [areaRect.id]: areaRect,
   [areaSquare.id]: areaSquare,
+  [shapeRecognize.id]: shapeRecognize,
+  [probabilityVocab.id]: probabilityVocab,
+  [dataChartRead.id]: dataChartRead,
   [convertKgToG.id]: convertKgToG,
   [convertGToKg.id]: convertGToKg,
   [convertKgToDag.id]: convertKgToDag,
@@ -1392,6 +1507,9 @@ export const TEMPLATES_BY_TYPE: Record<WordKind, readonly WordTemplate[]> = {
   fraction: FRACTION_TEMPLATES,
   perimeter: PERIMETER_TEMPLATES,
   area: AREA_TEMPLATES,
+  shapes: SHAPE_TEMPLATES,
+  probability: PROBABILITY_TEMPLATES,
+  dataChart: DATA_CHART_TEMPLATES,
   convertMass: MASS_CONVERT_TEMPLATES,
   convertVolume: VOLUME_CONVERT_TEMPLATES,
   convertLength: LENGTH_CONVERT_TEMPLATES,

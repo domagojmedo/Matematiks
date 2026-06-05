@@ -56,7 +56,8 @@
       "wordCompound": "Zadaci s riječima — složeni izrazi",
       "wordStory": "Zadaci s riječima — manje od i više od",
       "wordMixed": "Zadaci s riječima — sve vrste",
-      "compare": "Usporedi brojeve (<, =, >)"
+      "compare": "Usporedi brojeve (<, =, >)",
+      "shapes": "Prepoznaj geometrijske likove"
     },
     "g2": {
       "add100": "Zbrajanje do 100",
@@ -77,7 +78,8 @@
       "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
       "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)",
       "compare": "Usporedi brojeve do 100",
-      "parts": "Polovina, trećina, četvrtina"
+      "parts": "Polovina, trećina, četvrtina",
+      "probability": "Vjerojatnost (sigurno, moguće, nemoguće)"
     },
     "g3": {
       "add1000": "Pisano zbrajanje do 1000",
@@ -93,7 +95,8 @@
       "wordVocab": "Zadaci riječima (zbrajanje i oduzimanje)",
       "wordMulDiv": "Zadaci riječima (množenje i dijeljenje)",
       "placeValue": "Mjesne vrijednosti (rastavljanje)",
-      "perimeter": "Opseg pravokutnika i kvadrata"
+      "perimeter": "Opseg pravokutnika i kvadrata",
+      "data": "Čitanje stupčastog dijagrama"
     },
     "g4": {
       "addLarge": "Pisano zbrajanje (veći brojevi)",

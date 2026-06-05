@@ -216,6 +216,12 @@ export const LESSONS: Lesson[] = [
     nameKey: "lessons.g1.compare",
     wordKind: "compare",
   }),
+  word({
+    id: "g1-shapes",
+    grade: 1,
+    nameKey: "lessons.g1.shapes",
+    wordKind: "shapes",
+  }),
 
   // 2. razred
   arith({
@@ -310,6 +316,12 @@ export const LESSONS: Lesson[] = [
     grade: 2,
     nameKey: "lessons.g2.parts",
     wordKind: "partsOfWhole",
+  }),
+  word({
+    id: "g2-probability",
+    grade: 2,
+    nameKey: "lessons.g2.probability",
+    wordKind: "probability",
   }),
 
   // 3. razred
@@ -435,6 +447,12 @@ export const LESSONS: Lesson[] = [
     grade: 3,
     nameKey: "lessons.g3.perimeter",
     wordKind: "perimeter",
+  }),
+  word({
+    id: "g3-data",
+    grade: 3,
+    nameKey: "lessons.g3.data",
+    wordKind: "dataChart",
   }),
 
   // 4. razred

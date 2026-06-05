@@ -90,6 +90,31 @@ export type WordSolvePhase = {
     height: number;
     measure: "perimeter" | "area";
   };
+  /** Optional bar chart to read the answer off of (data lessons). */
+  chart?: {
+    labels: string[];
+    values: number[];
+    /** Index of the bar the prompt asks about; `expected === values[askIndex]`. */
+    askIndex: number;
+  };
+  stepStart?: boolean;
+  stepLabel?: string;
+};
+
+/** A 2D shape a glyph can draw, for shape-recognition `choice` problems. */
+export type ShapeGlyphKind = "circle" | "square" | "rectangle" | "triangle";
+
+/**
+ * Pick one of N text options. Non-numeric (voice stays idle, like compare).
+ * Used for shape recognition (with a `glyph`) and probability vocabulary.
+ */
+export type WordChoicePhase = {
+  kind: "choice";
+  options: string[];
+  expectedIndex: number;
+  prompt?: string;
+  /** When set, a shape glyph is drawn above the options. */
+  glyph?: ShapeGlyphKind;
   stepStart?: boolean;
   stepLabel?: string;
 };
@@ -128,7 +153,8 @@ export type WordPhase =
   | WordConvertPhase
   | WordSolvePhase
   | WordComparePhase
-  | WordFractionPhase;
+  | WordFractionPhase
+  | WordChoicePhase;
 
 /** Phases that take user input and end a step (never `pickOp`). */
 export type WordInputPhase =
@@ -136,7 +162,8 @@ export type WordInputPhase =
   | WordConvertPhase
   | WordSolvePhase
   | WordComparePhase
-  | WordFractionPhase;
+  | WordFractionPhase
+  | WordChoicePhase;
 
 /**
  * Optional generation context threaded from `WordLessonSetup` into each
@@ -186,7 +213,8 @@ export function finalInputPhase(problem: WordProblem): WordInputPhase {
         phase.kind === "convert" ||
         phase.kind === "solve" ||
         phase.kind === "compare" ||
-        phase.kind === "fraction")
+        phase.kind === "fraction" ||
+        phase.kind === "choice")
     )
       return phase;
   }
@@ -241,7 +269,8 @@ export function buildSteps(phases: WordPhase[]): WordStepView[] {
         phase.kind === "answer" ||
         phase.kind === "solve" ||
         phase.kind === "compare" ||
-        phase.kind === "fraction"
+        phase.kind === "fraction" ||
+        phase.kind === "choice"
           ? phase.stepLabel
           : undefined;
       steps.push({

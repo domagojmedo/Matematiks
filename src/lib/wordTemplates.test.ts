@@ -394,8 +394,8 @@ describe("findTemplate", () => {
 });
 
 describe("template registry coverage", () => {
-  it("includes 59 templates across arith + number-sense + conversions", () => {
-    expect(Object.keys(TEMPLATES)).toHaveLength(59);
+  it("includes 62 templates across arith + number-sense + conversions", () => {
+    expect(Object.keys(TEMPLATES)).toHaveLength(62);
     expect(TEMPLATES_BY_TYPE.vocab).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.missing).toHaveLength(4);
     expect(TEMPLATES_BY_TYPE.compound).toHaveLength(4);
@@ -408,6 +408,9 @@ describe("template registry coverage", () => {
     expect(TEMPLATES_BY_TYPE.fraction).toHaveLength(1);
     expect(TEMPLATES_BY_TYPE.perimeter).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.area).toHaveLength(2);
+    expect(TEMPLATES_BY_TYPE.shapes).toHaveLength(1);
+    expect(TEMPLATES_BY_TYPE.probability).toHaveLength(1);
+    expect(TEMPLATES_BY_TYPE.dataChart).toHaveLength(1);
     expect(TEMPLATES_BY_TYPE.convertMass).toHaveLength(8);
     expect(TEMPLATES_BY_TYPE.convertVolume).toHaveLength(2);
     expect(TEMPLATES_BY_TYPE.convertLength).toHaveLength(10);
@@ -578,6 +581,56 @@ describe("perimeter & area templates", () => {
         expect(shape.measure).toBe("area");
         expect(phase.expected).toBe(shape.width * shape.height);
       }
+    }
+  });
+});
+
+describe("geometry / data / probability templates", () => {
+  it("shape recognition: glyph matches the correct option, 4 options", () => {
+    const t = TEMPLATES.shape_recognize as WordTemplate;
+    const names = ["krug", "kvadrat", "pravokutnik", "trokut"];
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "choice") throw new Error("expected choice");
+      expect(phase.options).toHaveLength(4);
+      expect(phase.options.slice().sort()).toEqual(names.slice().sort());
+      expect(phase.glyph).toBeDefined();
+      // the expected option names the drawn glyph
+      const nameByGlyph: Record<string, string> = {
+        circle: "krug",
+        square: "kvadrat",
+        rectangle: "pravokutnik",
+        triangle: "trokut",
+      };
+      expect(phase.options[phase.expectedIndex]).toBe(
+        nameByGlyph[phase.glyph as string],
+      );
+    }
+  });
+
+  it("probability: expectedIndex points at a valid option", () => {
+    const t = TEMPLATES.probability_vocab as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "choice") throw new Error("expected choice");
+      expect(phase.options).toEqual(["sigurno", "moguće", "nemoguće"]);
+      expect(phase.expectedIndex).toBeGreaterThanOrEqual(0);
+      expect(phase.expectedIndex).toBeLessThan(3);
+    }
+  });
+
+  it("data chart: solve answer equals the asked bar's value", () => {
+    const t = TEMPLATES.data_chart_read as WordTemplate;
+    for (let i = 0; i < ITER; i++) {
+      const p = t.generate();
+      const phase = p.phases[0];
+      if (phase?.kind !== "solve") throw new Error("expected solve");
+      const chart = phase.chart;
+      if (!chart) throw new Error("expected chart");
+      expect(phase.expected).toBe(chart.values[chart.askIndex]);
+      expect(chart.labels).toHaveLength(chart.values.length);
     }
   });
 });

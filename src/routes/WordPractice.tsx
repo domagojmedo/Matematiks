@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { FractionVisual } from "../components/FractionVisual";
 import { Mascot } from "../components/Mascot";
+import { MiniBarChart } from "../components/MiniBarChart";
 import {
   CounterStrip,
   LeaveModal,
@@ -11,6 +12,7 @@ import {
   VoiceButton,
 } from "../components/PracticeUI";
 import { ShapeDiagram } from "../components/ShapeDiagram";
+import { ShapeGlyph } from "../components/ShapeGlyphs";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
@@ -37,6 +39,7 @@ import {
   buildSteps,
   finalInputPhase,
   phaseAtStep,
+  type WordChoicePhase,
   type WordComparePhase,
   type WordConvertPhase,
   type WordFractionPhase,
@@ -220,13 +223,21 @@ function WordPracticeRound({
         op = "+";
         answer = finalPhase.expected;
         userAnswer = finalPhase.expected;
-      } else {
+      } else if (finalPhase.kind === "compare") {
         // compare: non-numeric (</=/>). Record the difference so the history row
         // still has a sensible numeric equation; correctness lives in attempts.
         a = finalPhase.a;
         b = finalPhase.b;
         op = "-";
         answer = finalPhase.a - finalPhase.b;
+        userAnswer = answer;
+      } else {
+        // choice: non-numeric (tap an option). Record the index so the row is
+        // valid; correctness lives in attempts.
+        a = finalPhase.expectedIndex;
+        b = 0;
+        op = "+";
+        answer = finalPhase.expectedIndex;
         userAnswer = answer;
       }
       return {
@@ -440,6 +451,40 @@ function WordPracticeRound({
         }, FLASH_MS);
       } else {
         handleWrong(rel, expected, "compare");
+      }
+    },
+    [
+      flash,
+      currentPhase,
+      phaseIdx,
+      advancePhase,
+      handleWrong,
+      trackedTimeout,
+      nowMs,
+    ],
+  );
+
+  const handleChoice = useCallback(
+    (index: number) => {
+      if (flash) return;
+      if (!currentPhase || currentPhase.kind !== "choice") return;
+      const expected = currentPhase.expectedIndex;
+      if (index === expected) {
+        attemptsRef.current.push({
+          phaseIndex: phaseIdx,
+          phaseKind: "choice",
+          given: index,
+          expected,
+          correct: true,
+          atMs: nowMs(),
+        });
+        setFlash("correct");
+        trackedTimeout(() => {
+          setFlash(null);
+          advancePhase();
+        }, FLASH_MS);
+      } else {
+        handleWrong(index, expected, "choice");
       }
     },
     [
@@ -799,6 +844,12 @@ function WordPracticeRound({
           <PickOpPad onPick={handlePickOp} theme={theme} />
         ) : currentPhase?.kind === "compare" ? (
           <ComparePad onPick={handleCompare} theme={theme} />
+        ) : currentPhase?.kind === "choice" ? (
+          <ChoicePad
+            options={currentPhase.options}
+            onPick={handleChoice}
+            theme={theme}
+          />
         ) : currentPhase?.kind === "convert" ||
           currentPhase?.kind === "solve" ||
           currentPhase?.kind === "fraction" ? (
@@ -884,6 +935,15 @@ function StepLine({
         isCompleted={phaseIdx > step.answerIdx}
         typed={typed}
         flash={flash}
+        theme={theme}
+      />
+    );
+  }
+  if (inputPhase.kind === "choice") {
+    return (
+      <ChoiceStepLine
+        phase={inputPhase}
+        isCompleted={phaseIdx > step.answerIdx}
         theme={theme}
       />
     );
@@ -1094,6 +1154,13 @@ function SolveStepLine({
       {phase.shape && (
         <ShapeDiagram width={phase.shape.width} height={phase.shape.height} />
       )}
+      {phase.chart && (
+        <MiniBarChart
+          labels={phase.chart.labels}
+          values={phase.chart.values}
+          theme={theme}
+        />
+      )}
       <div className="flex items-baseline gap-1.5 px-1 text-3xl font-black tabular-nums sm:gap-2.5 sm:text-4xl">
         {phase.prompt && (
           <span className={`${promptClass} text-2xl sm:text-3xl`}>
@@ -1182,6 +1249,57 @@ function CompareStepLine({
         <span className={numClass}>{phase.a}</span>
         <span className={isCompleted ? numClass : relClass}>{relText}</span>
         <span className={numClass}>{phase.b}</span>
+      </div>
+    </div>
+  );
+}
+
+function ChoiceStepLine({
+  phase,
+  isCompleted,
+  theme,
+}: {
+  phase: WordChoicePhase;
+  isCompleted: boolean;
+  theme: import("../lib/themes").Theme;
+}) {
+  if (!phase.glyph) return null; // text-only choices need no equation row
+  return (
+    <div className="flex justify-center py-2">
+      <div className={isCompleted ? "opacity-50" : theme.primaryText}>
+        <ShapeGlyph kind={phase.glyph} size={104} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Choice pad: one button per option, shown during choice phases.
+// ---------------------------------------------------------------------------
+
+function ChoicePad({
+  options,
+  onPick,
+  theme,
+}: {
+  options: string[];
+  onPick: (index: number) => void;
+  theme: import("../lib/themes").Theme;
+}) {
+  const btnClass = `flex min-h-14 items-center justify-center rounded-2xl bg-white px-4 py-3 text-xl font-black text-stone-900 shadow-sm ring-1 ring-stone-200 transition hover:ring-stone-300 active:scale-95 focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 dark:hover:ring-stone-700 ${theme.primaryFocus}`;
+  return (
+    <div className="px-4 pt-2 pb-3 sm:pb-5">
+      <div className="flex flex-col gap-2.5">
+        {options.map((opt, i) => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onPick(i)}
+            className={btnClass}
+          >
+            {opt}
+          </button>
+        ))}
       </div>
     </div>
   );
