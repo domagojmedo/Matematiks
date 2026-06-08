@@ -83,8 +83,10 @@ export class WordGenerator {
   private readonly ctx: GenContext | undefined;
   private queue: WordTemplate[];
 
-  constructor(setup: WordLessonSetup) {
-    this.pool = poolFor(setup.wordKinds);
+  constructor(setup: WordLessonSetup, pool?: readonly WordTemplate[]) {
+    // An explicit pool (combined multi-select rounds) wins over kind-based
+    // resolution — it can include adapter templates that aren't in the registry.
+    this.pool = pool ?? poolFor(setup.wordKinds);
     this.rounds = setup.rounds;
     // Grade-scoping context, if the lesson declares one. Passed to every
     // template's generate() so range-aware templates can scale.

@@ -578,35 +578,6 @@ export function findLesson(id: string): Lesson | undefined {
   return LESSONS.find((l) => l.id === id);
 }
 
-/**
- * Build one combined word-lesson setup from several word lessons the user
- * multi-selected in the UI. The round pools problems from the union of all
- * their `wordKinds` (de-duplicated, order preserved). `maxNumber` takes the
- * largest declared bound so the combined round isn't capped below any member.
- * This is what replaces baked "X and Y together" lessons.
- */
-export function combinedWordSetup(lessons: WordLesson[]): WordLessonSetup {
-  const wordKinds: WordKind[] = [];
-  const seen = new Set<WordKind>();
-  let maxNumber: number | undefined;
-  for (const lesson of lessons) {
-    for (const kind of lesson.wordKinds) {
-      if (!seen.has(kind)) {
-        seen.add(kind);
-        wordKinds.push(kind);
-      }
-    }
-    const m = lesson.setup.maxNumber;
-    if (m !== undefined) maxNumber = Math.max(maxNumber ?? 0, m);
-  }
-  return {
-    kind: SetupKind.Word,
-    wordKinds,
-    rounds: ROUNDS,
-    ...(maxNumber !== undefined ? { maxNumber } : {}),
-  };
-}
-
 export function isValidGrade(s: string): s is `${Grade}` {
   return s === "1" || s === "2" || s === "3" || s === "4";
 }

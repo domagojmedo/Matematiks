@@ -79,6 +79,11 @@ export type WordLessonSetup = {
   timeMs?: number;
   /** Optional grade-scoping bound passed to range-aware templates (Tier 2+). */
   maxNumber?: number;
+  /**
+   * For combined multi-select rounds: the ids of the selected lessons. The
+   * template pool is rebuilt from these (functions can't ride router state).
+   */
+  lessonIds?: string[];
 };
 
 export type AnyLessonSetup = OperationSetup | WordLessonSetup;

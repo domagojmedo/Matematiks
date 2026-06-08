@@ -36,6 +36,26 @@ test("combine mode plays a mixed round from several selected lessons", async ({
   await expect(page.getByText(/Pretvori/)).toBeVisible();
 });
 
+test("combine mixes an arithmetic lesson with a word lesson", async ({
+  page,
+}) => {
+  await page.goto("/grade/3");
+  await page.getByRole("button", { name: "Kombiniraj" }).click();
+  // an arithmetic lesson (written addition) + a word/convert lesson (length)
+  await page.getByRole("button", { name: /Pisano zbrajanje do 1000/ }).click();
+  await page.getByRole("button", { name: /Mjerne jedinice — duljina/ }).click();
+
+  await expect(page.getByText("Odabrano: 2")).toBeVisible();
+  await page.getByRole("button", { name: "Pokreni zajedno" }).click();
+
+  // Combined round launches and is interactive (numpad present).
+  await expect(page).toHaveURL(/word-practice\/combined/);
+  await expect(page.getByText("Kombinirano vježbanje")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "5", exact: true }),
+  ).toBeVisible();
+});
+
 test("start is disabled until at least two lessons are selected", async ({
   page,
 }) => {

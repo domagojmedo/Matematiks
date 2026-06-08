@@ -18,8 +18,9 @@ import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { templatesForLessons } from "../lib/combine";
 import { formatMmSs } from "../lib/format";
-import { findLesson, isWordLesson } from "../lib/lessons";
+import { findLesson, isWordLesson, type Lesson } from "../lib/lessons";
 import { operationForWordKinds, TONE_CHIP, wordChip } from "../lib/operations";
 import {
   isSpeechRecognitionSupported,
@@ -123,7 +124,17 @@ function WordPracticeRound({
   // (which would reset the stratified queue mid-round).
   const generatorRef = useRef<WordGenerator | null>(null);
   if (generatorRef.current === null) {
-    generatorRef.current = new WordGenerator(setup);
+    // Combined rounds carry the selected lesson ids; rebuild their (function-
+    // bearing) template pool here, mixing word/convert templates with arith
+    // adapters. Single lessons fall back to kind-based pooling.
+    const pool = setup.lessonIds
+      ? templatesForLessons(
+          setup.lessonIds
+            .map(findLesson)
+            .filter((l): l is Lesson => l !== undefined),
+        )
+      : undefined;
+    generatorRef.current = new WordGenerator(setup, pool);
   }
 
   const generate = useCallback(

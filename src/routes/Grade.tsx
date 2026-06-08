@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useSettings } from "../contexts/SettingsContext";
+import { combinedSetup } from "../lib/combine";
 import { summarizeSetup } from "../lib/format";
 import {
-  combinedWordSetup,
   type Grade as GradeNum,
   isValidGrade,
   isWordLesson,
@@ -25,7 +25,8 @@ export function Grade() {
   const { theme, settings } = useSettings();
   const navigate = useNavigate();
 
-  // Combine mode: tap several word lessons, then play them as one mixed round.
+  // Combine mode: tap several lessons (any kind), then play them as one mixed
+  // round — arithmetic lessons are adapted into the word engine.
   const [combining, setCombining] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -37,9 +38,9 @@ export function Grade() {
   const lessons = lessonsByGrade(gradeNum, settings.language);
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
 
-  // Only word lessons can be combined (they share the WordPractice engine).
-  const wordLessons = lessons.filter(isWordLesson);
-  const canCombine = wordLessons.length >= 2;
+  // Any lessons can be combined: word/convert use their templates, arithmetic
+  // lessons are adapted into single-phase word problems (see lib/combine).
+  const canCombine = lessons.length >= 2;
 
   const launch = (lesson: Lesson) => {
     if (isWordLesson(lesson)) {
@@ -61,10 +62,10 @@ export function Grade() {
   };
 
   const startCombined = () => {
-    const chosen = wordLessons.filter((l) => selected.has(l.id));
+    const chosen = lessons.filter((l) => selected.has(l.id));
     if (chosen.length < 2) return;
     navigate("/word-practice/combined", {
-      state: { setup: combinedWordSetup(chosen), title: "lessons.combined" },
+      state: { setup: combinedSetup(chosen), title: "lessons.combined" },
     });
   };
 
@@ -75,7 +76,11 @@ export function Grade() {
 
   return (
     <div className={`min-h-dvh w-full ${pageBg}`}>
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-28 md:px-8 md:py-10">
+      <div
+        className={`mx-auto max-w-2xl px-5 pt-6 md:px-8 md:pt-10 ${
+          combining ? "pb-32" : "pb-10"
+        }`}
+      >
         <header className="mb-6 flex items-center justify-between gap-3">
           <Link
             to="/"
@@ -113,23 +118,19 @@ export function Grade() {
         </header>
 
         <ul className="space-y-2.5">
-          {lessons.map((lesson) => {
-            const selectable = combining && isWordLesson(lesson);
-            return (
-              <li key={lesson.id}>
-                <LessonCard
-                  lesson={lesson}
-                  selectMode={combining}
-                  selectable={selectable}
-                  selected={selected.has(lesson.id)}
-                  onLaunch={() => {
-                    if (selectable) toggleSelected(lesson.id);
-                    else if (!combining) launch(lesson);
-                  }}
-                />
-              </li>
-            );
-          })}
+          {lessons.map((lesson) => (
+            <li key={lesson.id}>
+              <LessonCard
+                lesson={lesson}
+                selectable={combining}
+                selected={selected.has(lesson.id)}
+                onLaunch={() => {
+                  if (combining) toggleSelected(lesson.id);
+                  else launch(lesson);
+                }}
+              />
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -174,13 +175,11 @@ function lessonSubtitle(lesson: Lesson, problemsLabel: string): string {
 
 function LessonCard({
   lesson,
-  selectMode,
   selectable,
   selected,
   onLaunch,
 }: {
   lesson: Lesson;
-  selectMode: boolean;
   selectable: boolean;
   selected: boolean;
   onLaunch: () => void;
@@ -190,15 +189,12 @@ function LessonCard({
   const symbolClass = isWordLesson(lesson)
     ? "text-base leading-none font-black"
     : "text-3xl leading-none font-black";
-  // In combine mode, non-word (arith) cards can't be combined — dim + disable.
-  const dimmed = selectMode && !selectable;
   return (
     <button
       type="button"
       onClick={onLaunch}
-      disabled={dimmed}
       aria-pressed={selectable ? selected : undefined}
-      className={`group flex w-full items-center gap-3.5 rounded-3xl bg-white p-4 text-left shadow-sm ring-1 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-sm dark:bg-stone-900 dark:hover:ring-stone-700 ${
+      className={`group flex w-full items-center gap-3.5 rounded-3xl bg-white p-4 text-left shadow-sm ring-1 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:hover:ring-stone-700 ${
         selected
           ? "ring-2 ring-emerald-400 dark:ring-emerald-500"
           : "ring-stone-200 dark:ring-stone-800"
