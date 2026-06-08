@@ -1,6 +1,10 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { type Flash, QuestionScaffold, RoundFrame } from "../components/RoundChrome";
+import {
+  type Flash,
+  QuestionScaffold,
+  RoundFrame,
+} from "../components/RoundChrome";
 import { useSettings } from "../contexts/SettingsContext";
 import { useRoundMechanics } from "../hooks/useRoundMechanics";
 import { formatMmSs } from "../lib/format";

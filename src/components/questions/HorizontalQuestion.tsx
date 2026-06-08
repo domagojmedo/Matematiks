@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnswerVoice } from "../../hooks/useAnswerVoice";
-import { isSpeechRecognitionSupported } from "../../lib/speech";
 import { operationGlyph, type Problem } from "../../lib/problemGen";
+import { isSpeechRecognitionSupported } from "../../lib/speech";
 import type { ProblemAttempt, ProblemRecord } from "../../lib/types";
 import type { QuestionApi } from "../../routes/RoundHost";
-import { QuestionScaffold } from "../RoundChrome";
 import { NumPad, VoiceButton } from "../PracticeUI";
+import { QuestionScaffold } from "../RoundChrome";
 
 const FLASH_MS = 400;
 const MAX_DIGITS = 4;
@@ -125,16 +125,22 @@ export function HorizontalQuestion({
 
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
-  const { voiceError, voicePaused, listening, speechActive, interim, onMicPress } =
-    useAnswerVoice({
-      language: settings.language,
-      enabled: voiceEnabled,
-      gateOpen: true,
-      gateKey: 0,
-      flash,
-      onNumber: submitFullAnswer,
-      trackedTimeout,
-    });
+  const {
+    voiceError,
+    voicePaused,
+    listening,
+    speechActive,
+    interim,
+    onMicPress,
+  } = useAnswerVoice({
+    language: settings.language,
+    enabled: voiceEnabled,
+    gateOpen: true,
+    gateKey: 0,
+    flash,
+    onNumber: submitFullAnswer,
+    trackedTimeout,
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

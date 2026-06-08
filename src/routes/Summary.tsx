@@ -367,9 +367,20 @@ function AccuracyRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl leading-none font-black text-stone-900 tabular-nums dark:text-white">
+        {/* "100%" is 3 chars wide — shrink it so it stays inside the ring. */}
+        <span
+          className={`leading-none font-black text-stone-900 tabular-nums dark:text-white ${
+            accuracy === 100 ? "text-2xl" : "text-3xl"
+          }`}
+        >
           {accuracy}
-          <span className="text-lg text-stone-500 dark:text-stone-400">%</span>
+          <span
+            className={`text-stone-500 dark:text-stone-400 ${
+              accuracy === 100 ? "text-sm" : "text-lg"
+            }`}
+          >
+            %
+          </span>
         </span>
         <span className="mt-0.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
           {t("summary.accuracy")}

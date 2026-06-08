@@ -9,6 +9,11 @@
 - **Per-tier promotion:** each tier is committed as a clean boundary on `lab`; promote a finished tier to `master` via merge/cherry-pick when it's ready to ship. New lessons register normally into `LESSONS` (no in-app flag) — isolation is the branch.
 - All changes stay additive: no edits to existing lessons, `LESSONS` entries, or persisted shapes, so a promotion can never break the working app.
 
+## Testing strategy
+
+- **Primary layer (every batch):** Vitest unit tests for `lib/` generators/templates (whole-number, round-trip, stratification, counts) + RTL component tests for new components.
+- **Playwright UI/E2E (added where it earns its place):** real-browser smoke tests for new *interactive/visual* surfaces — introduced at **Batch 3** (first new pad, `ComparePad`) and extended through **Batches 4–6** (`FractionVisual`, `ShapeDiagram`, shape recognition, charts) where jsdom can't validate rendering/interaction. Batches 1–2 reuse existing UI → no Playwright. Setup: add `@playwright/test` dev dep + `playwright.config.ts` + `e2e/` at Batch 3; tests navigate to a lab lesson and exercise the new UI. (Playwright MCP used for interactive visual verification during development.)
+
 ## Sequencing rationale
 
 Batch 0 lands the shared model/UI extension points **once** so tiers 1–6 don't each re-touch `wordTypes.ts`/`WordPractice.tsx` in conflicting ways. Then tiers ship in value÷effort order. Tiers 1–3 are low-risk (reuse/extend engines); 4–6 introduce visual components and carry explicit uncertainty (re-spec if drift exceeds the manifest).

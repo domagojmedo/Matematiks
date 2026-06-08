@@ -21,6 +21,7 @@ export function FractionVisual({
       data-parts={parts}
       data-shaded={shaded}
       className="flex w-full max-w-sm gap-1"
+      role="img"
       aria-label={`${shaded} od ${parts} dijelova obojano`}
     >
       {segments.map((i) => (
