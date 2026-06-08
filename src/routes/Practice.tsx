@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
-import { Mascot } from "../components/Mascot";
-import {
-  CounterStrip,
-  LeaveModal,
-  NumPad,
-  ProgressBar,
-  VoiceButton,
-} from "../components/PracticeUI";
+import { NumPad, VoiceButton } from "../components/PracticeUI";
+import { QuestionScaffold, RoundFrame } from "../components/RoundChrome";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { usePerProblemReset } from "../hooks/usePerProblemReset";
@@ -19,7 +13,6 @@ import {
   isValidOperation,
   OPERATION_SYMBOL,
   OPERATION_TONE,
-  TONE_CHIP,
 } from "../lib/operations";
 import {
   generateProblem,
@@ -371,155 +364,94 @@ function HorizontalPractice({
   }, [handleDigit, handleDelete]);
 
   const tone = OPERATION_TONE[op];
-  const flashBg =
-    flash === "correct"
-      ? "bg-emerald-50 dark:bg-emerald-950/60"
-      : flash === "wrong"
-        ? "bg-rose-50 dark:bg-rose-950/60"
-        : settings.dark
-          ? theme.pageBgDark
-          : theme.pageBg;
+  const timeText = timeMode
+    ? formatMmSs(Math.max(0, (setup.timeMs ?? 0) - elapsedMs))
+    : formatMmSs(elapsedMs);
+  const problemLabel = timeMode
+    ? t("practice.problemNumber", { current: problemIndex + 1 })
+    : t("practice.problemOf", {
+        current: Math.min(problemIndex + 1, totalRounds),
+        total: totalRounds,
+      });
 
   return (
-    <div
-      className={`flex min-h-dvh w-full flex-col transition-colors ${flashBg}`}
+    <RoundFrame
+      flash={flash}
+      dark={settings.dark}
+      theme={theme}
+      onBack={tryBack}
+      chip={{
+        tone,
+        symbol: OPERATION_SYMBOL[op],
+        label: t(`operations.${op}`),
+        summary: summarizeSetup(setup),
+      }}
+      timeText={timeText}
+      correct={correct}
+      mistakes={mistakes}
+      streak={streak}
+      showLeaveModal={showLeaveModal}
+      onStay={() => setShowLeaveModal(false)}
+      onLeave={leaveAndSave}
     >
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col sm:justify-center sm:py-6">
-        <header className="flex items-center justify-between px-4 pt-5 pb-3">
-          <button
-            type="button"
-            onClick={tryBack}
-            aria-label={t("common.back")}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800"
-          >
-            <svg
-              aria-hidden="true"
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              className="text-stone-700 dark:text-stone-200"
-            >
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-          </button>
-          <div className="flex h-10 items-center gap-1.5 rounded-full bg-white px-3 shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-base leading-none font-black ring-2 ${TONE_CHIP[tone]}`}
-            >
-              {OPERATION_SYMBOL[op]}
-            </span>
-            <span className="text-sm font-black text-stone-900 dark:text-white">
-              {t(`operations.${op}`)}
-            </span>
-            <span className="hidden text-xs font-bold text-stone-500 tabular-nums sm:inline dark:text-stone-400">
-              · {summarizeSetup(setup)}
-            </span>
-          </div>
-          <div className="flex h-12 min-w-[3.5rem] items-center justify-center rounded-2xl bg-white px-3 shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-            <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
-              {timeMode
-                ? formatMmSs(Math.max(0, (setup.timeMs ?? 0) - elapsedMs))
-                : formatMmSs(elapsedMs)}
-            </span>
-          </div>
-        </header>
-
-        <CounterStrip correct={correct} mistakes={mistakes} streak={streak} />
-
-        <section
-          className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 sm:flex-none sm:py-8"
-          aria-live="polite"
+      <QuestionScaffold
+        flash={flash}
+        theme={theme}
+        progressRatio={
+          timeMode
+            ? Math.min(1, elapsedMs / (setup.timeMs ?? 1))
+            : Math.min(1, problemIndex / totalRounds)
+        }
+        problemLabel={problemLabel}
+      >
+        <div
+          className={`flex items-baseline justify-center gap-1.5 sm:gap-3 md:gap-5 ${
+            shaking ? "animate-shake" : ""
+          }`}
         >
-          {flash === "correct" && (
-            <div className="absolute top-2 right-6">
-              <Mascot size={56} mood="cheer" theme={theme} />
-            </div>
-          )}
-          {flash === "wrong" && (
-            <div className="absolute top-2 right-6">
-              <Mascot size={56} mood="sad" theme={theme} />
-            </div>
-          )}
-          <div
-            className={`flex items-baseline justify-center gap-1.5 sm:gap-3 md:gap-5 ${
-              shaking ? "animate-shake" : ""
+          <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
+            {problem.a}
+          </span>
+          <span
+            className={`text-3xl leading-none font-black sm:text-5xl md:text-6xl lg:text-7xl ${theme.primaryText} ${theme.primaryTextDark}`}
+          >
+            {operationGlyph(problem.op)}
+          </span>
+          <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
+            {problem.b}
+          </span>
+          <span className="text-3xl leading-none font-black text-stone-300 sm:text-5xl md:text-6xl lg:text-7xl dark:text-stone-600">
+            =
+          </span>
+          <span
+            className={`inline-block min-w-[1.2ch] text-center text-4xl leading-none font-black tabular-nums sm:text-6xl md:text-7xl lg:text-8xl ${
+              flash === "correct"
+                ? "text-emerald-500"
+                : flash === "wrong"
+                  ? "text-rose-500"
+                  : `${theme.primaryText} ${theme.primaryTextDark}`
             }`}
           >
-            <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
-              {problem.a}
-            </span>
-            <span
-              className={`text-3xl leading-none font-black sm:text-5xl md:text-6xl lg:text-7xl ${theme.primaryText} ${theme.primaryTextDark}`}
-            >
-              {operationGlyph(problem.op)}
-            </span>
-            <span className="text-4xl leading-none font-black text-stone-900 tabular-nums sm:text-6xl md:text-7xl lg:text-8xl dark:text-white">
-              {problem.b}
-            </span>
-            <span className="text-3xl leading-none font-black text-stone-300 sm:text-5xl md:text-6xl lg:text-7xl dark:text-stone-600">
-              =
-            </span>
-            <span
-              className={`inline-block min-w-[1.2ch] text-center text-4xl leading-none font-black tabular-nums sm:text-6xl md:text-7xl lg:text-8xl ${
-                flash === "correct"
-                  ? "text-emerald-500"
-                  : flash === "wrong"
-                    ? "text-rose-500"
-                    : `${theme.primaryText} ${theme.primaryTextDark}`
-              }`}
-            >
-              {typed || (
-                <span className="text-stone-300 dark:text-stone-600">?</span>
-              )}
-            </span>
-          </div>
+            {typed || (
+              <span className="text-stone-300 dark:text-stone-600">?</span>
+            )}
+          </span>
+        </div>
+      </QuestionScaffold>
 
-          <ProgressBar
-            ratio={
-              timeMode
-                ? Math.min(1, elapsedMs / (setup.timeMs ?? 1))
-                : Math.min(1, problemIndex / totalRounds)
-            }
-            theme={theme}
-          />
-          <p className="mt-2.5 text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
-            {timeMode
-              ? t("practice.problemNumber", {
-                  current: problemIndex + 1,
-                })
-              : t("practice.problemOf", {
-                  current: Math.min(problemIndex + 1, totalRounds),
-                  total: totalRounds,
-                })}
-          </p>
-        </section>
-
-        {voiceEnabled && (
-          <VoiceButton
-            listening={listening}
-            paused={voicePaused}
-            speechActive={speechActive}
-            interim={interim}
-            error={voiceError}
-            onPress={onMicPress}
-            theme={theme}
-          />
-        )}
-
-        <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
-      </div>
-
-      {showLeaveModal && (
-        <LeaveModal
+      {voiceEnabled && (
+        <VoiceButton
+          listening={listening}
+          paused={voicePaused}
+          speechActive={speechActive}
+          interim={interim}
+          error={voiceError}
+          onPress={onMicPress}
           theme={theme}
-          onStay={() => setShowLeaveModal(false)}
-          onLeave={leaveAndSave}
         />
       )}
-    </div>
+
+      <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
+    </RoundFrame>
   );
 }
