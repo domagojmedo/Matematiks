@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  arithWordTemplate,
-  combinedSetup,
-  templatesForLessons,
-} from "./combine";
-import { findLesson, isArithLesson, type Lesson } from "./lessons";
+import { CombinedGenerator, combinedSetup } from "./combine";
+import { findLesson, type Lesson } from "./lessons";
 
 const get = (id: string): Lesson => {
   const l = findLesson(id);
@@ -32,42 +28,38 @@ describe("combinedSetup", () => {
   });
 });
 
-describe("arithWordTemplate", () => {
-  it("adapts an arith lesson into a single correct answer phase", () => {
-    const lesson = get("g3-add-1000");
-    if (!isArithLesson(lesson)) throw new Error("expected arith");
-    const t = arithWordTemplate(lesson);
-    for (let i = 0; i < 100; i++) {
-      const p = t.generate();
-      expect(p.phases).toHaveLength(1);
-      const phase = p.phases[0];
-      if (phase?.kind !== "answer") throw new Error("expected answer");
-      const computed =
-        phase.op === "+"
-          ? phase.a + phase.b
-          : phase.op === "-"
-            ? phase.a - phase.b
-            : phase.op === "*"
-              ? phase.a * phase.b
-              : phase.a / phase.b;
-      expect(computed).toBe(phase.result);
-      expect(phase.expected).toBe(phase.result);
+describe("CombinedGenerator", () => {
+  it("mixes native arith and word questions, tagged by kind", () => {
+    const lessons = [get("g3-add-1000"), get("g3-units-mass")];
+    const gen = new CombinedGenerator(lessons, combinedSetup(lessons));
+    const kinds = new Set<string>();
+    let sawColumnArith = false;
+    let sawWord = false;
+    for (let i = 0; i < 60; i++) {
+      const q = gen.next();
+      kinds.add(q.kind);
+      if (q.kind === "arith") {
+        // g3-add-1000 is a written-column lesson → rendered as column natively.
+        expect(q.format).toBe("column");
+        expect(Number.isInteger(q.problem.answer)).toBe(true);
+        sawColumnArith = true;
+      } else {
+        expect(q.problem.phases.length).toBeGreaterThan(0);
+        sawWord = true;
+      }
     }
+    expect(kinds.has("arith")).toBe(true);
+    expect(kinds.has("word")).toBe(true);
+    expect(sawColumnArith).toBe(true);
+    expect(sawWord).toBe(true);
   });
-});
 
-describe("templatesForLessons", () => {
-  it("mixes arith adapters with word templates, de-duplicated", () => {
-    const pool = templatesForLessons([
-      get("g3-add-1000"), // arith → 1 adapter
-      get("g3-units-mass"), // word → 8 mass templates
-    ]);
-    const ids = pool.map((t) => t.id);
-    expect(ids).toContain("arith_g3-add-1000");
-    expect(ids).toContain("convert_kg_to_g");
-    // unique ids
-    expect(new Set(ids).size).toBe(ids.length);
-    // 1 arith adapter + 8 mass convert templates
-    expect(pool).toHaveLength(9);
+  it("a horizontal arith lesson stays horizontal in the mix", () => {
+    const lessons = [get("g1-add-10"), get("g3-units-mass")];
+    const gen = new CombinedGenerator(lessons, combinedSetup(lessons));
+    for (let i = 0; i < 40; i++) {
+      const q = gen.next();
+      if (q.kind === "arith") expect(q.format).toBe("horizontal");
+    }
   });
 });

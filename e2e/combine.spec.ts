@@ -56,6 +56,25 @@ test("combine mixes an arithmetic lesson with a word lesson", async ({
   ).toBeVisible();
 });
 
+test("combined round renders written-column arithmetic natively", async ({
+  page,
+}) => {
+  await page.goto("/grade/4");
+  await page.getByRole("button", { name: "Kombiniraj" }).click();
+  // Two written-column lessons → every combined question is a column problem.
+  await page
+    .getByRole("button", { name: /Pisano zbrajanje \(veći brojevi\)/ })
+    .click();
+  await page
+    .getByRole("button", { name: /Pisano oduzimanje \(veći brojevi\)/ })
+    .click();
+  await page.getByRole("button", { name: "Pokreni zajedno" }).click();
+
+  await expect(page).toHaveURL(/word-practice\/combined/);
+  // The native column scaffold renders inside the combined round.
+  await expect(page.getByTestId("column-question")).toBeVisible();
+});
+
 test("start is disabled until at least two lessons are selected", async ({
   page,
 }) => {

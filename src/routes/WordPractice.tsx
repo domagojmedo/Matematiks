@@ -2,37 +2,27 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { FractionVisual } from "../components/FractionVisual";
-import { Mascot } from "../components/Mascot";
 import { MiniBarChart } from "../components/MiniBarChart";
-import {
-  CounterStrip,
-  LeaveModal,
-  NumPad,
-  ProgressBar,
-  VoiceButton,
-} from "../components/PracticeUI";
+import { NumPad, VoiceButton } from "../components/PracticeUI";
+import { ColumnQuestion } from "../components/questions/ColumnQuestion";
+import { HorizontalQuestion } from "../components/questions/HorizontalQuestion";
+import { QuestionScaffold } from "../components/RoundChrome";
 import { ShapeDiagram } from "../components/ShapeDiagram";
 import { ShapeGlyph } from "../components/ShapeGlyphs";
 import { useProfiles } from "../contexts/ProfilesContext";
-import { useSettings } from "../contexts/SettingsContext";
-import { usePerProblemReset } from "../hooks/usePerProblemReset";
-import { useRoundMechanics } from "../hooks/useRoundMechanics";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { templatesForLessons } from "../lib/combine";
-import { formatMmSs } from "../lib/format";
+import { useAnswerVoice } from "../hooks/useAnswerVoice";
+import { CombinedGenerator, type RoundQuestion } from "../lib/combine";
 import { findLesson, isWordLesson, type Lesson } from "../lib/lessons";
-import { operationForWordKinds, TONE_CHIP, wordChip } from "../lib/operations";
-import {
-  isSpeechRecognitionSupported,
-  parseSpokenNumber,
-  speechLangTag,
-} from "../lib/speech";
+import { operationForWordKinds, wordChip } from "../lib/operations";
+import { isSpeechRecognitionSupported } from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type AttemptToken,
+  type LastSession,
   type ProblemAttempt,
   type ProblemRecord,
   SetupKind,
+  type WordLessonSetup,
 } from "../lib/types";
 import { WordGenerator } from "../lib/wordGen";
 import { findTemplate } from "../lib/wordTemplates";
@@ -50,10 +40,9 @@ import {
   type WordSolvePhase,
   type WordStepView,
 } from "../lib/wordTypes";
+import { type QuestionApi, RoundHost } from "./RoundHost";
 
 const FLASH_MS = 400;
-// Bounded auto-listen retries per problem/phase — see Practice.tsx.
-const MAX_VOICE_ATTEMPTS = 3;
 // Largest answer across word lessons is a 5-digit convert (10 kg → 10000 g).
 // Arith word phases peak at 2 digits — extra digits there get rejected by the
 // length check anyway, so a single cap covers both.
@@ -67,14 +56,22 @@ export function WordPractice() {
   // A combined multi-select round (and Quick Start replay) arrives with the
   // setup on router state and no resolvable lesson id. Prefer it.
   const state = location.state as {
-    setup?: import("../lib/types").WordLessonSetup;
+    setup?: WordLessonSetup;
     title?: string;
   } | null;
   if (state?.setup) {
+    const s = state.setup;
+    // A combined multi-select round carries lessonIds → render each question
+    // in its native component (word / horizontal / column).
+    if (s.lessonIds && s.lessonIds.length > 0) {
+      return (
+        <CombinedRound setup={s} title={state.title ?? "lessons.combined"} />
+      );
+    }
     return (
-      <WordPracticeRound
+      <WordRound
         lessonId={lessonId ?? "combined"}
-        setup={state.setup}
+        setup={s}
         nameKey={state.title ?? "lessons.combined"}
       />
     );
@@ -84,7 +81,7 @@ export function WordPractice() {
     return <Navigate to="/" replace />;
   }
   return (
-    <WordPracticeRound
+    <WordRound
       lessonId={lesson.id}
       setup={lesson.setup}
       nameKey={lesson.nameKey}
@@ -92,100 +89,141 @@ export function WordPractice() {
   );
 }
 
-function WordPracticeRound({
+/** Resolves the round (generator + chrome) and delegates each problem to a
+ * WordQuestion via RoundHost. Combined rounds rebuild a mixed template pool
+ * from the selected lesson ids. */
+function WordRound({
   lessonId,
   setup,
   nameKey,
 }: {
   lessonId: string;
-  setup: import("../lib/types").WordLessonSetup;
+  setup: WordLessonSetup;
   nameKey: string;
 }) {
   const { t } = useTranslation();
-  const { theme, settings } = useSettings();
   const { profileId } = useProfiles();
-
   const sessionOp = operationForWordKinds(setup.wordKinds);
   const chip = wordChip(setup.wordKinds);
 
   // Stamp this round as the new "last session" so Home's Quick Start can
-  // replay it. Without this, finishing a word lesson leaves Quick Start
-  // pointing at whatever arith round preceded it.
+  // replay it.
   useEffect(() => {
-    const last: import("../lib/types").LastSession = {
-      operation: sessionOp,
-      setup,
-      lessonId,
-    };
+    const last: LastSession = { operation: sessionOp, setup, lessonId };
     writeJSON(profileKey(profileId, PROFILE_KEYS.lastSession), last);
   }, [profileId, lessonId, setup, sessionOp]);
 
-  // One generator per round. Held in a ref so re-renders don't rebuild it
-  // (which would reset the stratified queue mid-round).
+  // One generator per round, held in a ref so re-renders don't reset the
+  // stratified queue.
   const generatorRef = useRef<WordGenerator | null>(null);
   if (generatorRef.current === null) {
-    // Combined rounds carry the selected lesson ids; rebuild their (function-
-    // bearing) template pool here, mixing word/convert templates with arith
-    // adapters. Single lessons fall back to kind-based pooling.
-    const pool = setup.lessonIds
-      ? templatesForLessons(
-          setup.lessonIds
-            .map(findLesson)
-            .filter((l): l is Lesson => l !== undefined),
-        )
-      : undefined;
-    generatorRef.current = new WordGenerator(setup, pool);
+    generatorRef.current = new WordGenerator(setup);
   }
-
   const generate = useCallback(
     (prev: WordProblem | null) =>
       (generatorRef.current as WordGenerator).next(prev),
     [],
   );
 
-  const round = useRoundMechanics<WordProblem>({
-    // Tag the session with the operation that best represents the lesson:
-    // addsub for the prose-arith lessons, muldiv for unit-conversion lessons
-    // (math is ×/÷ by powers of ten). Keeps Sessions-card colors meaningful.
-    op: sessionOp,
-    setup,
-    lessonId,
-    generate,
-  });
+  return (
+    <RoundHost<WordProblem>
+      op={sessionOp}
+      setup={setup}
+      lessonId={lessonId}
+      chip={{ tone: chip.tone, symbol: chip.symbol, label: t(nameKey) }}
+      generate={generate}
+      renderQuestion={(problem, api) => (
+        <WordQuestion problem={problem} api={api} />
+      )}
+    />
+  );
+}
+
+/** A combined multi-select round: rebuilds the generator from the selected
+ * lesson ids and renders each problem in its native component. */
+function CombinedRound({
+  setup,
+  title,
+}: {
+  setup: WordLessonSetup;
+  title: string;
+}) {
+  const { t } = useTranslation();
+  const { profileId } = useProfiles();
+  const sessionOp = operationForWordKinds(setup.wordKinds);
+  const chip = wordChip(setup.wordKinds);
+
+  useEffect(() => {
+    const last: LastSession = {
+      operation: sessionOp,
+      setup,
+      lessonId: "combined",
+    };
+    writeJSON(profileKey(profileId, PROFILE_KEYS.lastSession), last);
+  }, [profileId, setup, sessionOp]);
+
+  const generatorRef = useRef<CombinedGenerator | null>(null);
+  if (generatorRef.current === null) {
+    const lessons = (setup.lessonIds ?? [])
+      .map(findLesson)
+      .filter((l): l is Lesson => l !== undefined);
+    generatorRef.current = new CombinedGenerator(lessons, setup);
+  }
+  const generate = useCallback(
+    () => (generatorRef.current as CombinedGenerator).next(),
+    [],
+  );
+
+  return (
+    <RoundHost<RoundQuestion>
+      op={sessionOp}
+      setup={setup}
+      lessonId="combined"
+      chip={{ tone: chip.tone, symbol: chip.symbol, label: t(title) }}
+      generate={generate}
+      renderQuestion={(q, api) =>
+        q.kind === "word" ? (
+          <WordQuestion problem={q.problem} api={api} />
+        ) : q.format === "column" ? (
+          <ColumnQuestion problem={q.problem} guide={q.guide} api={api} />
+        ) : (
+          <HorizontalQuestion problem={q.problem} api={api} />
+        )
+      }
+    />
+  );
+}
+
+/** A single word problem: prose + phase steps + the matching pad. Numeric
+ * phases (answer/convert/solve/fraction) accept voice; pickOp/compare/choice
+ * are tap-only. */
+export function WordQuestion({
+  problem,
+  api,
+}: {
+  problem: WordProblem;
+  api: QuestionApi;
+}) {
   const {
-    problem,
-    problemIndex,
-    totalRounds,
-    timeMode,
-    elapsedMs,
-    correct,
-    mistakes,
-    streak,
-    showLeaveModal,
-    setShowLeaveModal,
-    nowMs,
-    commitProblem,
-    noteWrongAttempt,
-    leaveAndSave,
-    tryBack,
+    theme,
+    settings,
+    flash,
+    shaking,
+    setFlash,
+    setShaking,
+    commit,
+    noteWrong,
     trackedTimeout,
-  } = round;
+    nowMs,
+    progressRatio,
+    problemLabel,
+  } = api;
 
   const phases = problem.phases;
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [typed, setTyped] = useState("");
-  const [flash, setFlash] = useState<Flash>(null);
-  const [shaking, setShaking] = useState(false);
-
   const attemptsRef = useRef<ProblemAttempt[]>([]);
   const startedAtRef = useRef<number>(nowMs());
-
-  usePerProblemReset(problem, () => {
-    setPhaseIdx(0);
-    setTyped("");
-    attemptsRef.current = [];
-    startedAtRef.current = nowMs();
-  });
 
   const currentPhase = phases[phaseIdx];
 
@@ -286,25 +324,25 @@ function WordPracticeRound({
       });
       setFlash("wrong");
       setShaking(true);
-      noteWrongAttempt();
+      noteWrong();
       trackedTimeout(() => {
         setFlash(null);
         setShaking(false);
         setTyped("");
       }, FLASH_MS);
     },
-    [phaseIdx, noteWrongAttempt, trackedTimeout, nowMs],
+    [phaseIdx, noteWrong, trackedTimeout, nowMs, setShaking, setFlash],
   );
 
   const advancePhase = useCallback(() => {
     const isLast = phaseIdx + 1 >= phases.length;
     if (isLast) {
-      commitProblem(buildRecord(attemptsRef.current));
+      commit(buildRecord(attemptsRef.current));
     } else {
       setPhaseIdx((i) => i + 1);
       setTyped("");
     }
-  }, [phaseIdx, phases.length, commitProblem, buildRecord]);
+  }, [phaseIdx, phases.length, commit, buildRecord]);
 
   const handlePickOp = useCallback(
     (op: "+" | "-") => {
@@ -337,6 +375,7 @@ function WordPracticeRound({
       advancePhase,
       trackedTimeout,
       nowMs,
+      setFlash,
     ],
   );
 
@@ -393,6 +432,7 @@ function WordPracticeRound({
       advancePhase,
       trackedTimeout,
       nowMs,
+      setFlash,
     ],
   );
 
@@ -434,6 +474,7 @@ function WordPracticeRound({
     advancePhase,
     trackedTimeout,
     nowMs,
+    setFlash,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -472,6 +513,7 @@ function WordPracticeRound({
       handleWrong,
       trackedTimeout,
       nowMs,
+      setFlash,
     ],
   );
 
@@ -506,6 +548,7 @@ function WordPracticeRound({
       handleWrong,
       trackedTimeout,
       nowMs,
+      setFlash,
     ],
   );
 
@@ -560,121 +603,28 @@ function WordPracticeRound({
       handleWrong,
       trackedTimeout,
       nowMs,
+      setFlash,
     ],
   );
 
   const voiceEnabled =
     (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  // Kid-toggleable mute. See Practice.tsx for context.
-  const [voicePaused, setVoicePaused] = useState(false);
-
-  const handleVoiceResult = useCallback(
-    (candidates: string[]) => {
-      // Accept the first alternative that parses to a number — the top guess
-      // is often a near-miss on Croatian number words.
-      for (const candidate of candidates) {
-        const parsed = parseSpokenNumber(candidate, settings.language);
-        if (parsed !== null) {
-          setVoiceError(null);
-          submitFullAnswer(parsed);
-          return;
-        }
-      }
-      setVoiceError(t("voice.notUnderstood"));
-      trackedTimeout(() => setVoiceError(null), 1500);
-    },
-    [settings.language, submitFullAnswer, trackedTimeout, t],
-  );
-
-  const handleVoiceError = useCallback(
-    (err: string) => {
-      if (err === "not-allowed" || err === "service-not-allowed") {
-        setVoiceError(t("voice.micDenied"));
-        setVoicePaused(true);
-        trackedTimeout(() => setVoiceError(null), 2400);
-        return;
-      }
-      // Surface diagnosable failures so a flaky tablet shows a reason instead
-      // of silence. `no-speech` / `aborted` are normal session ends and stay
-      // quiet. These don't pause — the retry loop will try again.
-      const hint =
-        err === "network"
-          ? t("voice.network")
-          : err === "language-not-supported"
-            ? t("voice.langUnsupported")
-            : err === "audio-capture"
-              ? t("voice.noMic")
-              : null;
-      if (hint) {
-        setVoiceError(hint);
-        trackedTimeout(() => setVoiceError(null), 2400);
-      }
-    },
-    [t, trackedTimeout],
-  );
-
   const {
+    voiceError,
+    voicePaused,
     listening,
     speechActive,
     interim,
-    start: startVoice,
-    stop: stopVoice,
-  } = useSpeechRecognition({
-    lang: speechLangTag(settings.language),
-    onResult: handleVoiceResult,
-    onError: handleVoiceError,
-  });
-
-  const voiceAttemptsRef = useRef(0);
-
-  const onMicPress = useCallback(() => {
-    setVoiceError(null);
-    setVoicePaused((prev) => !prev);
-    if (!voicePaused) stopVoice();
-    else voiceAttemptsRef.current = 0;
-  }, [voicePaused, stopVoice]);
-
-  // Reset the attempt budget on every problem AND phase change — a multi-phase
-  // word problem has several answer phases, each its own listening window.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: problem/currentPhase are the intended reset triggers, not values read in the body
-  useEffect(() => {
-    voiceAttemptsRef.current = 0;
-  }, [problem, currentPhase]);
-
-  // Auto-listen with a small, BOUNDED number of attempts per problem/phase.
-  // The cap (not a `listening`-free dep set) is what keeps a self-closing
-  // session from looping — see Practice.tsx for the chime-loop explanation.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: problem/currentPhase re-arm the attempt budget on each new problem/phase
-  useEffect(() => {
-    if (!voiceEnabled) return;
-    if (voicePaused) return;
-    if (!isNumberPhase) return;
-    if (flash) return;
-    if (listening) return;
-    if (voiceAttemptsRef.current >= MAX_VOICE_ATTEMPTS) return;
-    const attempt = voiceAttemptsRef.current;
-    const delay = attempt === 0 ? 150 : 500 + attempt * 300;
-    const id = window.setTimeout(() => {
-      voiceAttemptsRef.current += 1;
-      setVoiceError(null);
-      startVoice();
-    }, delay);
-    return () => window.clearTimeout(id);
-  }, [
-    voiceEnabled,
-    voicePaused,
-    isNumberPhase,
+    onMicPress,
+  } = useAnswerVoice({
+    language: settings.language,
+    enabled: voiceEnabled,
+    gateOpen: isNumberPhase,
+    gateKey: phaseIdx,
     flash,
-    listening,
-    problem,
-    currentPhase,
-    startVoice,
-  ]);
-
-  useEffect(() => {
-    return () => stopVoice();
-  }, [stopVoice]);
+    onNumber: submitFullAnswer,
+    trackedTimeout,
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -729,161 +679,71 @@ function WordPracticeRound({
   const proseText = template ? template.renderProse(problem) : "";
   const steps = useMemo(() => buildSteps(phases), [phases]);
 
-  const tone = chip.tone;
-  const flashBg =
-    flash === "correct"
-      ? "bg-emerald-50 dark:bg-emerald-950/60"
-      : flash === "wrong"
-        ? "bg-rose-50 dark:bg-rose-950/60"
-        : settings.dark
-          ? theme.pageBgDark
-          : theme.pageBg;
-
   return (
-    <div
-      className={`flex min-h-dvh w-full flex-col transition-colors ${flashBg}`}
-    >
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col sm:justify-center sm:py-6">
-        <header className="flex items-center justify-between px-4 pt-5 pb-3">
-          <button
-            type="button"
-            onClick={tryBack}
-            aria-label={t("common.back")}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800"
-          >
-            <svg
-              aria-hidden="true"
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              className="text-stone-700 dark:text-stone-200"
-            >
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-          </button>
-          <div className="flex h-10 items-center gap-1.5 rounded-full bg-white px-3 shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-sm leading-none font-black ring-2 ${TONE_CHIP[tone]}`}
-            >
-              {chip.symbol}
-            </span>
-            <span className="text-sm font-black text-stone-900 dark:text-white">
-              {t(nameKey)}
-            </span>
-          </div>
-          <div className="flex h-12 min-w-[3.5rem] items-center justify-center rounded-2xl bg-white px-3 shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
-            <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
-              {timeMode
-                ? formatMmSs(Math.max(0, (setup.timeMs ?? 0) - elapsedMs))
-                : formatMmSs(elapsedMs)}
-            </span>
-          </div>
-        </header>
-
-        <CounterStrip correct={correct} mistakes={mistakes} streak={streak} />
-
-        <section
-          className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-2 sm:flex-none sm:py-6"
-          aria-live="polite"
-        >
-          {flash === "correct" && (
-            <div className="absolute top-2 right-6">
-              <Mascot size={56} mood="cheer" theme={theme} />
-            </div>
-          )}
-          {flash === "wrong" && (
-            <div className="absolute top-2 right-6">
-              <Mascot size={56} mood="sad" theme={theme} />
-            </div>
-          )}
-
-          <div className={`w-full max-w-xl ${shaking ? "animate-shake" : ""}`}>
-            <p className="mb-3 px-1 text-base leading-snug font-bold text-stone-700 sm:text-lg dark:text-stone-200">
-              {proseText}
-            </p>
-
-            <div className="space-y-2">
-              {steps.map((step) => (
-                <StepLine
-                  key={step.answerIdx}
-                  step={step}
-                  phases={phases}
-                  phaseIdx={phaseIdx}
-                  typed={typed}
-                  flash={flash}
-                  theme={theme}
-                />
-              ))}
-            </div>
-          </div>
-
-          <ProgressBar
-            ratio={
-              timeMode
-                ? Math.min(1, elapsedMs / (setup.timeMs ?? 1))
-                : Math.min(1, problemIndex / totalRounds)
-            }
-            theme={theme}
-          />
-          <p className="mt-2.5 text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
-            {timeMode
-              ? t("practice.problemNumber", { current: problemIndex + 1 })
-              : t("practice.problemOf", {
-                  current: Math.min(problemIndex + 1, totalRounds),
-                  total: totalRounds,
-                })}
+    <>
+      <QuestionScaffold
+        flash={flash}
+        theme={theme}
+        progressRatio={progressRatio}
+        problemLabel={problemLabel}
+      >
+        <div className={`w-full max-w-xl ${shaking ? "animate-shake" : ""}`}>
+          <p className="mb-3 px-1 text-base leading-snug font-bold text-stone-700 sm:text-lg dark:text-stone-200">
+            {proseText}
           </p>
-        </section>
 
-        {voiceEnabled && isNumberPhase && (
-          <VoiceButton
-            listening={listening}
-            paused={voicePaused}
-            speechActive={speechActive}
-            interim={interim}
-            error={voiceError}
-            onPress={onMicPress}
-            theme={theme}
-          />
-        )}
+          <div className="space-y-2">
+            {steps.map((step) => (
+              <StepLine
+                key={step.answerIdx}
+                step={step}
+                phases={phases}
+                phaseIdx={phaseIdx}
+                typed={typed}
+                flash={flash}
+                theme={theme}
+              />
+            ))}
+          </div>
+        </div>
+      </QuestionScaffold>
 
-        {currentPhase?.kind === "pickOp" ? (
-          <PickOpPad onPick={handlePickOp} theme={theme} />
-        ) : currentPhase?.kind === "compare" ? (
-          <ComparePad onPick={handleCompare} theme={theme} />
-        ) : currentPhase?.kind === "choice" ? (
-          <ChoicePad
-            options={currentPhase.options}
-            onPick={handleChoice}
-            theme={theme}
-          />
-        ) : currentPhase?.kind === "convert" ||
-          currentPhase?.kind === "solve" ||
-          currentPhase?.kind === "fraction" ? (
-          <NumPad
-            onDigit={handleDigit}
-            onDelete={handleDelete}
-            onConfirm={handleConfirm}
-            confirmDisabled={typed.length === 0}
-            theme={theme}
-          />
-        ) : (
-          <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
-        )}
-      </div>
-
-      {showLeaveModal && (
-        <LeaveModal
+      {voiceEnabled && isNumberPhase && (
+        <VoiceButton
+          listening={listening}
+          paused={voicePaused}
+          speechActive={speechActive}
+          interim={interim}
+          error={voiceError}
+          onPress={onMicPress}
           theme={theme}
-          onStay={() => setShowLeaveModal(false)}
-          onLeave={leaveAndSave}
         />
       )}
-    </div>
+
+      {currentPhase?.kind === "pickOp" ? (
+        <PickOpPad onPick={handlePickOp} theme={theme} />
+      ) : currentPhase?.kind === "compare" ? (
+        <ComparePad onPick={handleCompare} theme={theme} />
+      ) : currentPhase?.kind === "choice" ? (
+        <ChoicePad
+          options={currentPhase.options}
+          onPick={handleChoice}
+          theme={theme}
+        />
+      ) : currentPhase?.kind === "convert" ||
+        currentPhase?.kind === "solve" ||
+        currentPhase?.kind === "fraction" ? (
+        <NumPad
+          onDigit={handleDigit}
+          onDelete={handleDelete}
+          onConfirm={handleConfirm}
+          confirmDisabled={typed.length === 0}
+          theme={theme}
+        />
+      ) : (
+        <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
+      )}
+    </>
   );
 }
 

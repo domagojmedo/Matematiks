@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildPhases, type Phase, pickLayout } from "../../lib/columnPhases";
-import { type Problem } from "../../lib/problemGen";
+import type { Problem } from "../../lib/problemGen";
 import type { ProblemAttempt, ProblemRecord } from "../../lib/types";
 import type { QuestionApi } from "../../routes/RoundHost";
 import {
@@ -95,7 +95,15 @@ export function ColumnQuestion({
         setShaking(false);
       }, FLASH_MS);
     },
-    [phaseIdx, currentPhase, noteWrong, setFlash, setShaking, trackedTimeout, nowMs],
+    [
+      phaseIdx,
+      currentPhase,
+      noteWrong,
+      setFlash,
+      setShaking,
+      trackedTimeout,
+      nowMs,
+    ],
   );
 
   const handleDigit = useCallback(
@@ -175,42 +183,44 @@ export function ColumnQuestion({
         progressRatio={progressRatio}
         problemLabel={problemLabel}
       >
-        {layoutKind === "division" && (
-          <LongDivisionLayout
-            problem={problem}
-            phases={phases}
-            phaseIdx={phaseIdx}
-            filledDigits={filledDigits}
-            completedPhases={completedPhases}
-            flash={flash}
-            shaking={shaking}
-            theme={theme}
-            guide={guide}
-          />
-        )}
-        {layoutKind === "mulPartials" && (
-          <MulPartialProductsLayout
-            problem={problem}
-            phases={phases}
-            phaseIdx={phaseIdx}
-            filledDigits={filledDigits}
-            completedPhases={completedPhases}
-            flash={flash}
-            shaking={shaking}
-            theme={theme}
-            guide={guide}
-          />
-        )}
-        {layoutKind === "simple" && (
-          <ColumnLayout
-            problem={problem}
-            filledDigits={filledDigits}
-            answerLen={String(problem.answer).length}
-            flash={flash}
-            shaking={shaking}
-            theme={theme}
-          />
-        )}
+        <div data-testid="column-question" className="contents">
+          {layoutKind === "division" && (
+            <LongDivisionLayout
+              problem={problem}
+              phases={phases}
+              phaseIdx={phaseIdx}
+              filledDigits={filledDigits}
+              completedPhases={completedPhases}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+              guide={guide}
+            />
+          )}
+          {layoutKind === "mulPartials" && (
+            <MulPartialProductsLayout
+              problem={problem}
+              phases={phases}
+              phaseIdx={phaseIdx}
+              filledDigits={filledDigits}
+              completedPhases={completedPhases}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+              guide={guide}
+            />
+          )}
+          {layoutKind === "simple" && (
+            <ColumnLayout
+              problem={problem}
+              filledDigits={filledDigits}
+              answerLen={String(problem.answer).length}
+              flash={flash}
+              shaking={shaking}
+              theme={theme}
+            />
+          )}
+        </div>
       </QuestionScaffold>
 
       <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />

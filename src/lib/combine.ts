@@ -1,75 +1,96 @@
 import { type ArithLesson, isWordLesson, type Lesson } from "./lessons";
-import { generateProblem } from "./problemGen";
+import { generateProblem, type Problem } from "./problemGen";
 import { SetupKind, type WordKind, type WordLessonSetup } from "./types";
 import { TEMPLATES_BY_TYPE, type WordTemplate } from "./wordTemplates";
-import type { WordPhase } from "./wordTypes";
+import type { GenContext, WordProblem } from "./wordTypes";
 
 const COMBINED_ROUNDS = 20;
 
 /**
- * Adapt an arithmetic lesson into a single-phase word template. The arithmetic
- * problem `a op b = ?` IS a word `answer` phase, so any add/sub/mul/div lesson
- * can join a combined round. Note: written-column lessons lose their
- * carry/borrow scaffold here and render as a plain horizontal equation — an
- * accepted trade-off for mixed practice.
+ * One question in a combined multi-select round, tagged so the host renders it
+ * with its native component — a word problem renders in the word engine, an
+ * arithmetic problem in the horizontal or written-column UI, exactly as it
+ * would standalone.
  */
-export function arithWordTemplate(lesson: ArithLesson): WordTemplate {
-  const id = `arith_${lesson.id}`;
-  return {
-    id,
-    // `type` is vestigial for adapter templates — they're only ever used via an
-    // explicit pool, never resolved through TEMPLATES_BY_TYPE.
-    type: "vocab",
-    generate: () => {
-      const p = generateProblem(lesson.op, lesson.setup, null);
-      const phases: WordPhase[] = [
-        {
-          kind: "answer",
-          slot: "result",
-          a: p.a,
-          b: p.b,
-          op: p.op,
-          result: p.answer,
-          expected: p.answer,
-        },
-      ];
-      return { templateId: id, numbers: [p.a, p.b], phases };
-    },
-    renderProse: () => "Izračunaj.",
-  };
+export type RoundQuestion =
+  | { kind: "word"; problem: WordProblem }
+  | {
+      kind: "arith";
+      problem: Problem;
+      format: "horizontal" | "column";
+      guide: boolean;
+    };
+
+type Source =
+  | { kind: "word"; template: WordTemplate }
+  | { kind: "arith"; lesson: ArithLesson };
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i] as T;
+    out[i] = out[j] as T;
+    out[j] = tmp;
+  }
+  return out;
 }
 
 /**
- * The pooled template list for a set of selected lessons: word/convert lessons
- * contribute their registered templates (de-duplicated); arithmetic lessons
- * contribute a one-phase adapter. This is what lets a combined round mix ANY
- * lesson types.
+ * Generator for a combined round. Pools each selected lesson into sources —
+ * word/convert lessons contribute their templates, arithmetic lessons
+ * contribute themselves — and emits a tagged `RoundQuestion` per draw, cycling
+ * through all sources (shuffled) for an even mix.
  */
-export function templatesForLessons(lessons: Lesson[]): WordTemplate[] {
-  const seen = new Set<string>();
-  const pool: WordTemplate[] = [];
-  const add = (t: WordTemplate) => {
-    if (!seen.has(t.id)) {
-      seen.add(t.id);
-      pool.push(t);
-    }
-  };
-  for (const lesson of lessons) {
-    if (isWordLesson(lesson)) {
-      for (const kind of lesson.wordKinds) {
-        for (const t of TEMPLATES_BY_TYPE[kind]) add(t);
+export class CombinedGenerator {
+  private readonly sources: Source[] = [];
+  private readonly ctx: GenContext | undefined;
+  private queue: Source[] = [];
+
+  constructor(lessons: Lesson[], setup: WordLessonSetup) {
+    this.ctx =
+      setup.maxNumber !== undefined
+        ? { maxNumber: setup.maxNumber }
+        : undefined;
+    const seen = new Set<string>();
+    for (const lesson of lessons) {
+      if (isWordLesson(lesson)) {
+        for (const kind of lesson.wordKinds) {
+          for (const t of TEMPLATES_BY_TYPE[kind]) {
+            if (!seen.has(`w:${t.id}`)) {
+              seen.add(`w:${t.id}`);
+              this.sources.push({ kind: "word", template: t });
+            }
+          }
+        }
+      } else if (!seen.has(`a:${lesson.id}`)) {
+        seen.add(`a:${lesson.id}`);
+        this.sources.push({ kind: "arith", lesson });
       }
-    } else {
-      add(arithWordTemplate(lesson));
     }
   }
-  return pool;
+
+  next(): RoundQuestion {
+    if (this.queue.length === 0) {
+      this.queue = shuffle(this.sources);
+    }
+    const src = this.queue.shift() as Source;
+    if (src.kind === "word") {
+      return { kind: "word", problem: src.template.generate(this.ctx) };
+    }
+    return {
+      kind: "arith",
+      problem: generateProblem(src.lesson.op, src.lesson.setup, null),
+      format: src.lesson.setup.format === "column" ? "column" : "horizontal",
+      guide: src.lesson.setup.guide ?? true,
+    };
+  }
 }
 
 /**
  * Build the combined round's setup from selected lessons of ANY kind. Carries
- * `lessonIds` so WordPractice can rebuild the (function-bearing) template pool
- * on the other side of router navigation, where only plain data survives.
+ * `lessonIds` so the round can rebuild the generator on the other side of
+ * router navigation, where only plain data survives.
  */
 export function combinedSetup(lessons: Lesson[]): WordLessonSetup {
   const wordKinds: WordKind[] = [];
