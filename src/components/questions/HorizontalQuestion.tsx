@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAnswerVoice } from "../../hooks/useAnswerVoice";
 import { operationGlyph, type Problem } from "../../lib/problemGen";
-import { isSpeechRecognitionSupported } from "../../lib/speech";
 import type { ProblemAttempt, ProblemRecord } from "../../lib/types";
 import type { QuestionApi } from "../../routes/RoundHost";
-import { NumPad, VoiceButton } from "../PracticeUI";
+import { AnswerInput } from "../AnswerInput";
 import { QuestionScaffold } from "../RoundChrome";
 
 const FLASH_MS = 400;
@@ -90,11 +88,19 @@ export function HorizontalQuestion({
     [problem, commit, setFlash, trackedTimeout, nowMs],
   );
 
-  const handleDigit = useCallback(
-    (n: number) => {
+  // Appends a batch of digits at once — a single recognized number ("10") or one
+  // tap — then applies the auto-submit-on-match / wrong-on-full check to the
+  // result. Batching (vs. one call per digit) keeps multi-digit handwriting from
+  // racing on stale `typed`.
+  const handleDigits = useCallback(
+    (ns: number[]) => {
       if (flash) return;
-      if (typed.length >= MAX_DIGITS) return;
-      const next = typed + String(n);
+      let next = typed;
+      for (const n of ns) {
+        if (next.length >= MAX_DIGITS) break;
+        next += String(n);
+      }
+      if (next === typed) return;
       setTyped(next);
       const parsed = Number.parseInt(next, 10);
       const answerLen = String(problem.answer).length;
@@ -105,6 +111,11 @@ export function HorizontalQuestion({
       }
     },
     [flash, typed, problem.answer, submitCorrect, submitWrong],
+  );
+
+  const handleDigit = useCallback(
+    (n: number) => handleDigits([n]),
+    [handleDigits],
   );
 
   const submitFullAnswer = useCallback(
@@ -122,25 +133,6 @@ export function HorizontalQuestion({
     if (flash) return;
     setTyped("");
   }, [flash]);
-
-  const voiceEnabled =
-    (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
-  const {
-    voiceError,
-    voicePaused,
-    listening,
-    speechActive,
-    interim,
-    onMicPress,
-  } = useAnswerVoice({
-    language: settings.language,
-    enabled: voiceEnabled,
-    gateOpen: true,
-    gateKey: 0,
-    flash,
-    onNumber: submitFullAnswer,
-    trackedTimeout,
-  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -200,19 +192,18 @@ export function HorizontalQuestion({
         </div>
       </QuestionScaffold>
 
-      {voiceEnabled && (
-        <VoiceButton
-          listening={listening}
-          paused={voicePaused}
-          speechActive={speechActive}
-          interim={interim}
-          error={voiceError}
-          onPress={onMicPress}
-          theme={theme}
-        />
-      )}
-
-      <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
+      <AnswerInput
+        onDigits={handleDigits}
+        onDelete={handleDelete}
+        voice={{
+          language: settings.language,
+          onNumber: submitFullAnswer,
+          gateKey: 0,
+        }}
+        theme={theme}
+        flash={flash}
+        trackedTimeout={trackedTimeout}
+      />
     </>
   );
 }

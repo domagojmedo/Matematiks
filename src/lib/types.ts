@@ -102,11 +102,16 @@ export type Profile = {
 
 export type Language = "hr" | "en";
 
+/** How the kid enters answers during practice; switchable on the fly. */
+export type InputMode = "pad" | "write" | "talk";
+
 export type AppSettings = {
   themeKey: ThemeKey;
   dark: boolean;
   language: Language;
   voiceInput?: boolean;
+  /** Last-used answer input mode, remembered across problems/sessions. */
+  inputMode?: InputMode;
   /**
    * Use the on-device Whisper recognizer instead of the browser's Web Speech
    * API. Trades a ~40 MB first-load model download for a continuous-stream

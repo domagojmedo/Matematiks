@@ -3,12 +3,12 @@ import { buildPhases, type Phase, pickLayout } from "../../lib/columnPhases";
 import type { Problem } from "../../lib/problemGen";
 import type { ProblemAttempt, ProblemRecord } from "../../lib/types";
 import type { QuestionApi } from "../../routes/RoundHost";
+import { AnswerInput } from "../AnswerInput";
 import {
   ColumnLayout,
   LongDivisionLayout,
   MulPartialProductsLayout,
 } from "../ColumnLayouts";
-import { NumPad } from "../PracticeUI";
 import { QuestionScaffold } from "../RoundChrome";
 
 const FLASH_MS = 400;
@@ -223,7 +223,16 @@ export function ColumnQuestion({
         </div>
       </QuestionScaffold>
 
-      <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
+      <AnswerInput
+        // Column mode fills one position at a time — take the first digit.
+        onDigits={(ds) => {
+          if (ds.length > 0) handleDigit(ds[0]);
+        }}
+        onDelete={handleDelete}
+        theme={theme}
+        flash={flash}
+        trackedTimeout={trackedTimeout}
+      />
     </>
   );
 }

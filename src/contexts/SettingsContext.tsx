@@ -10,13 +10,14 @@ import {
 import { useTranslation } from "react-i18next";
 import { readJSON, STORAGE_KEYS, writeJSON } from "../lib/storage";
 import { THEMES, type Theme } from "../lib/themes";
-import type { AppSettings, Language, ThemeKey } from "../lib/types";
+import type { AppSettings, InputMode, Language, ThemeKey } from "../lib/types";
 
 const DEFAULT_SETTINGS: AppSettings = {
   themeKey: "warmPurple",
   dark: false,
   language: "hr",
   voiceInput: false,
+  inputMode: "pad",
 };
 
 type SettingsContextValue = {
@@ -26,6 +27,7 @@ type SettingsContextValue = {
   setDark: (dark: boolean) => void;
   setLanguage: (lang: Language) => void;
   setVoiceInput: (enabled: boolean) => void;
+  setInputMode: (mode: InputMode) => void;
   setUseWhisper: (enabled: boolean) => void;
 };
 
@@ -63,6 +65,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setVoiceInput = useCallback((voiceInput: boolean) => {
     setSettings((s) => ({ ...s, voiceInput }));
   }, []);
+  const setInputMode = useCallback((inputMode: InputMode) => {
+    setSettings((s) => ({ ...s, inputMode }));
+  }, []);
   const setUseWhisper = useCallback((useWhisper: boolean) => {
     setSettings((s) => ({ ...s, useWhisper }));
   }, []);
@@ -75,9 +80,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setDark,
       setLanguage,
       setVoiceInput,
+      setInputMode,
       setUseWhisper,
     }),
-    [settings, setTheme, setDark, setLanguage, setVoiceInput, setUseWhisper],
+    [
+      settings,
+      setTheme,
+      setDark,
+      setLanguage,
+      setVoiceInput,
+      setInputMode,
+      setUseWhisper,
+    ],
   );
 
   return (

@@ -252,5 +252,16 @@
     "toggleAria": "Uključi/isključi mikrofon",
     "loadingModel": "Učitavam model… {{percent}}%",
     "modelReady": "Slušam…"
+  },
+  "handwriting": {
+    "draw": "Nacrtaj broj",
+    "clear": "Obriši",
+    "confirm": "Potvrdi",
+    "delete": "Obriši znamenku"
+  },
+  "input": {
+    "pad": "Tipke",
+    "write": "Piši",
+    "talk": "Govori"
   }
 }
