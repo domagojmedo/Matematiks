@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useParams } from "react-router-dom";
+import { AnswerInput } from "../components/AnswerInput";
 import { FractionVisual } from "../components/FractionVisual";
 import { MiniBarChart } from "../components/MiniBarChart";
-import { NumPad, VoiceButton } from "../components/PracticeUI";
 import { ColumnQuestion } from "../components/questions/ColumnQuestion";
 import { HorizontalQuestion } from "../components/questions/HorizontalQuestion";
 import { QuestionScaffold } from "../components/RoundChrome";
 import { ShapeDiagram } from "../components/ShapeDiagram";
 import { ShapeGlyph } from "../components/ShapeGlyphs";
 import { useProfiles } from "../contexts/ProfilesContext";
-import { useAnswerVoice } from "../hooks/useAnswerVoice";
 import { CombinedGenerator, type RoundQuestion } from "../lib/combine";
 import { findLesson, isWordLesson, type Lesson } from "../lib/lessons";
 import { operationForWordKinds, wordChip } from "../lib/operations";
-import { isSpeechRecognitionSupported } from "../lib/speech";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import {
   type AttemptToken,
@@ -379,8 +377,10 @@ export function WordQuestion({
     ],
   );
 
-  const handleDigit = useCallback(
-    (n: number) => {
+  // Appends a batch of digits at once — a single recognized number ("10") or one
+  // tap. Batching keeps multi-digit handwriting from racing on stale `typed`.
+  const handleDigits = useCallback(
+    (ns: number[]) => {
       if (flash) return;
       if (
         !currentPhase ||
@@ -390,12 +390,16 @@ export function WordQuestion({
           currentPhase.kind !== "fraction")
       )
         return;
-      if (typed.length >= MAX_DIGITS) return;
-      const next = typed + String(n);
+      let next = typed;
+      for (const n of ns) {
+        if (next.length >= MAX_DIGITS) break;
+        next += String(n);
+      }
+      if (next === typed) return;
       setTyped(next);
-      // Convert/solve/fraction phases use an explicit confirm key — the kid types
+      // Convert/solve/fraction phases use an explicit confirm key — the kid enters
       // the full answer and presses ✓. Without that, the auto-submit-on-match
-      // below would mark "200" correct when they meant to type "2000".
+      // below would mark "200" correct when they meant to enter "2000".
       if (
         currentPhase.kind === "convert" ||
         currentPhase.kind === "solve" ||
@@ -434,6 +438,11 @@ export function WordQuestion({
       nowMs,
       setFlash,
     ],
+  );
+
+  const handleDigit = useCallback(
+    (n: number) => handleDigits([n]),
+    [handleDigits],
   );
 
   const handleConfirm = useCallback(() => {
@@ -552,15 +561,8 @@ export function WordQuestion({
     ],
   );
 
-  // Voice input: submits the current phase only. pickOp phases are skipped
-  // — we don't recognize "plus" / "minus" — so voice stays idle there and
-  // the kid uses the on-screen + / − pad.
-  const isNumberPhase =
-    currentPhase?.kind === "answer" ||
-    currentPhase?.kind === "convert" ||
-    currentPhase?.kind === "solve" ||
-    currentPhase?.kind === "fraction";
-
+  // Submits a full number for the current numeric phase — used by the voice and
+  // (potential) full-recognition paths. pickOp/compare/choice phases ignore it.
   const submitFullAnswer = useCallback(
     (n: number) => {
       if (flash) return;
@@ -606,25 +608,6 @@ export function WordQuestion({
       setFlash,
     ],
   );
-
-  const voiceEnabled =
-    (settings.voiceInput ?? false) && isSpeechRecognitionSupported();
-  const {
-    voiceError,
-    voicePaused,
-    listening,
-    speechActive,
-    interim,
-    onMicPress,
-  } = useAnswerVoice({
-    language: settings.language,
-    enabled: voiceEnabled,
-    gateOpen: isNumberPhase,
-    gateKey: phaseIdx,
-    flash,
-    onNumber: submitFullAnswer,
-    trackedTimeout,
-  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -708,18 +691,6 @@ export function WordQuestion({
         </div>
       </QuestionScaffold>
 
-      {voiceEnabled && isNumberPhase && (
-        <VoiceButton
-          listening={listening}
-          paused={voicePaused}
-          speechActive={speechActive}
-          interim={interim}
-          error={voiceError}
-          onPress={onMicPress}
-          theme={theme}
-        />
-      )}
-
       {currentPhase?.kind === "pickOp" ? (
         <PickOpPad onPick={handlePickOp} theme={theme} />
       ) : currentPhase?.kind === "compare" ? (
@@ -733,15 +704,33 @@ export function WordQuestion({
       ) : currentPhase?.kind === "convert" ||
         currentPhase?.kind === "solve" ||
         currentPhase?.kind === "fraction" ? (
-        <NumPad
-          onDigit={handleDigit}
+        <AnswerInput
+          onDigits={handleDigits}
           onDelete={handleDelete}
           onConfirm={handleConfirm}
           confirmDisabled={typed.length === 0}
+          voice={{
+            language: settings.language,
+            onNumber: submitFullAnswer,
+            gateKey: phaseIdx,
+          }}
           theme={theme}
+          flash={flash}
+          trackedTimeout={trackedTimeout}
         />
       ) : (
-        <NumPad onDigit={handleDigit} onDelete={handleDelete} theme={theme} />
+        <AnswerInput
+          onDigits={handleDigits}
+          onDelete={handleDelete}
+          voice={{
+            language: settings.language,
+            onNumber: submitFullAnswer,
+            gateKey: phaseIdx,
+          }}
+          theme={theme}
+          flash={flash}
+          trackedTimeout={trackedTimeout}
+        />
       )}
     </>
   );

@@ -126,9 +126,7 @@ export function SettingsRoute() {
                 <p className="mt-1.5 px-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {t("settings.useWhisperNote")}
                 </p>
-                {(settings.useWhisper ?? false) && (
-                  <WhisperEngineStatus />
-                )}
+                {(settings.useWhisper ?? false) && <WhisperEngineStatus />}
               </div>
             )}
           </SettingSection>
@@ -451,7 +449,9 @@ function WhisperEngineStatus() {
         )}
       </div>
       {!isReady && !isError && (
-        <div className={`mt-2 h-2 w-full overflow-hidden rounded-full ${trackClass}`}>
+        <div
+          className={`mt-2 h-2 w-full overflow-hidden rounded-full ${trackClass}`}
+        >
           <div
             className={`h-full rounded-full transition-[width] duration-150 ${barClass}`}
             style={{ width: `${percent ?? 5}%` }}

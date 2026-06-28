@@ -223,5 +223,16 @@
     "toggleAria": "Toggle microphone",
     "loadingModel": "Loading speech model… {{percent}}%",
     "modelReady": "Listening…"
+  },
+  "handwriting": {
+    "draw": "Draw a digit",
+    "clear": "Clear",
+    "confirm": "Confirm",
+    "delete": "Delete"
+  },
+  "input": {
+    "pad": "Numbers",
+    "write": "Write",
+    "talk": "Talk"
   }
 }
