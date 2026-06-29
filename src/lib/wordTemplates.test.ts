@@ -69,6 +69,41 @@ describe("vocab templates", () => {
   });
 });
 
+describe("answer distribution is not skewed", () => {
+  // Regression: these templates used to derive one operand from the other in
+  // the leftover range, ramping the answer toward one end (e.g. vocab_sum hit
+  // 20 ~20% of the time). They now pick the answer first, so it should be
+  // spread roughly evenly across its feasible values.
+  const sumOfOperands = (p: WordProblem) =>
+    (p.numbers[0] ?? 0) + (p.numbers[1] ?? 0);
+  const diffOfOperands = (p: WordProblem) =>
+    (p.numbers[0] ?? 0) - (p.numbers[1] ?? 0);
+  const answerExpected = (p: WordProblem) =>
+    answerPhasesOf(p)[0]?.expected ?? 0;
+  const cases: { id: string; answerOf: (p: WordProblem) => number }[] = [
+    { id: "vocab_sum", answerOf: sumOfOperands },
+    { id: "vocab_diff", answerOf: diffOfOperands },
+    { id: "missing_first_addend", answerOf: answerExpected },
+    { id: "missing_second_addend", answerOf: answerExpected },
+    { id: "missing_minuend", answerOf: answerExpected },
+    { id: "missing_subtrahend", answerOf: answerExpected },
+  ];
+  for (const { id, answerOf } of cases) {
+    it(`${id}: no answer dominates`, () => {
+      const t = TEMPLATES[id] as WordTemplate;
+      const counts = new Map<number, number>();
+      const N = 20000;
+      for (let i = 0; i < N; i++) {
+        const a = answerOf(t.generate());
+        counts.set(a, (counts.get(a) ?? 0) + 1);
+      }
+      // Spread over >= 10 distinct answers, none taking more than 10% share.
+      expect(counts.size).toBeGreaterThanOrEqual(10);
+      for (const c of counts.values()) expect(c / N).toBeLessThan(0.1);
+    });
+  }
+});
+
 describe("missing-operand templates", () => {
   it("missing_first_addend: 1 phase, slot=a, expected = sum − second", () => {
     const t = TEMPLATES.missing_first_addend as WordTemplate;

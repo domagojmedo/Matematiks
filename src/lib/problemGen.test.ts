@@ -39,6 +39,32 @@ describe("generateProblem with crossesTen filter", () => {
     }
   });
 
+  it("spreads answers roughly evenly across crossing additions to 20", () => {
+    // Regression: result-first sampling + crossing rejection used to pile ~40%
+    // of answers onto 10 and 20 (and never produced 19's neighbours), making
+    // "do 20 s prijelazom" feel like the same answers repeating.
+    const setup: OperationSetup = {
+      kind: "range",
+      min: 1,
+      max: 20,
+      crossesTen: "always",
+      rounds: 20,
+    };
+    const counts = new Map<number, number>();
+    let prev = null as ReturnType<typeof generateProblem> | null;
+    const N = 20000;
+    for (let i = 0; i < N; i++) {
+      const p = generateProblem("add", setup, prev);
+      counts.set(p.answer, (counts.get(p.answer) ?? 0) + 1);
+      prev = p;
+    }
+    // 10 feasible crossing sums (10–18 and 20); none should dominate.
+    expect(counts.size).toBe(10);
+    for (const share of [...counts.values()].map((c) => c / N)) {
+      expect(share).toBeLessThan(0.2);
+    }
+  });
+
   it("never borrows in subtraction when crossesTen=never", () => {
     const setup: OperationSetup = {
       kind: "range",

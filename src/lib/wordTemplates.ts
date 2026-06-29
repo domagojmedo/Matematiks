@@ -23,6 +23,33 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)] as T;
 }
 
+// Answer-first sampling shared by the arithmetic word templates. Deriving one
+// operand from the other in the leftover range ramps the answer toward one end
+// (e.g. "zbroj … do 20" kept asking for 20); picking the answer first keeps
+// every feasible answer equally likely.
+
+/** Split `total` into two parts, the first uniform in [minPart, total−minPart]. */
+function splitSum(total: number, minPart: number): [number, number] {
+  const a = randInt(minPart, total - minPart);
+  return [a, total - a];
+}
+
+/**
+ * Pick a uniform answer in [ansLo, ansHi], then a total in
+ * [max(totalLo, answer + 1), totalHi]. Returns [answer, partner, total] with
+ * partner = total − answer (so answer + partner = total, both ≥ 1).
+ */
+function answerThenTotal(
+  ansLo: number,
+  ansHi: number,
+  totalLo: number,
+  totalHi: number,
+): [number, number, number] {
+  const answer = randInt(ansLo, ansHi);
+  const total = randInt(Math.max(totalLo, answer + 1), totalHi);
+  return [answer, total - answer, total];
+}
+
 function pickKey<T>(
   record: Record<string, T>,
   keys: readonly string[],
@@ -72,9 +99,8 @@ const vocabSum: WordTemplate = {
     // Grade-scoped: default 20 (grade 1); grade 2+ lessons pass a larger
     // maxNumber so the same template covers sums to 100 / 1000.
     const max = ctx?.maxNumber ?? 20;
-    const a = randInt(2, Math.max(2, max - 2));
-    const bMax = max - a;
-    const b = randInt(2, Math.max(2, bMax));
+    const sum = randInt(Math.min(4, max), max);
+    const [a, b] = splitSum(sum, 2);
     const phases: WordPhase[] = [
       { kind: "pickOp", a, b, expected: "+" },
       {
@@ -98,8 +124,8 @@ const vocabDiff: WordTemplate = {
   type: "vocab",
   generate: (ctx) => {
     const max = ctx?.maxNumber ?? 20;
-    const a = randInt(3, max);
-    const b = randInt(1, a - 1);
+    // [answer, partner, total] = [difference, subtrahend, minuend].
+    const [, b, a] = answerThenTotal(1, max - 1, 1, max);
     const phases: WordPhase[] = [
       { kind: "pickOp", a, b, expected: "-" },
       {
@@ -130,9 +156,8 @@ const missingFirstAddend: WordTemplate = {
   id: "missing_first_addend",
   type: "missing",
   generate: () => {
-    const sum = randInt(5, 20);
-    const second = randInt(1, sum - 1);
-    const first = sum - second;
+    // [answer, partner, total] = [first addend, second addend, sum].
+    const [first, second, sum] = answerThenTotal(1, 19, 5, 20);
     const phases: WordPhase[] = [
       {
         kind: "answer",
@@ -158,9 +183,8 @@ const missingSecondAddend: WordTemplate = {
   id: "missing_second_addend",
   type: "missing",
   generate: () => {
-    const sum = randInt(5, 20);
-    const first = randInt(1, sum - 1);
-    const second = sum - first;
+    // [answer, partner, total] = [second addend, first addend, sum].
+    const [second, first, sum] = answerThenTotal(1, 19, 5, 20);
     const phases: WordPhase[] = [
       {
         kind: "answer",
@@ -186,10 +210,9 @@ const missingMinuend: WordTemplate = {
   id: "missing_minuend",
   type: "missing",
   generate: () => {
-    const diff = randInt(1, 19);
-    const subMax = 20 - diff;
-    const subtrahend = randInt(1, Math.max(1, subMax));
-    const minuend = diff + subtrahend;
+    // Minuend-first (the unknown); split it into difference + subtrahend.
+    const minuend = randInt(2, 20);
+    const [diff, subtrahend] = splitSum(minuend, 1);
     const phases: WordPhase[] = [
       {
         kind: "answer",
@@ -215,9 +238,8 @@ const missingSubtrahend: WordTemplate = {
   id: "missing_subtrahend",
   type: "missing",
   generate: () => {
-    const diff = randInt(1, 19);
-    const minuend = randInt(diff + 1, 20);
-    const subtrahend = minuend - diff;
+    // [answer, partner, total] = [subtrahend, difference, minuend].
+    const [subtrahend, diff, minuend] = answerThenTotal(1, 19, 1, 20);
     const phases: WordPhase[] = [
       {
         kind: "answer",
@@ -1005,13 +1027,17 @@ const PROBABILITY_TEMPLATES: readonly WordTemplate[] = [probabilityVocab];
 
 // Data / bar charts (grade 3): read a value off a small bar chart (solve).
 const CHART_LABELS = ["pon", "uto", "sri", "čet", "pet"];
+const CHART_VALUE_POOL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const dataChartRead: WordTemplate = {
   id: "data_chart_read",
   type: "dataChart",
   generate: () => {
     const labels = shuffled(CHART_LABELS).slice(0, 4);
-    const values = labels.map(() => randInt(1, 10));
+    // Distinct values (sampled without replacement) so no two bars share a
+    // height and the chart doesn't look lopsided/repetitive; the asked value
+    // stays uniform across 1–10.
+    const values = shuffled(CHART_VALUE_POOL).slice(0, 4);
     const askIndex = randInt(0, labels.length - 1);
     const expected = values[askIndex] as number;
     const phases: WordPhase[] = [
