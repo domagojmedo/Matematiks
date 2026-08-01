@@ -12,6 +12,26 @@ export const RANGE_PRESETS = [
 
 export type RangePresetKey = (typeof RANGE_PRESETS)[number]["key"];
 
+/**
+ * Partner factor pool for custom mul/div rounds. Picking a number in setup means
+ * "drill that number's table", so the other factor spans the whole table — ×1 and
+ * ×10 are left out because they're trivial and would dilute a short round.
+ */
+export const TABLE_PARTNERS = [2, 3, 4, 5, 6, 7, 8, 9];
+
+/**
+ * Custom multiplicand setups choose WHICH tables to drill, not both factors —
+ * without this, picking only 6 yields 6 × 6 every time. Applied on read so setups
+ * saved before this rule (and old lastSession / session records) behave the same.
+ * Lesson setups author `values2` explicitly and are never normalized here.
+ */
+export function withTablePartners(setup: OperationSetup): OperationSetup {
+  if (setup.kind !== "multiplicands" || setup.values2 !== undefined) {
+    return setup;
+  }
+  return { ...setup, values2: TABLE_PARTNERS };
+}
+
 const DEFAULT_SETUPS: Record<Operation, OperationSetup> = {
   add: { kind: "range", min: 1, max: 20, rounds: 20 },
   sub: { kind: "range", min: 1, max: 20, rounds: 20 },
@@ -36,7 +56,7 @@ const DEFAULT_SETUPS: Record<Operation, OperationSetup> = {
 export function getSetup(profileId: string, op: Operation): OperationSetup {
   const key = profileKey(profileId, PROFILE_KEYS.setups);
   const all = readJSON<Partial<Record<Operation, OperationSetup>>>(key, {});
-  return all[op] ?? DEFAULT_SETUPS[op];
+  return withTablePartners(all[op] ?? DEFAULT_SETUPS[op]);
 }
 
 export function saveSetup(

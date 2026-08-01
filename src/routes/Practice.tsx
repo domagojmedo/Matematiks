@@ -10,7 +10,7 @@ import {
   OPERATION_TONE,
 } from "../lib/operations";
 import { generateProblem, type Problem } from "../lib/problemGen";
-import { getSetup } from "../lib/setup";
+import { getSetup, withTablePartners } from "../lib/setup";
 import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import type { LastSession, Operation, OperationSetup } from "../lib/types";
 import { ColumnPractice } from "./ColumnPractice";
@@ -31,8 +31,12 @@ export function Practice() {
       setup?: OperationSetup;
       lessonId?: string;
     } | null;
+    // Custom rounds (Quick Start, "repeat round") carry a setup but no lessonId;
+    // theirs may predate the table-partner rule, so normalize it. Lesson setups
+    // are authored and must pass through untouched.
+    const raw = state?.setup ?? getSetup(profileId, op);
     return {
-      setup: state?.setup ?? getSetup(profileId, op),
+      setup: state?.lessonId ? raw : withTablePartners(raw),
       lessonId: state?.lessonId,
     };
   });

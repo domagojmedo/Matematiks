@@ -167,6 +167,18 @@ function generateSub(setup: RangeSetup, crossMode: CrossMode): Problem {
   return { a, b, op: "-", answer: a - b };
 }
 
+/**
+ * Build a multiplication problem, showing either factor order for a table drill:
+ * practicing 6 should serve 2 × 6 as readily as 6 × 2 (commutativity). Only
+ * single-digit pairs commute — column mode reads `a` as the multiplicand and `b`
+ * as the multiplier, so 45 × 7 must never surface as 7 × 45.
+ */
+function makeMul(a: number, b: number): Problem {
+  const swap = a < 10 && b < 10 && Math.random() < 0.5;
+  const [x, y] = swap ? [b, a] : [a, b];
+  return { a: x, b: y, op: "*", answer: a * b };
+}
+
 function generateOnce(
   operation: Operation,
   setup: OperationSetup,
@@ -190,9 +202,7 @@ function generateOnce(
     }
     case "mul": {
       if (setup.kind !== "multiplicands") throw new Error("Bad setup for mul");
-      const a = pick(setup.values);
-      const b = pick(setup.values2 ?? setup.values);
-      return { a, b, op: "*", answer: a * b };
+      return makeMul(pick(setup.values), pick(setup.values2 ?? setup.values));
     }
     case "div": {
       if (setup.kind !== "multiplicands") throw new Error("Bad setup for div");
@@ -205,9 +215,7 @@ function generateOnce(
         throw new Error("Bad setup for muldiv");
       const useMul = Math.random() < 0.5;
       if (useMul) {
-        const a = pick(setup.values);
-        const b = pick(setup.values2 ?? setup.values);
-        return { a, b, op: "*", answer: a * b };
+        return makeMul(pick(setup.values), pick(setup.values2 ?? setup.values));
       }
       const divisor = pick(setup.values);
       const quotient = pick(setup.values2 ?? setup.values);
@@ -217,7 +225,16 @@ function generateOnce(
 }
 
 function isSameProblem(p: Problem, prev: Problem): boolean {
-  return p.a === prev.a && p.b === prev.b && p.op === prev.op;
+  if (p.op !== prev.op) return false;
+  // Multiplication commutes, so 6 × 2 right after 2 × 6 still reads as a repeat:
+  // compare the factor pair unordered.
+  if (p.op === "*") {
+    return (
+      Math.min(p.a, p.b) === Math.min(prev.a, prev.b) &&
+      Math.max(p.a, p.b) === Math.max(prev.a, prev.b)
+    );
+  }
+  return p.a === prev.a && p.b === prev.b;
 }
 
 export function generateProblem(

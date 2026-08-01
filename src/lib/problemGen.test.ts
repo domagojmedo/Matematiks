@@ -82,7 +82,7 @@ describe("generateProblem with crossesTen filter", () => {
 });
 
 describe("generateProblem with values2 (asymmetric multiplicands)", () => {
-  it("respects values2 for the second factor in multiplication", () => {
+  it("respects values2 for the partner factor in multiplication", () => {
     const setup: OperationSetup = {
       kind: "multiplicands",
       values: [7],
@@ -91,10 +91,47 @@ describe("generateProblem with values2 (asymmetric multiplicands)", () => {
     };
     for (let i = 0; i < 50; i++) {
       const p = generateProblem("mul", setup);
-      expect(p.a).toBe(7);
-      expect(p.b).toBeGreaterThanOrEqual(1);
-      expect(p.b).toBeLessThanOrEqual(10);
-      expect(p.answer).toBe(7 * p.b);
+      // Single-digit factors may commute, so 7 can sit on either side.
+      const partner = p.a === 7 ? p.b : p.a;
+      expect(p.a === 7 || p.b === 7).toBe(true);
+      expect(partner).toBeGreaterThanOrEqual(1);
+      expect(partner).toBeLessThanOrEqual(10);
+      expect(p.answer).toBe(p.a * p.b);
+    }
+  });
+
+  it("shows a single-digit table drill in both factor orders", () => {
+    const setup: OperationSetup = {
+      kind: "multiplicands",
+      values: [6],
+      values2: [2, 3, 4, 5, 6, 7, 8, 9],
+      rounds: 20,
+    };
+    const first = new Set<number>();
+    const second = new Set<number>();
+    for (let i = 0; i < 300; i++) {
+      const p = generateProblem("mul", setup);
+      expect(p.answer).toBe(p.a * p.b);
+      first.add(p.a);
+      second.add(p.b);
+    }
+    // 6 × n and n × 6 both occur; every partner shows up on each side.
+    expect([...first].sort((a, b) => a - b)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+    expect([...second].sort((a, b) => a - b)).toEqual([2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("keeps multi-digit multiplication in multiplicand × multiplier order", () => {
+    const setup: OperationSetup = {
+      kind: "multiplicands",
+      values: [45, 72],
+      values2: [2, 3, 4, 5, 6, 7, 8, 9],
+      rounds: 20,
+    };
+    for (let i = 0; i < 100; i++) {
+      const p = generateProblem("mul", setup);
+      // Column mode reads `a` as the multiplicand — 45 × 7 must not flip to 7 × 45.
+      expect([45, 72]).toContain(p.a);
+      expect(p.b).toBeLessThan(10);
     }
   });
 
@@ -125,6 +162,21 @@ describe("generateProblem avoids repeating previous", () => {
       const p = generateProblem("add", setup, prev);
       const same = p.a === prev.a && p.b === prev.b && p.op === prev.op;
       expect(same).toBe(false);
+      prev = p;
+    }
+  });
+
+  it("treats a commuted multiplication as a repeat", () => {
+    const setup: OperationSetup = {
+      kind: "multiplicands",
+      values: [6],
+      values2: [2, 3, 4, 5, 6, 7, 8, 9],
+      rounds: 20,
+    };
+    let prev = generateProblem("mul", setup);
+    for (let i = 0; i < 100; i++) {
+      const p = generateProblem("mul", setup, prev);
+      expect(p.answer).not.toBe(prev.answer);
       prev = p;
     }
   });
@@ -175,7 +227,7 @@ describe("generateProblem edge cases", () => {
     };
     for (let i = 0; i < 50; i++) {
       const p = generateProblem("mul", setup);
-      expect(p.a).toBe(2);
+      expect(p.a === 2 || p.b === 2).toBe(true);
       expect(p.answer).toBe(p.a * p.b);
     }
   });
