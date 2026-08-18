@@ -192,7 +192,8 @@
     "yesterday": "Jučer",
     "emptyTitle": "Još nema vježbi",
     "emptyBody": "Završi rundu i sesije će se pojaviti ovdje.",
-    "emptyCta": "Započni prvu rundu"
+    "emptyCta": "Započni prvu rundu",
+    "repeat": "Ponovi vježbu"
   },
   "sessionDetail": {
     "correct": "točno",
@@ -206,7 +207,22 @@
     "expand": "{{count}} pokušaja",
     "collapse": "Sakrij",
     "noAttempts": "Nema detaljnih pokušaja za ovaj zadatak.",
-    "expected": "očekivano:"
+    "expected": "očekivano:",
+    "params": "Postavke vježbe",
+    "paramRounds": "Broj zadataka",
+    "paramTime": "Vrijeme",
+    "paramPartners": "Drugi faktor",
+    "paramCrossesTen": "Prelazak desetice",
+    "crossesTen": {
+      "never": "bez prelaska",
+      "always": "s prelaskom",
+      "any": "pomiješano"
+    },
+    "paramMaxNumber": "Do broja",
+    "paramLessons": "Lekcije",
+    "on": "Uključeno",
+    "off": "Isključeno",
+    "repeat": "Ponovi ovu vježbu"
   },
   "profiles": {
     "title": "Profili",

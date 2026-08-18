@@ -163,7 +163,8 @@
     "yesterday": "Yesterday",
     "emptyTitle": "No practices yet",
     "emptyBody": "Finish a round and your sessions will show up here.",
-    "emptyCta": "Start your first round"
+    "emptyCta": "Start your first round",
+    "repeat": "Play again"
   },
   "sessionDetail": {
     "correct": "correct",
@@ -177,7 +178,22 @@
     "expand": "{{count}} attempts",
     "collapse": "Hide",
     "noAttempts": "No detailed attempts for this problem.",
-    "expected": "expected:"
+    "expected": "expected:",
+    "params": "Round settings",
+    "paramRounds": "Problems",
+    "paramTime": "Time",
+    "paramPartners": "Second factor",
+    "paramCrossesTen": "Crossing ten",
+    "crossesTen": {
+      "never": "never",
+      "always": "always",
+      "any": "mixed"
+    },
+    "paramMaxNumber": "Up to",
+    "paramLessons": "Lessons",
+    "on": "On",
+    "off": "Off",
+    "repeat": "Play this round again"
   },
   "profiles": {
     "title": "Profiles",

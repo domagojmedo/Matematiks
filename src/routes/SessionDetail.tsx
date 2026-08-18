@@ -3,13 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { formatDuration } from "../lib/format";
+import { describeSetup, formatDuration } from "../lib/format";
 import { findLesson } from "../lib/lessons";
 import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
 import { operationGlyph } from "../lib/problemGen";
+import { replayRound } from "../lib/replay";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import {
   isWordRecord,
+  isWordSetup,
   type ProblemAttempt,
   type ProblemRecord,
   type SessionRecord,
@@ -39,6 +41,7 @@ export function SessionDetail() {
     ? t(lesson.nameKey)
     : t(`operations.${session.operation}`);
   const tone = OPERATION_TONE[session.operation];
+  const replay = replayRound(session);
   const dateStr = new Date(session.date).toLocaleString(i18n.language, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -110,6 +113,30 @@ export function SessionDetail() {
           </div>
         </section>
 
+        <SetupParams session={session} />
+
+        <Link
+          to={replay.to}
+          state={replay.state}
+          className={`mb-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-black text-white shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
+        >
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v5h5" />
+          </svg>
+          {t("sessionDetail.repeat")}
+        </Link>
+
         <h2 className="mb-2.5 px-1 text-sm font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
           {t("sessionDetail.problems")} ({session.problems.length})
         </h2>
@@ -134,6 +161,54 @@ export function SessionDetail() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The exact parameters the round was configured with. Kids (and parents) come
+ * back to history asking "which range was that?" — the repeat button right
+ * below only makes sense if you can see what it will replay.
+ */
+function SetupParams({ session }: { session: SessionRecord }) {
+  const { t } = useTranslation();
+  const params = describeSetup(session.setup);
+  const combinedLessons = isWordSetup(session.setup)
+    ? (session.setup.lessonIds ?? [])
+        .map((id) => findLesson(id))
+        .filter((l) => l !== undefined)
+    : [];
+
+  return (
+    <section className="mb-5 rounded-3xl bg-white px-5 py-4 shadow-sm ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+      <p className="mb-2 text-xs font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
+        {t("sessionDetail.params")}
+      </p>
+      <dl className="divide-y divide-stone-100 dark:divide-stone-800">
+        {params.map((param) => (
+          <div
+            key={param.labelKey}
+            className="flex items-baseline justify-between gap-3 py-1.5"
+          >
+            <dt className="text-sm font-semibold text-stone-500 dark:text-stone-400">
+              {t(param.labelKey)}
+            </dt>
+            <dd className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
+              {param.textKey ? t(param.textKey) : param.text}
+            </dd>
+          </div>
+        ))}
+        {combinedLessons.length > 0 && (
+          <div className="flex items-baseline justify-between gap-3 py-1.5">
+            <dt className="flex-shrink-0 text-sm font-semibold text-stone-500 dark:text-stone-400">
+              {t("sessionDetail.paramLessons")}
+            </dt>
+            <dd className="text-right text-sm font-black text-stone-900 dark:text-white">
+              {combinedLessons.map((l) => t(l.nameKey)).join(" · ")}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </section>
   );
 }
 

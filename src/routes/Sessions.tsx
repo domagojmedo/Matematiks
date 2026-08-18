@@ -7,6 +7,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import { formatDuration, summarizeSetup } from "../lib/format";
 import { findLesson } from "../lib/lessons";
 import { OPERATION_SYMBOL, OPERATION_TONE, TONE_CHIP } from "../lib/operations";
+import { replayRound } from "../lib/replay";
 import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import type { SessionRecord } from "../lib/types";
 
@@ -192,59 +193,90 @@ function SessionCard({
   language: string;
 }) {
   const { t } = useTranslation();
+  const { theme } = useSettings();
   const tone = OPERATION_TONE[session.operation];
   const lesson = session.lessonId ? findLesson(session.lessonId) : undefined;
   const title = lesson
     ? t(lesson.nameKey)
     : t(`operations.${session.operation}`);
+  const params = summarizeSetup(session.setup);
+  const replay = replayRound(session);
   return (
-    <Link
-      to={`/session/${session.id}`}
-      className="flex w-full items-center gap-3.5 rounded-2xl bg-white p-3.5 text-left shadow-sm ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] dark:bg-stone-900 dark:ring-stone-800"
-    >
-      <div
-        className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ring-2 ${TONE_CHIP[tone]}`}
+    <div className="flex w-full items-center gap-1 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-stone-200 transition hover:shadow-md dark:bg-stone-900 dark:ring-stone-800">
+      <Link
+        to={`/session/${session.id}`}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-stone-50 active:scale-[0.99] dark:hover:bg-stone-800"
       >
-        <span className="text-2xl leading-none font-black">
-          {OPERATION_SYMBOL[session.operation]}
-        </span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="flex items-baseline gap-2 text-base leading-tight font-black text-stone-900 dark:text-white">
-          <span className="truncate">{title}</span>
-          {!lesson && (
-            <span className="truncate text-xs font-bold text-stone-500 tabular-nums dark:text-stone-400">
-              {summarizeSetup(session.setup)}
-            </span>
-          )}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
-          {lesson && (
-            <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-stone-600 uppercase dark:bg-stone-800 dark:text-stone-300">
-              {t(`grades.g${lesson.grade}`)}
-            </span>
-          )}
-          <span>
-            {formatRelative(session.date, language, t)} ·{" "}
-            {formatDuration(session.durationMs)}
-          </span>
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
-            {session.correct}
+        <div
+          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ring-2 ${TONE_CHIP[tone]}`}
+        >
+          <span className="text-2xl leading-none font-black">
+            {OPERATION_SYMBOL[session.operation]}
           </span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded-full bg-rose-500" />
-          <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
-            {session.mistakes}
-          </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base leading-tight font-black text-stone-900 dark:text-white">
+            {title}
+          </p>
+          {/* Parameters first, date last: the tail truncates on narrow phones
+              and the setup is the part worth keeping visible. */}
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+            {lesson && (
+              <span className="flex-shrink-0 rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-stone-600 uppercase dark:bg-stone-800 dark:text-stone-300">
+                {t(`grades.g${lesson.grade}`)}
+              </span>
+            )}
+            {params !== "" && (
+              <span className="flex-shrink-0 font-bold text-stone-600 tabular-nums dark:text-stone-300">
+                {params}
+              </span>
+            )}
+            <span className="truncate">
+              {formatRelative(session.date, language, t)} ·{" "}
+              {formatDuration(session.durationMs)}
+            </span>
+          </p>
         </div>
-      </div>
-    </Link>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
+              {session.correct}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-full bg-rose-500" />
+            <span className="text-sm font-black text-stone-900 tabular-nums dark:text-white">
+              {session.mistakes}
+            </span>
+          </div>
+        </div>
+      </Link>
+      {/* Sibling of the detail Link, never nested inside it — an <a> in an <a>
+          is invalid and browsers reparent it, breaking the whole card. */}
+      <Link
+        to={replay.to}
+        state={replay.state}
+        aria-label={t("sessions.repeat")}
+        title={t("sessions.repeat")}
+        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition active:scale-[0.95] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
+      >
+        <svg
+          aria-hidden="true"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 12a9 9 0 1 0 3-6.7" />
+          <path d="M3 4v5h5" />
+        </svg>
+      </Link>
+    </div>
   );
 }
 
