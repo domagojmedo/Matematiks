@@ -14,11 +14,15 @@
 import { act, render } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ProfilesProvider } from "../contexts/ProfilesContext";
+import { writePendingSession } from "../lib/pendingSession";
+import { getActiveProfileId } from "../lib/profiles";
+import { PROFILE_KEYS, profileKey, readJSON } from "../lib/storage";
 import {
   type ProblemAttempt,
   type ProblemRecord,
+  type SessionRecord,
   SetupKind,
   type WordLessonSetup,
 } from "../lib/types";
@@ -218,5 +222,116 @@ describe("useRoundMechanics — multi-problem lifecycle", () => {
     act(() => observed.commit?.(baseRecord));
     // problemIndex stays at 1 because the round ended (no more setProblemIndex).
     expect(observed.problemIndex).toBe(1);
+  });
+});
+
+describe("useRoundMechanics — mid-round checkpoint", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  const baseRecord: ProblemRecord = {
+    a: 1,
+    b: 1,
+    op: "+",
+    answer: 2,
+    userAnswer: 2,
+    tookMs: 0,
+    retries: 0,
+    startedAtMs: 0,
+    attempts: [],
+  };
+
+  function renderRound(rounds: number) {
+    const tiny: WordLessonSetup = {
+      kind: SetupKind.Word,
+      wordKinds: ["vocab"],
+      rounds,
+    };
+    let nextId = 0;
+    const generate = () => ({ id: nextId++ });
+    const observed = {
+      commit: null as ((rec: ProblemRecord) => void) | null,
+      noteWrong: null as (() => void) | null,
+    };
+    function Consumer() {
+      const round = useRoundMechanics<FakeProblem>({
+        op: "addsub",
+        setup: tiny,
+        generate,
+      });
+      observed.commit = round.commitProblem;
+      observed.noteWrong = round.noteWrongAttempt;
+      return null;
+    }
+    render(
+      <Wrap>
+        <Consumer />
+      </Wrap>,
+    );
+    const profileId = getActiveProfileId();
+    if (!profileId) throw new Error("no active profile after render");
+    return {
+      observed,
+      pendingKey: profileKey(profileId, PROFILE_KEYS.pendingSession),
+      sessionsKey: profileKey(profileId, PROFILE_KEYS.sessions),
+      profileId,
+    };
+  }
+
+  it("writes a checkpoint after each committed problem", () => {
+    const { observed, pendingKey } = renderRound(5);
+    expect(localStorage.getItem(pendingKey)).toBeNull();
+
+    act(() => observed.commit?.(baseRecord));
+    const pending = readJSON<SessionRecord | null>(pendingKey, null);
+    expect(pending?.problems).toHaveLength(1);
+    expect(pending?.correct).toBe(1);
+
+    act(() => observed.commit?.(baseRecord));
+    const pending2 = readJSON<SessionRecord | null>(pendingKey, null);
+    expect(pending2?.problems).toHaveLength(2);
+  });
+
+  it("writes a checkpoint after a wrong attempt with no completed problems", () => {
+    const { observed, pendingKey } = renderRound(5);
+    act(() => observed.noteWrong?.());
+    const pending = readJSON<SessionRecord | null>(pendingKey, null);
+    expect(pending?.mistakes).toBe(1);
+    expect(pending?.problems).toHaveLength(0);
+  });
+
+  it("clears the checkpoint when the round finishes normally", () => {
+    const { observed, pendingKey, sessionsKey } = renderRound(2);
+    act(() => observed.commit?.(baseRecord));
+    expect(localStorage.getItem(pendingKey)).not.toBeNull();
+
+    act(() => observed.commit?.(baseRecord));
+    expect(localStorage.getItem(pendingKey)).toBeNull();
+    const sessions = readJSON<SessionRecord[]>(sessionsKey, []);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.problems).toHaveLength(2);
+  });
+
+  it("flushes a leftover checkpoint into history when a new round mounts", () => {
+    // Simulate an interrupted round: seed a checkpoint for the profile that
+    // ensureProfilesInitialized will resolve, then mount a fresh round.
+    const first = renderRound(5);
+    writePendingSession(first.profileId, {
+      id: "interrupted",
+      date: new Date().toISOString(),
+      operation: "add",
+      setup: { kind: SetupKind.Range, rounds: 100, min: 1, max: 20 },
+      correct: 63,
+      mistakes: 2,
+      durationMs: 60000,
+      bestStreak: 20,
+      problems: [baseRecord],
+    });
+
+    const second = renderRound(5);
+    expect(localStorage.getItem(second.pendingKey)).toBeNull();
+    const sessions = readJSON<SessionRecord[]>(second.sessionsKey, []);
+    expect(sessions[0]?.id).toBe("interrupted");
   });
 });

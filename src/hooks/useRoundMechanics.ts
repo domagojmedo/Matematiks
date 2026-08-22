@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { trackEvent } from "../lib/analytics";
 import { isTimeMode } from "../lib/format";
+import {
+  clearPendingSession,
+  flushPendingSession,
+  writePendingSession,
+} from "../lib/pendingSession";
 import { PROFILE_KEYS, profileKey, readJSON, writeJSON } from "../lib/storage";
 import {
   type AnyLessonSetup,
@@ -92,32 +97,67 @@ export function useRoundMechanics<P>({
     };
   }, []);
 
+  // A checkpoint left over from an interrupted round (refresh, tab close)
+  // must land in history before this round starts writing its own.
+  useEffect(() => {
+    flushPendingSession(profileId);
+  }, [profileId]);
+
+  const buildSession = useCallback(
+    (
+      records: ProblemRecord[],
+      finalCorrect: number,
+      finalBest: number,
+      finalMistakes: number,
+    ): SessionRecord | null => {
+      if (records.length === 0 && finalMistakes === 0) return null;
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        date: new Date().toISOString(),
+        operation: op,
+        setup,
+        ...(lessonId ? { lessonId } : {}),
+        correct: finalCorrect,
+        mistakes: finalMistakes,
+        durationMs: Math.round(performance.now() - roundStartedRef.current),
+        bestStreak: finalBest,
+        problems: records,
+      };
+    },
+    [op, setup, lessonId],
+  );
+
+  // Overwritten after every answered problem / wrong attempt so a refresh
+  // mid-round still leaves a partial session to flush into history.
+  const checkpoint = useCallback(
+    (
+      records: ProblemRecord[],
+      curCorrect: number,
+      curBest: number,
+      curMistakes: number,
+    ) => {
+      if (endedRef.current) return;
+      const session = buildSession(records, curCorrect, curBest, curMistakes);
+      if (session) writePendingSession(profileId, session);
+    },
+    [buildSession, profileId],
+  );
+
   const persistSession = useCallback(
     (
       records: ProblemRecord[],
       finalCorrect: number,
       finalBest: number,
     ): string | null => {
-      if (records.length === 0 && mistakes === 0) return null;
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const session: SessionRecord = {
-        id,
-        date: new Date().toISOString(),
-        operation: op,
-        setup,
-        ...(lessonId ? { lessonId } : {}),
-        correct: finalCorrect,
-        mistakes,
-        durationMs: Math.round(performance.now() - roundStartedRef.current),
-        bestStreak: finalBest,
-        problems: records,
-      };
+      clearPendingSession(profileId);
+      const session = buildSession(records, finalCorrect, finalBest, mistakes);
+      if (session === null) return null;
       const sessionsKey = profileKey(profileId, PROFILE_KEYS.sessions);
       const all = readJSON<SessionRecord[]>(sessionsKey, []);
       writeJSON(sessionsKey, [session, ...all].slice(0, 200));
-      return id;
+      return session.id;
     },
-    [profileId, op, setup, lessonId, mistakes],
+    [profileId, buildSession, mistakes],
   );
 
   const modeTag = timeMode ? "time" : "count";
@@ -191,6 +231,7 @@ export function useRoundMechanics<P>({
       }
 
       recordsRef.current = [...recordsRef.current, record];
+      checkpoint(recordsRef.current, newCorrect, newBest, mistakes);
       setProblemIndex((i) => i + 1);
       setProblem((prev) => generate(prev));
     },
@@ -198,10 +239,12 @@ export function useRoundMechanics<P>({
       correct,
       streak,
       bestStreak,
+      mistakes,
       problemIndex,
       totalRounds,
       timeMode,
       finishRound,
+      checkpoint,
       generate,
     ],
   );
@@ -209,7 +252,8 @@ export function useRoundMechanics<P>({
   const noteWrongAttempt = useCallback(() => {
     setMistakes((m) => m + 1);
     setStreak(0);
-  }, []);
+    checkpoint(recordsRef.current, correct, bestStreak, mistakes + 1);
+  }, [checkpoint, correct, bestStreak, mistakes]);
 
   const tryBack = useCallback(() => {
     const hasProgress = recordsRef.current.length > 0 || mistakes > 0;

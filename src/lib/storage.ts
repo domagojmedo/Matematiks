@@ -8,6 +8,7 @@ export const PROFILE_KEYS = {
   sessions: "sessions",
   lastSession: "lastSession",
   setups: "setups",
+  pendingSession: "pendingSession",
 } as const;
 
 export type ProfileKey = (typeof PROFILE_KEYS)[keyof typeof PROFILE_KEYS];

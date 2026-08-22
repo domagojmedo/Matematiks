@@ -3,10 +3,12 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { flushPendingSession } from "../lib/pendingSession";
 import {
   DEFAULT_PROFILE_NAME,
   ensureProfilesInitialized,
@@ -51,6 +53,12 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       profiles[0] ?? { id: "", name: "" },
     [profiles, activeId],
   );
+
+  // A round interrupted by refresh / tab close leaves a checkpoint behind —
+  // move it into session history as soon as this profile is active again.
+  useEffect(() => {
+    if (profile.id) flushPendingSession(profile.id);
+  }, [profile.id]);
 
   const switchProfile = useCallback(
     (id: string) => {
