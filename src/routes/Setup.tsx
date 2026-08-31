@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { NumberField } from "../components/NumberField";
 import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import {
@@ -20,6 +21,26 @@ import { PROFILE_KEYS, profileKey, writeJSON } from "../lib/storage";
 import type { Operation, OperationSetup } from "../lib/types";
 
 const MULTIPLICANDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
+/**
+ * Absolute bounds for the custom range fields. The two fields are NOT clamped
+ * against each other: doing so made editing 1..20 into 30..100 impossible
+ * (typing 30 into min snapped it to 19). A crossed pair is caught by
+ * `isSetupValid` and explained inline instead — it's the one case with no
+ * sensible auto-correction, since we can't know which number was meant.
+ */
+const RANGE_LIMIT = { min: 1, max: 9999 } as const;
+
+function RangeWarning({ text }: { text: string }) {
+  return (
+    <p
+      role="alert"
+      className="mt-2 px-1 text-xs font-bold text-rose-600 dark:text-rose-400"
+    >
+      {text}
+    </p>
+  );
+}
 
 export function Setup() {
   const { operation } = useParams<{ operation: string }>();
@@ -131,7 +152,12 @@ export function Setup() {
 function isSetupValid(s: OperationSetup): boolean {
   const lenValid = s.timeMs !== undefined ? s.timeMs > 0 : s.rounds > 0;
   if (!lenValid) return false;
-  if (s.kind === "range") return s.min < s.max;
+  if (s.kind === "range") {
+    // Both pairs matter now that the fields no longer clamp against each
+    // other — an asymmetric round with a crossed second range is unstartable.
+    if (s.min >= s.max) return false;
+    return (s.min2 ?? s.min) < (s.max2 ?? s.max);
+  }
   return s.values.length > 0;
 }
 
@@ -188,7 +214,18 @@ function RangePicker({
     setup.max === max &&
     setup.min2 === undefined &&
     setup.max2 === undefined;
-  const isCustom = !RANGE_PRESETS.some((p) => isPresetMatch(p.min, p.max));
+  // Sticky: typing a custom range that transiently equals a preset (1..20 on
+  // the way to 1..200) must not collapse the fields being typed into.
+  const [isCustom, setIsCustom] = useState(
+    () =>
+      !RANGE_PRESETS.some(
+        (p) =>
+          setup.min === p.min &&
+          setup.max === p.max &&
+          setup.min2 === undefined &&
+          setup.max2 === undefined,
+      ),
+  );
   const asymmetric = setup.min2 !== undefined || setup.max2 !== undefined;
 
   const presetBg = "bg-violet-100 dark:bg-violet-900/40";
@@ -216,8 +253,11 @@ function RangePicker({
         {RANGE_PRESETS.map((p) => (
           <ChipButton
             key={p.key}
-            active={isPresetMatch(p.min, p.max)}
-            onClick={() => setSymmetric(p.min, p.max)}
+            active={!isCustom && isPresetMatch(p.min, p.max)}
+            onClick={() => {
+              setIsCustom(false);
+              setSymmetric(p.min, p.max);
+            }}
             themeBg={presetBg}
             themeText={presetText}
             themeRing={presetRing}
@@ -231,7 +271,7 @@ function RangePicker({
         ))}
         <ChipButton
           active={isCustom}
-          onClick={() => setSymmetric(1, 50)}
+          onClick={() => setIsCustom(true)}
           themeBg={presetBg}
           themeText={presetText}
           themeRing={presetRing}
@@ -249,20 +289,23 @@ function RangePicker({
             <NumberField
               label={t("setup.min")}
               value={setup.min}
-              min={1}
-              max={setup.max - 1}
+              min={RANGE_LIMIT.min}
+              max={RANGE_LIMIT.max}
               onChange={(v) => onChange({ ...setup, min: v })}
               focus={theme.primaryFocus}
             />
             <NumberField
               label={t("setup.max")}
               value={setup.max}
-              min={setup.min + 1}
-              max={9999}
+              min={RANGE_LIMIT.min}
+              max={RANGE_LIMIT.max}
               onChange={(v) => onChange({ ...setup, max: v })}
               focus={theme.primaryFocus}
             />
           </div>
+          {setup.min >= setup.max && (
+            <RangeWarning text={t("setup.rangeCrossed")} />
+          )}
 
           <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
             <input
@@ -285,61 +328,26 @@ function RangePicker({
                 <NumberField
                   label={t("setup.min")}
                   value={min2}
-                  min={1}
-                  max={max2 - 1}
+                  min={RANGE_LIMIT.min}
+                  max={RANGE_LIMIT.max}
                   onChange={(v) => onChange({ ...setup, min2: v })}
                   focus={theme.primaryFocus}
                 />
                 <NumberField
                   label={t("setup.max")}
                   value={max2}
-                  min={min2 + 1}
-                  max={9999}
+                  min={RANGE_LIMIT.min}
+                  max={RANGE_LIMIT.max}
                   onChange={(v) => onChange({ ...setup, max2: v })}
                   focus={theme.primaryFocus}
                 />
               </div>
+              {min2 >= max2 && <RangeWarning text={t("setup.rangeCrossed")} />}
             </>
           )}
         </>
       )}
     </section>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-  focus,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (n: number) => void;
-  focus: string;
-}) {
-  return (
-    <label className="block">
-      <span className="block px-1 text-xs font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
-        {label}
-      </span>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          if (Number.isFinite(n)) onChange(n);
-        }}
-        className={`mt-1 h-12 w-full rounded-2xl bg-white px-4 text-base font-black text-stone-900 ring-2 ring-stone-200 tabular-nums focus:outline-none focus-visible:ring-4 dark:bg-stone-900 dark:text-white dark:ring-stone-800 ${focus}`}
-      />
-    </label>
   );
 }
 
@@ -513,19 +521,28 @@ function RoundsPicker({
   theme: ReturnType<typeof useSettings>["theme"];
 }) {
   const { t } = useTranslation();
-  const isPreset = ROUND_SIZE_OPTIONS.includes(
-    setup.rounds as (typeof ROUND_SIZE_OPTIONS)[number],
+  // Sticky, not derived from the value: typing "100" passes through 10, and a
+  // derived flag would read that keystroke as "picked the 10 preset" and
+  // unmount the field mid-entry.
+  const [custom, setCustom] = useState(
+    () =>
+      !ROUND_SIZE_OPTIONS.includes(
+        setup.rounds as (typeof ROUND_SIZE_OPTIONS)[number],
+      ),
   );
   return (
     <>
       <div className="grid grid-cols-4 gap-2.5">
         {ROUND_SIZE_OPTIONS.map((n) => {
-          const active = setup.rounds === n;
+          const active = !custom && setup.rounds === n;
           return (
             <button
               key={n}
               type="button"
-              onClick={() => onChange({ ...setup, rounds: n })}
+              onClick={() => {
+                setCustom(false);
+                onChange({ ...setup, rounds: n });
+              }}
               className={`flex h-12 items-center justify-center rounded-2xl text-base font-black tabular-nums ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
                 active
                   ? `${theme.primary} text-white ring-transparent shadow-sm ${theme.primaryShadow}`
@@ -539,16 +556,16 @@ function RoundsPicker({
       </div>
       <button
         type="button"
-        onClick={() => onChange({ ...setup, rounds: 25 })}
+        onClick={() => setCustom(true)}
         className={`mt-2.5 flex h-12 w-full items-center justify-center rounded-2xl px-4 text-base font-black ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
-          !isPreset
+          custom
             ? `${theme.primary} text-white ring-transparent shadow-sm ${theme.primaryShadow}`
             : "bg-white text-stone-700 ring-stone-200 hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800 dark:hover:ring-stone-700"
         }`}
       >
         {t("setup.customRounds")}
       </button>
-      {!isPreset && (
+      {custom && (
         <div className="mt-3">
           <NumberField
             label={t("setup.rounds")}
@@ -575,21 +592,27 @@ function TimePicker({
 }) {
   const { t } = useTranslation();
   const currentMs = setup.timeMs ?? 0;
-  const isPreset = TIME_OPTIONS_MS.includes(
-    currentMs as (typeof TIME_OPTIONS_MS)[number],
+  // Sticky for the same reason as RoundsPicker: 1 and 10 minutes are presets,
+  // so a derived flag closes the field as soon as you type the first digit.
+  const [custom, setCustom] = useState(
+    () =>
+      !TIME_OPTIONS_MS.includes(currentMs as (typeof TIME_OPTIONS_MS)[number]),
   );
   const customMinutes = Math.max(1, Math.round(currentMs / 60_000));
   return (
     <>
       <div className="grid grid-cols-4 gap-2.5">
         {TIME_OPTIONS_MS.map((ms) => {
-          const active = currentMs === ms;
+          const active = !custom && currentMs === ms;
           const minutes = ms / 60_000;
           return (
             <button
               key={ms}
               type="button"
-              onClick={() => onChange({ ...setup, timeMs: ms })}
+              onClick={() => {
+                setCustom(false);
+                onChange({ ...setup, timeMs: ms });
+              }}
               className={`flex h-12 items-center justify-center rounded-2xl text-base font-black tabular-nums ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
                 active
                   ? `${theme.primary} text-white ring-transparent shadow-sm ${theme.primaryShadow}`
@@ -603,16 +626,16 @@ function TimePicker({
       </div>
       <button
         type="button"
-        onClick={() => onChange({ ...setup, timeMs: 7 * 60_000 })}
+        onClick={() => setCustom(true)}
         className={`mt-2.5 flex h-12 w-full items-center justify-center rounded-2xl px-4 text-base font-black ring-2 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primaryFocus} ${
-          !isPreset
+          custom
             ? `${theme.primary} text-white ring-transparent shadow-sm ${theme.primaryShadow}`
             : "bg-white text-stone-700 ring-stone-200 hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800 dark:hover:ring-stone-700"
         }`}
       >
         {t("setup.customRounds")}
       </button>
-      {!isPreset && (
+      {custom && (
         <div className="mt-3">
           <NumberField
             label={t("setup.minutesShort")}

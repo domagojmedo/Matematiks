@@ -102,6 +102,7 @@
     "rangeFirst": "First number",
     "rangeSecond": "Second number",
     "differentSecondRange": "Different range for second number",
+    "rangeCrossed": "The smallest number must be less than the largest.",
     "multiplicands": "Numbers to practice",
     "rounds": "Round size",
     "modeCount": "Fixed count",

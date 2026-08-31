@@ -131,6 +131,7 @@
     "rangeFirst": "Prvi broj",
     "rangeSecond": "Drugi broj",
     "differentSecondRange": "Drugi raspon za drugi broj",
+    "rangeCrossed": "Najmanji broj mora biti manji od najvećeg.",
     "multiplicands": "Brojevi za vježbu",
     "rounds": "Broj zadataka",
     "modeCount": "Fiksni broj",
