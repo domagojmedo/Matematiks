@@ -292,6 +292,9 @@
     "case": {
       "sentence": "Mixed case",
       "upper": "Capitals"
-    }
+    },
+    "speed": "Speed",
+    "speedOff": "No hiding",
+    "recallHint": "Say what it was, then tap to check."
   }
 }

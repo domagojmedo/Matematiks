@@ -321,6 +321,9 @@
     "case": {
       "sentence": "Mala slova",
       "upper": "Velika slova"
-    }
+    },
+    "speed": "Brzina",
+    "speedOff": "Bez skrivanja",
+    "recallHint": "Reci što je pisalo, pa dodirni za provjeru."
   }
 }

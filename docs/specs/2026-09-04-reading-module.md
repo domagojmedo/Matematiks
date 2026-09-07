@@ -230,6 +230,35 @@ adult in places (`posvuda`, `konačno`).
 | 7+ | Content fill | ~20 stories per batch, roughly a batch per level, to reach the targets above |
 | — | History | Reading session list, WPM trend across sessions |
 
+## Status
+
+Built and on the `reading-module` branch, not merged.
+
+| Batch | State |
+|---|---|
+| 0 Foundation | done — `syllabify`, level guard, story pipeline |
+| 1 Story engine | done — `StoryPage`, `useReadingRound`, `Reading`, Home card |
+| 2 Questions & stats | done — `QuestionPad`, `readingStats`, WPM summary |
+| 3 Repeated reading | done — personal best, "Pobij svoj rekord" |
+| 4 Priča dana | done — daily story, streak, offered promotion |
+| 5 Story generator | done — `storyTemplates`, same guard as written stories |
+| 6 Warm-ups | done — syllable + blending cards, exposure control |
+| History | done — WPM trend, session list |
+
+Added beyond the spec: a **mala / velika tiskana slova** toggle. Croatian schools teach reading in
+uppercase first, and sentence case quietly assumed a stage the child may not have reached.
+
+Two deliberate deviations, both recorded above in full:
+
+- **A partial read is not recorded** (spec SC4 said on-leave too). Words-per-minute over part of a
+  story is a different measurement, not a slower one.
+- **Exposure does not shrink automatically.** Doing that honestly needs an accuracy signal, and the
+  warm-up deliberately collects none — scoring blending drills would make the gentlest part of the
+  session the tensest. A grown-up picks the speed.
+
+**Still outstanding: the 140 stories have had no native Croatian review.** That gates shipping the
+content, and has since before any code existed.
+
 ## Open questions
 
 - Who taps `Dalje` — the kid, or a parent following along? Changes button size and placement.

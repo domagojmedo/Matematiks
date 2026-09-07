@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useSettings } from "../contexts/SettingsContext";
+import { EXPOSURE_STEPS, useExposure } from "../hooks/useExposure";
 import { STORIES } from "../lib/reading/readingStories";
 import {
   type Drill,
@@ -27,6 +28,7 @@ export function ReadingWarmup() {
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
   const [index, setIndex] = useState(0);
+  const [exposureMs, setExposureMs] = useState<number>(0);
 
   const drills = useMemo<Drill[]>(() => {
     const syllables = syllableDrills(DRILL_COUNT, 6, Math.random);
@@ -41,6 +43,17 @@ export function ReadingWarmup() {
   const uppercase = settings.readingCase === "upper";
   const drill = drills[index];
   const done = index >= drills.length;
+  const exposure = useExposure({ exposureMs, cardKey: index });
+
+  // In recall the card is blank and the tap reveals it; otherwise the tap moves
+  // on. Two different jobs, one big target, so a child never has to aim.
+  const onCardTap = () => {
+    if (exposure.phase === "recall") {
+      exposure.reveal();
+      return;
+    }
+    setIndex(index + 1);
+  };
 
   return (
     <div className={`flex min-h-dvh w-full flex-col ${pageBg}`}>
@@ -73,6 +86,29 @@ export function ReadingWarmup() {
           </span>
         </header>
 
+        {!done && (
+          <div className="mb-4 flex items-center gap-1.5 rounded-2xl bg-white p-1.5 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+            <span className="pl-2 pr-1 text-[11px] font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
+              {t("reading.speed")}
+            </span>
+            {EXPOSURE_STEPS.map((step) => (
+              <button
+                key={step}
+                type="button"
+                onClick={() => setExposureMs(step)}
+                aria-pressed={exposureMs === step}
+                className={`h-9 flex-1 rounded-xl text-xs font-black transition ${
+                  exposureMs === step
+                    ? `text-white ${theme.primary}`
+                    : "text-stone-500 dark:text-stone-400"
+                }`}
+              >
+                {step === 0 ? t("reading.speedOff") : `${step / 1000}s`}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex flex-1 items-center justify-center">
           {done ? (
             <div className="text-center">
@@ -90,10 +126,14 @@ export function ReadingWarmup() {
           ) : (
             <button
               type="button"
-              onClick={() => setIndex(index + 1)}
+              onClick={onCardTap}
               className="flex min-h-[16rem] w-full items-center justify-center rounded-[2rem] bg-white p-8 shadow-sm ring-2 ring-stone-200 transition active:scale-[0.99] dark:bg-stone-900 dark:ring-stone-800"
             >
-              {drill.kind === "syllable" ? (
+              {!exposure.visible ? (
+                <span className="text-7xl font-black text-stone-300 md:text-8xl dark:text-stone-700">
+                  ?
+                </span>
+              ) : drill.kind === "syllable" ? (
                 <span
                   className={`text-7xl font-black tracking-tight text-stone-900 md:text-8xl dark:text-white ${uppercase ? "uppercase" : ""}`}
                 >
@@ -125,7 +165,9 @@ export function ReadingWarmup() {
 
         {!done && (
           <p className="mt-5 text-center text-sm font-semibold text-stone-500 dark:text-stone-400">
-            {t("reading.warmupHint")}
+            {exposure.phase === "recall"
+              ? t("reading.recallHint")
+              : t("reading.warmupHint")}
           </p>
         )}
       </div>
