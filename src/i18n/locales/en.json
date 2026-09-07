@@ -295,6 +295,7 @@
     },
     "speed": "Speed",
     "speedOff": "No hiding",
-    "recallHint": "Say what it was, then tap to check."
+    "recallHint": "Say what it was, then tap to check.",
+    "tooFast": "Too fast to measure — not saved"
   }
 }

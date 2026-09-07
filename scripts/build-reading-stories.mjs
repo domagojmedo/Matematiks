@@ -19,6 +19,7 @@
  *   *Question?* → **correct option** / wrong / wrong
  */
 
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -214,6 +215,22 @@ writeFileSync(
   `${header}${JSON.stringify(stories, null, 2)};\n`,
   "utf8",
 );
+
+// Hand the output to Biome. Raw JSON.stringify is not what the repo formatter
+// produces, so without this a regeneration that changed no content still shows
+// a four-thousand-line diff and fails `npm run check` — which would make the
+// "regenerate after editing the markdown" instruction in the header useless.
+// Run Biome's Node entry point with the current interpreter: no shell (passing
+// args through one is deprecated in Node) and no platform branch, which the
+// `.bin` shims would need since Windows cannot exec a `.cmd` directly.
+const biome = join("node_modules", "@biomejs", "biome", "bin", "biome");
+try {
+  execFileSync(process.execPath, [biome, "format", "--write", OUT_FILE], {
+    stdio: "ignore",
+  });
+} catch {
+  console.warn(`Could not run Biome on ${OUT_FILE}; run npm run format.`);
+}
 
 console.log(`${stories.length} stories → ${OUT_FILE}`);
 for (const [level, count] of Object.entries(byLevel)) {

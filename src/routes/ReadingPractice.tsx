@@ -133,6 +133,7 @@ function ReadingRound({
         {round.phase === "done" && round.summary && (
           <Summary
             summary={round.summary}
+            recorded={round.recorded}
             previousBest={round.previousBest}
             sentences={round.sentences}
             onAgain={onAgain}
@@ -175,12 +176,15 @@ function ReadingRound({
 
 function Summary({
   summary,
+  recorded,
   previousBest,
   sentences,
   onAgain,
   onDone,
 }: {
   summary: NonNullable<ReturnType<typeof useReadingRound>["summary"]>;
+  /** False when the read was too fast to be a measurement; nothing was saved. */
+  recorded: boolean;
   previousBest: number;
   sentences: string[];
   onAgain: () => void;
@@ -188,7 +192,7 @@ function Summary({
 }) {
   const { t } = useTranslation();
   const { theme } = useSettings();
-  const beatRecord = previousBest > 0 && summary.wpm > previousBest;
+  const beatRecord = recorded && previousBest > 0 && summary.wpm > previousBest;
   const slowest = slowestSentence(summary.timings, sentences);
 
   return (
@@ -213,7 +217,12 @@ function Summary({
           {t("reading.newRecord", { previous: previousBest })}
         </p>
       )}
-      {!beatRecord && previousBest > 0 && (
+      {!recorded && (
+        <p className="mt-3 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-black text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+          {t("reading.tooFast")}
+        </p>
+      )}
+      {recorded && !beatRecord && previousBest > 0 && (
         <p className="mt-3 text-sm font-semibold text-stone-500 dark:text-stone-400">
           {t("reading.yourRecord", { best: previousBest })}
         </p>

@@ -101,4 +101,35 @@ describe("QuestionPad", () => {
     expect(option.className).toContain("uppercase");
     expect(option.textContent).toBe("maca");
   });
+
+  /**
+   * The reveal is delayed 900ms so the child sees the answer land. If the round
+   * is left within that window, the pending callback must not still fire —
+   * answering the last question and then tapping Izađi would otherwise finish
+   * the round and save the session, contradicting the leave dialog's promise
+   * that the story would not be saved.
+   */
+  it("cancels the pending reveal when unmounted", () => {
+    vi.useFakeTimers();
+    try {
+      const onAnswer = vi.fn();
+      const { unmount } = render(
+        <QuestionPad
+          question={QUESTION}
+          index={0}
+          total={1}
+          progressLabel="Pitanje"
+          onAnswer={onAnswer}
+          theme={theme}
+          uppercase={false}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "maca" }));
+      unmount();
+      vi.advanceTimersByTime(2000);
+      expect(onAnswer).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

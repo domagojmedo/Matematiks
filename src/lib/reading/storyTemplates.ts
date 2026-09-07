@@ -153,7 +153,11 @@ function buildLevel3(rng: () => number): {
   title: string;
 } {
   const [noun, other] = pickDistinct(L3_NOUNS, 2, rng);
-  const [name, otherName] = pickDistinct(L3_NAMES, 2, rng);
+  // Three distinct names, not two plus a hardcoded distractor: "Baka" is in
+  // this pool, so a literal "baka" third option collided with it in 29% of
+  // seeds — and under the uppercase letterform both render as BAKA, leaving
+  // the child two identical options, one of which is scored wrong.
+  const [name, otherName, distractor] = pickDistinct(L3_NAMES, 3, rng);
   const adjective = agree(pickFrom(L3_ADJECTIVES, rng), noun.gender);
   const otherAdjective = agree(pickFrom(L3_ADJECTIVES, rng), other.gender);
 
@@ -173,7 +177,7 @@ function buildLevel3(rng: () => number): {
     sentences,
     question: {
       prompt: `Tko nosi ${noun.acc}?`,
-      options: [name, otherName, "baka"],
+      options: [name, otherName, distractor],
       expectedIndex: 0,
     },
   };

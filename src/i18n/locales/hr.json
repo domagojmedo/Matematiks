@@ -324,6 +324,7 @@
     },
     "speed": "Brzina",
     "speedOff": "Bez skrivanja",
-    "recallHint": "Reci što je pisalo, pa dodirni za provjeru."
+    "recallHint": "Reci što je pisalo, pa dodirni za provjeru.",
+    "tooFast": "Prebrzo za mjerenje — nije spremljeno"
   }
 }

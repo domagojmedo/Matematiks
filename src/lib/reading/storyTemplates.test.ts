@@ -59,14 +59,19 @@ describe("generated stories", () => {
   });
 
   it("always has a question with a valid answer index", () => {
-    for (const seed of seeds.slice(0, 40)) {
+    for (const seed of seeds) {
       for (const level of [2, 3] as const) {
         const story = generateStory(level, seed);
         expect(story.questions).toHaveLength(1);
         const question = story.questions[0];
         expect(question.expectedIndex).toBeGreaterThanOrEqual(0);
         expect(question.expectedIndex).toBeLessThan(question.options.length);
-        expect(new Set(question.options).size).toBe(question.options.length);
+        // Case-insensitive: "Baka" and "baka" are the same word to a child,
+        // and identical on screen under the uppercase letterform.
+        const lowered = question.options.map((o) => o.toLowerCase());
+        expect(new Set(lowered).size, question.options.join("/")).toBe(
+          lowered.length,
+        );
       }
     }
   });

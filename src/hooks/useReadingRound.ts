@@ -7,6 +7,7 @@ import {
   writeProgress,
 } from "../lib/reading/readingProgress";
 import {
+  isPlausibleRead,
   type ReadingSessionRecord,
   type SentenceTiming,
   summarizeReading,
@@ -50,6 +51,9 @@ export function useReadingRound(story: Story) {
   });
 
   const [phase, setPhase] = useState<ReadingPhase>("reading");
+  // False when the finished read was too fast to be a real measurement, so the
+  // summary can say so instead of announcing a record nobody earned.
+  const [recorded, setRecorded] = useState(true);
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
@@ -75,19 +79,23 @@ export function useReadingRound(story: Story) {
         }),
       };
 
-      const key = profileKey(profileId, PROFILE_KEYS.readingSessions);
-      const stored = readJSON<ReadingSessionRecord[]>(key, []);
-      writeJSON(key, [record, ...stored].slice(0, MAX_STORED_SESSIONS));
+      const plausible = isPlausibleRead(record.wpm);
+      if (plausible) {
+        const key = profileKey(profileId, PROFILE_KEYS.readingSessions);
+        const stored = readJSON<ReadingSessionRecord[]>(key, []);
+        writeJSON(key, [record, ...stored].slice(0, MAX_STORED_SESSIONS));
 
-      writeProgress(
-        profileId,
-        recordRead(readProgress(profileId), {
-          storyId: story.id,
-          wpm: record.wpm,
-          today: dayKey(new Date()),
-        }),
-      );
+        writeProgress(
+          profileId,
+          recordRead(readProgress(profileId), {
+            storyId: story.id,
+            wpm: record.wpm,
+            today: dayKey(new Date()),
+          }),
+        );
+      }
 
+      setRecorded(plausible);
       setSummary(record);
       setPhase("done");
     },
@@ -154,6 +162,7 @@ export function useReadingRound(story: Story) {
     questionCount: story.questions.length,
     answers,
     summary,
+    recorded,
     isReread,
     previousBest,
     nextSentence,

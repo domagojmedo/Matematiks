@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  isPlausibleRead,
+  MAX_PLAUSIBLE_WPM,
   type SentenceTiming,
   slowestSentence,
   summarizeReading,
@@ -90,5 +92,26 @@ describe("slowestSentence", () => {
       storySentences(story),
     );
     expect(result).toBeNull();
+  });
+});
+
+describe("isPlausibleRead", () => {
+  it("accepts speeds a child could actually read aloud", () => {
+    expect(isPlausibleRead(20)).toBe(true);
+    expect(isPlausibleRead(120)).toBe(true);
+    expect(isPlausibleRead(MAX_PLAUSIBLE_WPM)).toBe(true);
+  });
+
+  it("rejects speeds produced by tapping straight through", () => {
+    // 15 words in 400ms — the fast-tap case, which would otherwise be stored
+    // as a permanent unbeatable best and flatten the whole history chart.
+    expect(wordsPerMinute(15, 400)).toBeGreaterThan(MAX_PLAUSIBLE_WPM);
+    expect(isPlausibleRead(wordsPerMinute(15, 400))).toBe(false);
+    expect(isPlausibleRead(MAX_PLAUSIBLE_WPM + 1)).toBe(false);
+  });
+
+  it("rejects a zero reading", () => {
+    expect(isPlausibleRead(0)).toBe(false);
+    expect(isPlausibleRead(-5)).toBe(false);
   });
 });

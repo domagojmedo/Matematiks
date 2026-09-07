@@ -40,6 +40,31 @@ export function wordsPerMinute(words: number, ms: number): number {
   return Math.round((words / ms) * 60_000);
 }
 
+/**
+ * Above this, the taps came faster than speech.
+ *
+ * A fluent adult reads *aloud* at roughly 150–200 wpm; a child working on
+ * fluency is well under that. 300 leaves generous headroom for a fast older
+ * reader while still catching the real failure mode: someone tapping "Dalje"
+ * straight through without reading, which produces four-figure numbers.
+ */
+export const MAX_PLAUSIBLE_WPM = 300;
+
+/**
+ * Whether a finished read is a usable measurement.
+ *
+ * This matters more than it looks. `recordRead` keeps the *best* score
+ * forever, and the history chart scales every bar against the peak — so one
+ * fast-tapped run would sit at the top of that story permanently, make a
+ * genuine record impossible to beat, and squash every real session in the
+ * trend down to a sliver. The trend is the entire point of the module, so an
+ * implausible read is discarded rather than stored, exactly as a partial read
+ * is.
+ */
+export function isPlausibleRead(wpm: number): boolean {
+  return wpm > 0 && wpm <= MAX_PLAUSIBLE_WPM;
+}
+
 export function summarizeReading({
   story,
   timings,

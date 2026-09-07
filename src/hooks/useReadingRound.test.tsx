@@ -207,6 +207,42 @@ describe("persistence", () => {
     expect(progress.best).toEqual({});
   });
 
+  /**
+   * Same rule as a partial read: a run finished by tapping straight through is
+   * not a slower measurement, it is not a measurement. Storing it would put an
+   * unbeatable best on that story forever and flatten every real session in
+   * the history trend, which is the one thing the module exists to show.
+   */
+  it("writes nothing for a read too fast to be real", () => {
+    const { result } = render();
+    for (let i = 0; i < 3; i++) {
+      act(() => {
+        advance(100);
+        result.current.nextSentence();
+      });
+    }
+    act(() => result.current.answerQuestion(0));
+
+    expect(result.current.phase).toBe("done");
+    expect(result.current.recorded).toBe(false);
+    expect(sessions()).toEqual([]);
+    const progress = readProgress(getActiveProfileId() ?? "");
+    expect(progress.read).toEqual([]);
+    expect(progress.best).toEqual({});
+  });
+
+  it("marks a normal read as recorded", () => {
+    const { result } = render();
+    for (let i = 0; i < 3; i++) {
+      act(() => {
+        advance(20_000);
+        result.current.nextSentence();
+      });
+    }
+    act(() => result.current.answerQuestion(0));
+    expect(result.current.recorded).toBe(true);
+  });
+
   it("records the story as read and stores the best", () => {
     const { result } = render();
     for (let i = 0; i < 3; i++) {

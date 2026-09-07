@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReadingQuestion } from "../../lib/reading/readingTypes";
 import type { Theme } from "../../lib/themes";
 
@@ -42,12 +42,30 @@ export function QuestionPad({
   }, [question]);
 
   const [picked, setPicked] = useState<number | null>(null);
+  const revealTimer = useRef<number | null>(null);
+
+  /**
+   * Cancel the pending reveal on unmount.
+   *
+   * Without this, answering the last question and then leaving within the
+   * 900 ms window still fires `onAnswer`, which finishes the round and writes
+   * the session — directly contradicting the leave dialog's promise that the
+   * story would not be saved.
+   */
+  useEffect(() => {
+    return () => {
+      if (revealTimer.current !== null) {
+        window.clearTimeout(revealTimer.current);
+      }
+    };
+  }, []);
 
   const choose = (originalIndex: number) => {
     if (picked !== null) return;
     setPicked(originalIndex);
     // Let the child see the answer land before the screen moves on.
-    window.setTimeout(() => {
+    revealTimer.current = window.setTimeout(() => {
+      revealTimer.current = null;
       setPicked(null);
       onAnswer(originalIndex);
     }, 900);
