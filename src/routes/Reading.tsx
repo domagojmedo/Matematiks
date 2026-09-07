@@ -21,11 +21,22 @@ export function Reading() {
   const navigate = useNavigate();
 
   const [progress, setProgress] = useState(() => readProgress(profileId));
-  const [level, setLevel] = useState<ReadingLevel>(progress.level);
+  // Level 1 is syllable practice and has no stories, so it is a UI-only chip
+  // rather than a ReadingLevel — the story types and the decodability guard
+  // stay honest about levels 2–6 being the ones with text.
+  const [level, setLevel] = useState<ReadingLevel | 1>(progress.browsingLevel);
+
+  const chooseLevel = (value: ReadingLevel | 1) => {
+    setLevel(value);
+    if (value === 1) return;
+    const updated = { ...progress, browsingLevel: value };
+    writeProgress(profileId, updated);
+    setProgress(updated);
+  };
 
   const today = dayKey(new Date());
   const daily = pickDailyStory(progress, today);
-  const stories = storiesForLevel(level);
+  const stories = level === 1 ? [] : storiesForLevel(level);
   const read = new Set(progress.read);
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
   const promote = canPromote(progress);
@@ -148,11 +159,11 @@ export function Reading() {
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
-          {READING_LEVELS.map((value) => (
+          {([1, ...READING_LEVELS] as const).map((value) => (
             <button
               key={value}
               type="button"
-              onClick={() => setLevel(value)}
+              onClick={() => chooseLevel(value)}
               className={`h-11 min-w-[4.5rem] rounded-2xl px-4 text-sm font-black transition ${
                 value === level
                   ? `text-white ${theme.primary}`
@@ -179,6 +190,28 @@ export function Reading() {
               🔤 {t("reading.warmup")}
             </Link>
           </div>
+        )}
+
+        {level === 1 && (
+          <Link
+            to="/reading/warmup"
+            className={`flex items-center gap-3.5 rounded-3xl bg-white p-4 shadow-sm ring-2 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] dark:bg-stone-900 dark:ring-stone-800 ${theme.hoverPrimaryRing}`}
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-2xl dark:bg-amber-900/40"
+            >
+              🔤
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-black text-stone-900 md:text-lg dark:text-white">
+                {t("reading.level1Title")}
+              </span>
+              <span className="mt-0.5 block text-sm font-semibold text-stone-500 dark:text-stone-400">
+                {t("reading.level1Body")}
+              </span>
+            </span>
+          </Link>
         )}
 
         <div className="flex flex-col gap-2.5">

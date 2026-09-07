@@ -45,21 +45,29 @@ export function StoryPage({
             const isCurrent = flat === currentIndex;
             const isRead = flat < currentIndex;
             return (
-              <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: sentences within a story are immutable, and sentence text alone is not unique enough to key on.
-                key={`s-${pIndex}-${sIndex}`}
-                data-current={isCurrent || undefined}
-                className={
-                  isCurrent
-                    ? `rounded-lg px-1.5 py-0.5 decoration-2 ${
-                        dark ? "text-white" : "text-stone-900"
-                      } ${theme.accentChip}`
-                    : isRead
-                      ? "text-stone-500 dark:text-stone-400"
-                      : "text-stone-400 dark:text-stone-600"
-                }
-              >
-                {sentence}{" "}
+              // biome-ignore lint/suspicious/noArrayIndexKey: sentences within a story are immutable, and sentence text alone is not unique enough to key on.
+              <span key={`s-${pIndex}-${sIndex}`}>
+                <span
+                  data-sentence={flat}
+                  data-current={isCurrent || undefined}
+                  // Every sentence carries the same box — padding, radius,
+                  // decoration-clone — and only the colours change. Giving the
+                  // padding to the highlighted sentence alone made the line
+                  // wider than the others, so each advance reflowed the
+                  // paragraph and shunted words onto different lines. A child
+                  // who is still tracking text with their eyes loses their
+                  // place completely. Colour is the one thing that can change
+                  // without moving anything.
+                  className={`box-decoration-clone rounded px-1 py-0.5 transition-colors duration-200 ${
+                    isCurrent
+                      ? `${dark ? "text-white" : "text-stone-900"} ${theme.accentChip}`
+                      : isRead
+                        ? "bg-transparent text-stone-500 dark:text-stone-400"
+                        : "bg-transparent text-stone-400 dark:text-stone-600"
+                  }`}
+                >
+                  {sentence}
+                </span>{" "}
               </span>
             );
           })}

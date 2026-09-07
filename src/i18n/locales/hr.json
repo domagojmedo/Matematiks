@@ -325,6 +325,9 @@
     "speed": "Brzina",
     "speedOff": "Bez skrivanja",
     "recallHint": "Reci što je pisalo, pa dodirni za provjeru.",
-    "tooFast": "Prebrzo za mjerenje — nije spremljeno"
+    "tooFast": "Prebrzo za mjerenje — nije spremljeno",
+    "level1Title": "Slogovi",
+    "level1Body": "Prva razina je vježba slogova — još bez priča.",
+    "nextStory": "Sljedeća priča"
   }
 }

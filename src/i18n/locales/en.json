@@ -296,6 +296,9 @@
     "speed": "Speed",
     "speedOff": "No hiding",
     "recallHint": "Say what it was, then tap to check.",
-    "tooFast": "Too fast to measure — not saved"
+    "tooFast": "Too fast to measure — not saved",
+    "level1Title": "Syllables",
+    "level1Body": "Level 1 is syllable practice — no stories yet.",
+    "nextStory": "Next story"
   }
 }

@@ -5,6 +5,7 @@ import {
   EMPTY_PROGRESS,
   nextLevel,
   pickDailyStory,
+  pickNextStory,
   type ReadingProgress,
   readProgress,
   recordRead,
@@ -182,5 +183,69 @@ describe("persistence", () => {
     expect(
       localStorage.getItem("matematiks.kid.readingProgress"),
     ).not.toBeNull();
+  });
+
+  it("remembers the browsed level separately from the child's own level", () => {
+    // Returning from a story used to drop back to the child's level, so
+    // browsing level 4 and tapping "another story" bounced to level 2.
+    writeProgress("kid", base({ level: 2, browsingLevel: 4 }));
+    const progress = readProgress("kid");
+    expect(progress.level).toBe(2);
+    expect(progress.browsingLevel).toBe(4);
+  });
+
+  it("falls back to the child's level when nothing has been browsed", () => {
+    writeProgress("kid", base({ level: 3 }));
+    localStorage.setItem(
+      "matematiks.kid.readingProgress",
+      JSON.stringify({ level: 3 }),
+    );
+    expect(readProgress("kid").browsingLevel).toBe(3);
+  });
+});
+
+describe("pickNextStory", () => {
+  const always = (value: number) => () => value;
+
+  it("offers another story at the same level", () => {
+    const next = pickNextStory(
+      base({ level: 4 }),
+      4,
+      "zimsko-jutro",
+      always(0),
+    );
+    expect(next).not.toBeNull();
+    expect(next?.level).toBe(4);
+  });
+
+  it("never offers the story just finished", () => {
+    const level2 = storiesAtLevel(2);
+    for (const story of level2) {
+      // Sweep the whole random range so no draw can land on the excluded one.
+      for (const r of [0, 0.25, 0.5, 0.75, 0.999]) {
+        const next = pickNextStory(base({ level: 2 }), 2, story.id, always(r));
+        expect(next?.id).not.toBe(story.id);
+      }
+    }
+  });
+
+  it("prefers an unread story", () => {
+    const level2 = storiesAtLevel(2);
+    const read = level2.slice(0, level2.length - 1).map((s) => s.id);
+    const progress = base({ level: 2, read });
+    // Only the last story is unread, so it must come back whatever the draw.
+    for (const r of [0, 0.4, 0.999]) {
+      expect(pickNextStory(progress, 2, "nothing", always(r))?.id).toBe(
+        level2[level2.length - 1].id,
+      );
+    }
+  });
+
+  it("falls back to a re-read once the level is exhausted", () => {
+    const level2 = storiesAtLevel(2);
+    const progress = base({ level: 2, read: level2.map((s) => s.id) });
+    const next = pickNextStory(progress, 2, level2[0].id, always(0));
+    expect(next).not.toBeNull();
+    expect(next?.id).not.toBe(level2[0].id);
   });
 });

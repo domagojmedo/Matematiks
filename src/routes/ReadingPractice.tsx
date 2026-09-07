@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { QuestionPad } from "../components/reading/QuestionPad";
 import { StoryPage, VerdictPad } from "../components/reading/StoryPage";
+import { useProfiles } from "../contexts/ProfilesContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { useReadingKeys } from "../hooks/useReadingKeys";
 import { useReadingRound } from "../hooks/useReadingRound";
+import { pickNextStory, readProgress } from "../lib/reading/readingProgress";
 import { slowestSentence } from "../lib/reading/readingStats";
 import type { Story } from "../lib/reading/readingTypes";
 import { findStory } from "../lib/reading/stories";
@@ -36,6 +38,7 @@ function ReadingRound({
   const { t } = useTranslation();
   const { theme, settings } = useSettings();
   const navigate = useNavigate();
+  const { profileId } = useProfiles();
   const round = useReadingRound(story);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const uppercase = settings.readingCase === "upper";
@@ -155,6 +158,16 @@ function ReadingRound({
             previousBest={round.previousBest}
             sentences={round.sentences}
             onAgain={onAgain}
+            onNextStory={() => {
+              // Read progress fresh: this round has just been recorded, so the
+              // story now counts as read and will not be offered again.
+              const next = pickNextStory(
+                readProgress(profileId),
+                story.level,
+                story.id,
+              );
+              navigate(next ? `/reading/story/${next.id}` : "/reading");
+            }}
             onDone={() => navigate("/reading")}
           />
         )}
@@ -198,6 +211,7 @@ function Summary({
   previousBest,
   sentences,
   onAgain,
+  onNextStory,
   onDone,
 }: {
   summary: NonNullable<ReturnType<typeof useReadingRound>["summary"]>;
@@ -206,6 +220,8 @@ function Summary({
   previousBest: number;
   sentences: string[];
   onAgain: () => void;
+  /** Straight into another story at the same level, without the list. */
+  onNextStory: () => void;
   onDone: () => void;
 }) {
   const { t } = useTranslation();
@@ -269,21 +285,45 @@ function Summary({
         </div>
       )}
 
+      {/* "Keep reading" is the primary action: the whole point is daily volume,
+          and sending a child back to a list between every story is friction.
+          Re-reading for speed stays one tap away as the drill it is. */}
       <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
         <button
           type="button"
-          onClick={onAgain}
-          className={`h-14 rounded-2xl text-lg font-black text-white shadow-sm transition active:scale-[0.99] ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow}`}
+          onClick={onNextStory}
+          className={`flex h-14 items-center justify-center gap-2 rounded-2xl text-lg font-black text-white shadow-sm transition active:scale-[0.99] ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow}`}
         >
-          {t("reading.beatRecord")}
+          {t("reading.nextStory")}
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="h-14 rounded-2xl bg-white text-lg font-black text-stone-700 ring-2 ring-stone-200 transition hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800"
-        >
-          {t("reading.pickAnother")}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onAgain}
+            className="h-13 flex-1 rounded-2xl bg-white px-3 py-3 text-sm font-black text-stone-700 ring-2 ring-stone-200 transition hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800"
+          >
+            {t("reading.beatRecord")}
+          </button>
+          <button
+            type="button"
+            onClick={onDone}
+            className="h-13 flex-1 rounded-2xl bg-white px-3 py-3 text-sm font-black text-stone-700 ring-2 ring-stone-200 transition hover:ring-stone-300 dark:bg-stone-900 dark:text-stone-200 dark:ring-stone-800"
+          >
+            {t("reading.pickAnother")}
+          </button>
+        </div>
       </div>
     </div>
   );

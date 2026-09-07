@@ -180,3 +180,92 @@ test("warm-up cards advance with the keyboard", async ({ page }) => {
   await page.keyboard.press("ArrowRight");
   await expect(page.getByText("3/20")).toBeVisible();
 });
+
+/**
+ * The highlight must not move the text.
+ *
+ * A slow reader tracks lines with their eyes; if advancing the highlight
+ * reflows the paragraph and shunts words onto different lines, they lose their
+ * place entirely. Every sentence therefore carries the same box and only the
+ * colours change, and this measures that directly rather than trusting it.
+ *
+ * Positions are document-relative and fonts are awaited first: viewport
+ * coordinates would also catch Playwright scrolling the button into view, and
+ * a late webfont reflows everything once on its own.
+ */
+test("text does not shift as the highlight advances", async ({ page }) => {
+  // A level-6 story: three paragraphs, plenty of wrapping.
+  await page.goto("/reading/story/prvi-bicikl");
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(300);
+
+  const boxes = () =>
+    page.$$eval("[data-sentence]", (nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return [
+          Math.round(rect.x + window.scrollX),
+          Math.round(rect.y + window.scrollY),
+          Math.round(rect.width),
+        ].join(",");
+      }),
+    );
+
+  const before = await boxes();
+  expect(before.length).toBeGreaterThan(10);
+
+  for (let i = 0; i < 4; i++) {
+    await page.getByRole("button", { name: "Dalje" }).click();
+    await page.waitForTimeout(250);
+    expect(await boxes(), `after ${i + 1} advance(s)`).toEqual(before);
+  }
+});
+
+test("returning from a story keeps the level you were browsing", async ({
+  page,
+}) => {
+  await page.goto("/reading");
+  await page.getByRole("button", { name: "4. razina" }).click();
+  await expect(page.getByText("Zimsko jutro")).toBeVisible();
+
+  await page.getByText("Zimsko jutro").click();
+  await expect(
+    page.getByRole("heading", { name: "Zimsko jutro" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Natrag" }).click();
+  await page.getByRole("button", { name: "Izađi" }).click();
+
+  // Level 4 must still be selected, not the child's own level.
+  await expect(page.getByText("Zimsko jutro")).toBeVisible();
+  await expect(page.getByRole("button", { name: "4. razina" })).toHaveAttribute(
+    "class",
+    /text-white/,
+  );
+});
+
+test("level 1 is offered and leads to syllable practice", async ({ page }) => {
+  await page.goto("/reading");
+  await page.getByRole("button", { name: "1. razina" }).click();
+  await expect(page.getByText("Slogovi")).toBeVisible();
+
+  await page.getByText("Slogovi").click();
+  await expect(page.getByText("1/20")).toBeVisible();
+});
+
+test("next story keeps you reading without going back to the list", async ({
+  page,
+}) => {
+  await page.goto(STORY);
+  await readAtHumanPace(page);
+  await page.getByRole("button", { name: "maca", exact: true }).click();
+  await expect(page.getByText("Pročitano!")).toBeVisible();
+
+  await page.getByRole("button", { name: /Sljedeća priča/ }).click();
+
+  // Straight into another story at the same level, not the picker.
+  await expect(page).toHaveURL(/\/reading\/story\//);
+  await expect(page).not.toHaveURL(/maca-i-lopta/);
+  await expect(page.getByRole("button", { name: "Dalje" })).toBeVisible();
+  await expect(page.getByText("2. razina")).toBeVisible();
+});

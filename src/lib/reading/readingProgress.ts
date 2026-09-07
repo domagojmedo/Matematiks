@@ -20,10 +20,19 @@ export type ReadingProgress = {
   streak: number;
   /** `YYYY-MM-DD` of the most recent reading day, or "" if never. */
   lastReadDay: string;
+  /**
+   * The level currently being browsed, which is not the same thing as `level`.
+   * `level` is where the child is up to; this is what a grown-up last looked
+   * at. Kept because returning from a story used to drop back to the child's
+   * own level, so browsing level 4 and tapping "another story" bounced you to
+   * level 2 every time.
+   */
+  browsingLevel: ReadingLevel;
 };
 
 export const EMPTY_PROGRESS: ReadingProgress = {
   level: 2,
+  browsingLevel: 2,
   best: {},
   read: [],
   streak: 0,
@@ -55,6 +64,8 @@ export function readProgress(profileId: string): ReadingProgress {
     read: stored.read ?? [],
     streak: stored.streak ?? 0,
     lastReadDay: stored.lastReadDay ?? "",
+    // Falls back to the child's own level the first time.
+    browsingLevel: stored.browsingLevel ?? stored.level ?? EMPTY_PROGRESS.level,
   };
 }
 
@@ -155,4 +166,32 @@ export function canPromote(progress: ReadingProgress): boolean {
 
 export function nextLevel(level: ReadingLevel): ReadingLevel {
   return Math.min(level + 1, 6) as ReadingLevel;
+}
+
+/**
+ * The next story to read after finishing one — the "keep going" path.
+ *
+ * Prefers something unread at the same level, so a child working through a
+ * level does not get handed the same two stories back. Falls back to any other
+ * story at that level once the level is exhausted, and returns null only when
+ * the level has nothing else at all.
+ *
+ * The story just finished is always excluded: offering "next" and reopening
+ * the same page reads as a broken button.
+ */
+export function pickNextStory(
+  progress: ReadingProgress,
+  level: ReadingLevel,
+  excludeId: string,
+  random: () => number = Math.random,
+): Story | null {
+  const unread = unreadAtLevel(progress, level).filter(
+    (story) => story.id !== excludeId,
+  );
+  const pool =
+    unread.length > 0
+      ? unread
+      : storiesAtLevel(level).filter((story) => story.id !== excludeId);
+  if (pool.length === 0) return null;
+  return pool[Math.floor(random() * pool.length)];
 }
