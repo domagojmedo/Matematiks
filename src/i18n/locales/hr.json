@@ -325,7 +325,15 @@
     "recallHint": "Reci što je pisalo, pa dodirni za provjeru.",
     "tooFast": "Prebrzo za mjerenje — nije spremljeno",
     "level1Title": "Slogovi",
-    "level1Body": "Prva razina je vježba slogova — još bez priča.",
-    "nextStory": "Sljedeća priča"
+    "nextStory": "Sljedeća priča",
+    "levelsNote": "Razine nisu razredi — biraj po tome kako dijete čita, ne po godini u školi.",
+    "levelDesc": {
+      "1": "Slogovi: ma, me, mi. Vježba spajanja, još bez priča.",
+      "2": "Kratke riječi od dva sloga. Rečenice od 3 do 4 riječi.",
+      "3": "Riječi od tri sloga. Rečenice do 6 riječi.",
+      "4": "Suglasnički skupovi: škola, zvijezda, snjegović. Duže rečenice.",
+      "5": "Duge riječi i priče u dva dijela.",
+      "6": "Cijeli tekst u odlomcima, s pitanjem koje traži zaključivanje."
+    }
   }
 }

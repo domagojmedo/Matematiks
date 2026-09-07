@@ -230,9 +230,11 @@ test("returning from a story keeps the level you were browsing", async ({
 test("level 1 is offered and leads to syllable practice", async ({ page }) => {
   await page.goto("/reading");
   await page.getByRole("button", { name: "1. razina" }).click();
-  await expect(page.getByText("Slogovi")).toBeVisible();
+  // "Slogovi" is both the level description and the link, so target the link.
+  const link = page.getByRole("link", { name: /Slogovi/ });
+  await expect(link).toBeVisible();
 
-  await page.getByText("Slogovi").click();
+  await link.click();
   await expect(page.getByText("1/20")).toBeVisible();
 });
 
@@ -251,4 +253,17 @@ test("next story keeps you reading without going back to the list", async ({
   await expect(page).not.toHaveURL(/maca-i-lopta/);
   await expect(page.getByRole("button", { name: "Dalje" })).toBeVisible();
   await expect(page.getByText("2. razina")).toBeVisible();
+});
+
+test("each level explains what it means", async ({ page }) => {
+  await page.goto("/reading");
+
+  await page.getByRole("button", { name: "2. razina" }).click();
+  await expect(page.getByText(/Kratke riječi od dva sloga/)).toBeVisible();
+
+  await page.getByRole("button", { name: "4. razina" }).click();
+  await expect(page.getByText(/Suglasnički skupovi/)).toBeVisible();
+
+  // Levels are not school grades, and the two words look alike in Croatian.
+  await expect(page.getByText(/Razine nisu razredi/)).toBeVisible();
 });

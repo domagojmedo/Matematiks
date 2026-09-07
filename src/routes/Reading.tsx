@@ -175,6 +175,19 @@ export function Reading() {
           ))}
         </div>
 
+        {/* What the chosen level actually means. The maths side is split by
+            *razred* (school grade) and this one by *razina*, which look alike
+            enough that a parent can read "4. razina" as fourth grade — so the
+            difference is spelled out rather than implied. */}
+        <div className="mb-4 rounded-2xl bg-white p-4 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+          <p className="text-sm font-bold text-stone-800 dark:text-stone-100">
+            {t(`reading.levelDesc.${level}`)}
+          </p>
+          <p className="mt-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+            {t("reading.levelsNote")}
+          </p>
+        </div>
+
         {(level === 2 || level === 3) && (
           <div className="mb-4 flex gap-2.5">
             <Link
@@ -208,7 +221,7 @@ export function Reading() {
                 {t("reading.level1Title")}
               </span>
               <span className="mt-0.5 block text-sm font-semibold text-stone-500 dark:text-stone-400">
-                {t("reading.level1Body")}
+                {t("reading.warmupHint")}
               </span>
             </span>
           </Link>

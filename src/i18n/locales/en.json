@@ -296,7 +296,15 @@
     "recallHint": "Say what it was, then tap to check.",
     "tooFast": "Too fast to measure — not saved",
     "level1Title": "Syllables",
-    "level1Body": "Level 1 is syllable practice — no stories yet.",
-    "nextStory": "Next story"
+    "nextStory": "Next story",
+    "levelsNote": "Levels are not school grades — pick by how the child reads, not by their year.",
+    "levelDesc": {
+      "1": "Syllables: ma, me, mi. Blending practice, no stories yet.",
+      "2": "Short two-syllable words. Sentences of 3 to 4 words.",
+      "3": "Three-syllable words. Sentences up to 6 words.",
+      "4": "Consonant clusters: škola, zvijezda, snjegović. Longer sentences.",
+      "5": "Long words and stories in two parts.",
+      "6": "Full text in paragraphs, with a question that needs inference."
+    }
   }
 }
