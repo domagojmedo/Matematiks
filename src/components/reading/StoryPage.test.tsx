@@ -120,25 +120,17 @@ describe("StoryPage", () => {
 });
 
 describe("VerdictPad", () => {
-  it("calls the right handler for each button", async () => {
+  it("advances when tapped", () => {
     const onNext = vi.fn();
-    const onRepeat = vi.fn();
-    render(
-      <VerdictPad
-        onNext={onNext}
-        onRepeat={onRepeat}
-        nextLabel="Dalje"
-        repeatLabel="Ponovi"
-        theme={theme}
-      />,
-    );
-
+    render(<VerdictPad onNext={onNext} nextLabel="Dalje" theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Dalje" }));
     expect(onNext).toHaveBeenCalledTimes(1);
-    expect(onRepeat).not.toHaveBeenCalled();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Ponovi" }));
-    expect(onRepeat).toHaveBeenCalledTimes(1);
-    expect(onNext).toHaveBeenCalledTimes(1);
+  it("offers exactly one button", () => {
+    // A second "mark this line" button used to sit here and change nothing on
+    // screen, so it read as broken.
+    render(<VerdictPad onNext={vi.fn()} nextLabel="Dalje" theme={theme} />);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });

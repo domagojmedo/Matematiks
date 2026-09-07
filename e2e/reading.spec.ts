@@ -63,22 +63,6 @@ test("records the run in history and marks a re-read", async ({ page }) => {
   await expect(page.getByText(/ponovno čitanje/)).toBeVisible();
 });
 
-test("a stumble does not skip the sentence", async ({ page }) => {
-  await page.goto(STORY);
-  const first = page.getByText("Maca je mala.");
-  await expect(first).toHaveAttribute("data-current", "true");
-
-  await page.getByRole("button", { name: "Ponovi" }).click();
-  // Still on the same line — Ponovi marks a stumble, it does not advance.
-  await expect(first).toHaveAttribute("data-current", "true");
-
-  await page.getByRole("button", { name: "Dalje" }).click();
-  await expect(page.getByText("Maca ima loptu.")).toHaveAttribute(
-    "data-current",
-    "true",
-  );
-});
-
 test("leaving mid-story records nothing", async ({ page }) => {
   await page.goto(STORY);
   await page.getByRole("button", { name: "Dalje" }).click();
@@ -139,7 +123,7 @@ test("can be read start to finish with the keyboard alone", async ({
   await expect(page.getByText("Pročitano!")).toBeVisible();
 });
 
-test("left arrow re-reads the line instead of advancing", async ({ page }) => {
+test("left arrow does nothing now that stumbles are gone", async ({ page }) => {
   await page.goto(STORY);
   const first = page.getByText("Maca je mala.");
   await expect(first).toHaveAttribute("data-current", "true");
@@ -154,19 +138,18 @@ test("left arrow re-reads the line instead of advancing", async ({ page }) => {
   );
 });
 
-test("space activates the focused button, not the advance key", async ({
+test("space activates the focused control, not the advance key", async ({
   page,
 }) => {
   await page.goto(STORY);
   const first = page.getByText("Maca je mala.");
 
-  // Clicking Ponovi leaves it focused. Space must then re-read that line --
-  // the key handler has to stand down for a focused control, or it would
-  // advance instead and swallow the button's own activation.
-  await page.getByRole("button", { name: "Ponovi" }).click();
-  await expect(first).toHaveAttribute("data-current", "true");
-
+  // With the back button focused, Space must open the leave dialog rather than
+  // advance the story and swallow the button's own activation.
+  await page.getByRole("button", { name: "Natrag" }).focus();
   await page.keyboard.press("Space");
+
+  await expect(page.getByText("Prekinuti čitanje?")).toBeVisible();
   await expect(first).toHaveAttribute("data-current", "true");
 });
 

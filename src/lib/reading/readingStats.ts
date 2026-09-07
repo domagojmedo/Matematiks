@@ -5,8 +5,6 @@ import { storyWordCount } from "./readingTypes";
 export type SentenceTiming = {
   index: number;
   ms: number;
-  /** The child re-read this line — tapped "Ponovi" rather than "Dalje". */
-  stumbled: boolean;
 };
 
 export type ReadingSessionRecord = {
@@ -19,7 +17,6 @@ export type ReadingSessionRecord = {
   words: number;
   durationMs: number;
   wpm: number;
-  stumbles: number;
   questionsCorrect: number;
   questionsTotal: number;
   /** True when this story had been read before — a record attempt, not a first pass. */
@@ -86,7 +83,6 @@ export function summarizeReading({
     words,
     durationMs,
     wpm: wordsPerMinute(words, durationMs),
-    stumbles: timings.filter((t) => t.stumbled).length,
     questionsCorrect: answers.filter(Boolean).length,
     questionsTotal: answers.length,
     isReread,

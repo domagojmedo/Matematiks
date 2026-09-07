@@ -4,7 +4,6 @@ import { useEffect } from "react";
  * Keyboard control for the reading screens.
  *
  *   Space / Enter / →   advance
- *   ←                   re-read the current line (a stumble)
  *
  * Three details matter more than the mapping:
  *
@@ -15,10 +14,9 @@ import { useEffect } from "react";
  * **Space and Enter stand down when a control has focus.** Not to avoid a
  * double advance — `preventDefault` already suppresses the browser's synthetic
  * click — but because the focused control may not be the advance button at
- * all. Clicking "Ponovi" leaves it focused; a following Space has to re-read
- * the line, and without this check it would advance instead and swallow the
- * button's own activation. Arrow keys have no native button behaviour, so they
- * are always handled.
+ * all. With the back button focused, a following Space has to open the leave
+ * dialog rather than advance and swallow the button's own activation. Arrow
+ * keys have no native button behaviour, so they are always handled.
  *
  * **Space is prevented from scrolling.** It is the default page-scroll key, and
  * a story that jumps down the page on every advance is unreadable.
@@ -26,12 +24,10 @@ import { useEffect } from "react";
 export function useReadingKeys({
   enabled,
   next,
-  repeat,
 }: {
   /** False while a dialog is open or the round is finished. */
   enabled: boolean;
   next?: () => void;
-  repeat?: () => void;
 }) {
   useEffect(() => {
     if (!enabled) return;
@@ -62,17 +58,13 @@ export function useReadingKeys({
           event.preventDefault();
           next?.();
           return;
-        case "ArrowLeft":
-          event.preventDefault();
-          repeat?.();
-          return;
         default:
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [enabled, next, repeat]);
+  }, [enabled, next]);
 }
 
 /**

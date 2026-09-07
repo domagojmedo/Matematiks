@@ -114,35 +114,6 @@ describe("timing", () => {
     expect(result.current.summary?.durationMs).toBe(60_000);
     expect(result.current.summary?.wpm).toBe(9);
   });
-
-  it("keeps counting time across a re-read, and records the stumble", () => {
-    const { result } = render();
-    act(() => {
-      advance(5_000);
-      result.current.repeatSentence();
-    });
-    act(() => {
-      advance(3_000);
-      result.current.nextSentence();
-    });
-    act(() => result.current.nextSentence());
-    act(() => result.current.nextSentence());
-    act(() => result.current.answerQuestion(0));
-
-    const timings = result.current.summary?.timings ?? [];
-    // The 5s before the stumble is carried, not discarded.
-    expect(timings[0].ms).toBe(8_000);
-    expect(timings[0].stumbled).toBe(true);
-    expect(result.current.summary?.stumbles).toBe(1);
-  });
-
-  it("does not count a re-read as a second sentence", () => {
-    const { result } = render();
-    act(() => result.current.repeatSentence());
-    act(() => result.current.repeatSentence());
-    expect(result.current.sentenceIndex).toBe(0);
-    expect(result.current.phase).toBe("reading");
-  });
 });
 
 describe("questions", () => {

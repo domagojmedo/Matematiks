@@ -13,12 +13,8 @@ import { storySentences } from "./readingTypes";
 const story = STORIES.find((s) => s.id === "maca-i-lopta");
 if (!story) throw new Error("fixture story missing");
 
-const timings = (ms: number[], stumbleAt: number[] = []): SentenceTiming[] =>
-  ms.map((value, index) => ({
-    index,
-    ms: value,
-    stumbled: stumbleAt.includes(index),
-  }));
+const timings = (ms: number[]): SentenceTiming[] =>
+  ms.map((value, index) => ({ index, ms: value }));
 
 describe("wordsPerMinute", () => {
   it("computes words per minute", () => {
@@ -50,21 +46,19 @@ describe("summarizeReading", () => {
     expect(summary.words).toBe(15);
     expect(summary.durationMs).toBe(30_000);
     expect(summary.wpm).toBe(30);
-    expect(summary.stumbles).toBe(0);
     expect(summary.questionsCorrect).toBe(1);
     expect(summary.questionsTotal).toBe(1);
     expect(summary.isReread).toBe(false);
     expect(summary.level).toBe(2);
   });
 
-  it("counts stumbles and wrong answers", () => {
+  it("counts wrong answers", () => {
     const summary = summarizeReading({
       story,
-      timings: timings([6000, 6000, 6000, 6000, 6000], [1, 3]),
+      timings: timings([6000, 6000, 6000, 6000, 6000]),
       answers: [false],
       isReread: true,
     });
-    expect(summary.stumbles).toBe(2);
     expect(summary.questionsCorrect).toBe(0);
     expect(summary.isReread).toBe(true);
   });
@@ -88,7 +82,7 @@ describe("slowestSentence", () => {
 
   it("ignores a timing that points past the end of the story", () => {
     const result = slowestSentence(
-      [{ index: 99, ms: 10_000, stumbled: false }],
+      [{ index: 99, ms: 10_000 }],
       storySentences(story),
     );
     expect(result).toBeNull();

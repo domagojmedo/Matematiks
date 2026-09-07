@@ -13,9 +13,8 @@ const press = (key: string, init: KeyboardEventInit = {}) =>
 describe("useReadingKeys", () => {
   const setup = (enabled = true) => {
     const next = vi.fn();
-    const repeat = vi.fn();
-    renderHook(() => useReadingKeys({ enabled, next, repeat }));
-    return { next, repeat };
+    renderHook(() => useReadingKeys({ enabled, next }));
+    return { next };
   };
 
   it("advances on space, enter and right arrow", () => {
@@ -26,20 +25,13 @@ describe("useReadingKeys", () => {
     expect(next).toHaveBeenCalledTimes(3);
   });
 
-  it("re-reads on left arrow", () => {
-    const { next, repeat } = setup();
-    press("ArrowLeft");
-    expect(repeat).toHaveBeenCalledTimes(1);
-    expect(next).not.toHaveBeenCalled();
-  });
-
   it("ignores other keys", () => {
-    const { next, repeat } = setup();
+    const { next } = setup();
     press("a");
     press("Tab");
     press("ArrowUp");
+    press("ArrowLeft");
     expect(next).not.toHaveBeenCalled();
-    expect(repeat).not.toHaveBeenCalled();
   });
 
   /**
@@ -54,11 +46,10 @@ describe("useReadingKeys", () => {
   });
 
   it("does nothing when disabled", () => {
-    const { next, repeat } = setup(false);
+    const { next } = setup(false);
     press(" ");
-    press("ArrowLeft");
+    press("ArrowRight");
     expect(next).not.toHaveBeenCalled();
-    expect(repeat).not.toHaveBeenCalled();
   });
 
   it("ignores modified keypresses", () => {
@@ -70,9 +61,9 @@ describe("useReadingKeys", () => {
   });
 
   /**
-   * After clicking "Dalje" the button keeps focus, and the browser already
-   * fires a click for Space on a focused button. Handling it here too would
-   * advance two sentences for one press.
+   * Not to stop a double advance — preventDefault already suppresses the
+   * browser's synthetic click — but because the focused control may not be the
+   * advance button. With the back button focused, Space has to activate that.
    */
   it("leaves space and enter to a focused button", () => {
     const { next } = setup();

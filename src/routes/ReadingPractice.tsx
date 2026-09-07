@@ -46,7 +46,6 @@ function ReadingRound({
   useReadingKeys({
     enabled: round.phase === "reading" && !confirmLeave,
     next: round.nextSentence,
-    repeat: round.repeatSentence,
   });
 
   // Escape backs out of the leave dialog. Deliberately not bound to *open* it:
@@ -129,9 +128,7 @@ function ReadingRound({
               </p>
               <VerdictPad
                 onNext={round.nextSentence}
-                onRepeat={round.repeatSentence}
                 nextLabel={t("reading.next")}
-                repeatLabel={t("reading.repeat")}
                 theme={theme}
               />
             </div>
@@ -262,12 +259,11 @@ function Summary({
         </p>
       )}
 
-      <div className="mt-7 grid w-full max-w-sm grid-cols-3 gap-3">
+      <div className="mt-7 grid w-full max-w-sm grid-cols-2 gap-3">
         <Stat
           label={t("reading.time")}
           value={`${Math.round(summary.durationMs / 1000)}s`}
         />
-        <Stat label={t("reading.stumbles")} value={`${summary.stumbles}`} />
         <Stat
           label={t("reading.questions")}
           value={`${summary.questionsCorrect}/${summary.questionsTotal}`}

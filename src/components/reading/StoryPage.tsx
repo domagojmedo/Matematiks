@@ -78,36 +78,32 @@ export function StoryPage({
 }
 
 /**
- * `Dalje` / `Ponovi`. Sized for a finger — at the lower levels a grown-up is
- * often the one tapping while the child reads, and at every level the child
- * should never have to aim.
+ * The advance button, and nothing else.
+ *
+ * There used to be a "Ponovi" beside it that marked the line as a stumble.
+ * It changed nothing on screen — the highlight stayed put and the count only
+ * appeared on the summary — so it read as a button that did nothing, and a
+ * child had to be taught what it was for before it meant anything. Reading
+ * aloud already tells a grown-up which lines were hard.
+ *
+ * Sized for a finger: at the lower levels a grown-up is often the one tapping
+ * while the child reads, and the child should never have to aim.
  */
 export function VerdictPad({
   onNext,
-  onRepeat,
   nextLabel,
-  repeatLabel,
   theme,
 }: {
   onNext: () => void;
-  onRepeat: () => void;
   nextLabel: string;
-  repeatLabel: string;
   theme: Theme;
 }) {
   return (
-    <div className="flex gap-3">
-      <button
-        type="button"
-        onClick={onRepeat}
-        className="flex h-16 flex-1 items-center justify-center rounded-2xl bg-amber-100 text-lg font-black text-amber-800 ring-2 ring-amber-200 transition hover:bg-amber-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800"
-      >
-        {repeatLabel}
-      </button>
+    <div className="flex">
       <button
         type="button"
         onClick={onNext}
-        className={`flex h-16 flex-[2] items-center justify-center gap-2 rounded-2xl text-xl font-black text-white shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
+        className={`flex h-16 flex-1 items-center justify-center gap-2 rounded-2xl text-xl font-black text-white shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 ${theme.primary} ${theme.primaryHover} ${theme.primaryShadow} ${theme.primaryFocus}`}
       >
         {nextLabel}
         <svg

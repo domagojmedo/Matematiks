@@ -61,10 +61,6 @@ export function useReadingRound(story: Story) {
 
   const timingsRef = useRef<SentenceTiming[]>([]);
   const sentenceStartRef = useRef<number>(performance.now());
-  // Time already spent on the current sentence across re-reads, and whether
-  // any of them was a stumble.
-  const carriedMsRef = useRef(0);
-  const stumbledRef = useRef(false);
 
   const finish = useCallback(
     (finalAnswers: boolean[]) => {
@@ -104,17 +100,13 @@ export function useReadingRound(story: Story) {
 
   /** Finished reading the highlighted sentence aloud. */
   const nextSentence = useCallback(() => {
-    const elapsed = performance.now() - sentenceStartRef.current;
     timingsRef.current = [
       ...timingsRef.current,
       {
         index: sentenceIndex,
-        ms: carriedMsRef.current + elapsed,
-        stumbled: stumbledRef.current,
+        ms: performance.now() - sentenceStartRef.current,
       },
     ];
-    carriedMsRef.current = 0;
-    stumbledRef.current = false;
     sentenceStartRef.current = performance.now();
 
     if (sentenceIndex + 1 < sentences.length) {
@@ -127,16 +119,6 @@ export function useReadingRound(story: Story) {
     }
     finish([]);
   }, [sentenceIndex, sentences.length, story.questions.length, finish]);
-
-  /**
-   * The child stumbled and is re-reading this line. Time keeps accumulating —
-   * a re-read is part of how long the sentence actually took.
-   */
-  const repeatSentence = useCallback(() => {
-    carriedMsRef.current += performance.now() - sentenceStartRef.current;
-    sentenceStartRef.current = performance.now();
-    stumbledRef.current = true;
-  }, []);
 
   const answerQuestion = useCallback(
     (optionIndex: number) => {
@@ -166,7 +148,6 @@ export function useReadingRound(story: Story) {
     isReread,
     previousBest,
     nextSentence,
-    repeatSentence,
     answerQuestion,
   };
 }
