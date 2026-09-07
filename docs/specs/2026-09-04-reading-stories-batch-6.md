@@ -81,7 +81,7 @@ Sada je maca dolje.
 Baka i Mia idu do jezera.
 Nose stari kruh u vrećici.
 Patke plivaju blizu obale.
-Mia baca male komadiće.
+Mia baca male komade.
 Patke dolaze sasvim blizu.
 Jedna joj jede iz ruke.
 Mia stoji posve mirno.
@@ -92,14 +92,14 @@ Kruha nestane vrlo brzo.
 ## Duga
 Kiša je stala u podne.
 Sunce je izašlo iza oblaka.
-Na nebu se pojavila duga.
+Na nebu se vidi duga.
 Mia broji boje s prozora.
-Nabrojala je sedam boja.
+Ona ih vidi sedam.
 Luka kaže da ih je šest.
 Broje ih zajedno još jednom.
 Duga polako nestaje.
 
-*Koliko je boja Mia nabrojala?* → **sedam** / šest / pet
+*Koliko boja vidi Mia?* → **sedam** / šest / pet
 
 ---
 
@@ -181,7 +181,7 @@ Od tada radije ide stubama.
 *Što joj je rekao glas iz zvučnika?* → **neka ostane mirna i ne otvara vrata** / neka zove roditelje / neka se popne kroz krov
 
 ## Novi susjedi
-U prazan stan na drugom katu uselili su se novi ljudi.
+Na drugi kat uselili su se novi ljudi.
 Kamion je stajao pred zgradom cijelo jutro.
 Nosili su kutije, stol i veliki klavir.
 Klavir nikako nije prolazio kroz vrata.

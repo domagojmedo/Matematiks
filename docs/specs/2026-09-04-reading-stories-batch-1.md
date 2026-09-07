@@ -39,14 +39,14 @@ Baka nosi jaje mami.
 
 *Tko nosi jaje?* → **baka** / mama / kokoš
 
-## Pas Reks
-Reks je pas.
-Reks je malen.
-Reks voli meso.
+## Pas
+Pas je tu.
+Pas je malen.
+Pas voli meso.
 Tata daje meso.
-Reks jede meso.
+Pas jede meso.
 
-*Što Reks voli?* → **meso** / kolač / vodu
+*Što pas voli?* → **meso** / kolač / vodu
 
 ## Kiša
 Pada kiša.
@@ -148,7 +148,7 @@ Luka ima veliki kišobran.
 Luka zove Miu pod kišobran.
 Sada su oboje suhi.
 Idu skupa do kuće.
-Kiša pada po kišobranu.
+Kiša pada po njemu.
 Djeca se smiju.
 
 *Tko ima kišobran?* → **Luka** / Mia / baka

@@ -177,7 +177,8 @@ Rasla je iskrivljeno prema pukotini na vratima.
 Treća je proklijala prva od svih.
 Zatim je nakon dva tjedna prestala rasti.
 Na vati više nije imala hrane.
-Mia je zaključila da klijanju treba voda, a rastu i zemlja i svjetlo.
+Mia je zaključila da klijanju treba voda.
+Rastu trebaju i zemlja i svjetlo.
 
 *Zašto je biljka iz ormara rasla iskrivljeno?* → **rasla je prema pukotini kroz koju je ulazilo svjetlo** / bila je bolesna / posađena je nakrivo
 

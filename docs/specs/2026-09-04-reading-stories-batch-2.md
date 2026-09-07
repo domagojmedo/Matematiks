@@ -265,7 +265,7 @@ Pregledao je svaku pukotinu na pločniku.
 Novčića nije bilo nigdje.
 Sjeo je na rub klupe potpuno tužan.
 Tada je osjetio nešto tvrdo u cipeli.
-Kroz rupu u džepu novčić mu je skliznuo u čizmu.
+Novčić mu je kroz rupu skliznuo u čizmu.
 Sladoled je toga dana bio posebno sladak.
 
 *Gdje je na kraju bio novčić?* → **u čizmi** / u izlogu / na pločniku

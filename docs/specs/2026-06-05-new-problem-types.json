@@ -3,47 +3,182 @@
   "date": "2026-06-05",
   "scope": "new-feature",
   "change_manifest": [
-    { "path": "src/lib/wordTypes.ts", "action": "modify", "purpose": "new phase kinds (solve/compare/choice/fraction), GenContext, op union *,/" },
-    { "path": "src/lib/wordGen.ts", "action": "modify", "purpose": "thread GenContext into generate(); poolFor new convert kinds" },
-    { "path": "src/lib/wordTemplates.ts", "action": "modify", "purpose": "length/money/time conversions, mul/div word templates, number-sense, fraction, perimeter/area, choice templates" },
-    { "path": "src/lib/types.ts", "action": "modify", "purpose": "extend WordKind union; WordLessonSetup.maxNumber?" },
-    { "path": "src/lib/operations.ts", "action": "modify", "purpose": "isConvertKind + wordChip for new families" },
-    { "path": "src/lib/lessons.ts", "action": "modify", "purpose": "declarative lessons for all new types (HR-only)" },
-    { "path": "src/routes/WordPractice.tsx", "action": "modify", "purpose": "render + handle solve/compare/choice/fraction phases; *,/ glyphs" },
-    { "path": "src/components/PracticeUI.tsx", "action": "modify", "purpose": "ComparePad, ChoicePad, new step-line renderers" },
-    { "path": "src/components/FractionVisual.tsx", "action": "create", "purpose": "tier 4 fraction visual" },
-    { "path": "src/components/ShapeDiagram.tsx", "action": "create", "purpose": "tier 5 rectangle/square diagram with side labels" },
-    { "path": "src/components/ShapeGlyphs.tsx", "action": "create", "purpose": "tier 6 SVG solids/2D shapes for recognition" },
-    { "path": "src/components/MiniBarChart.tsx", "action": "create", "purpose": "tier 6 read-only bar chart" },
-    { "path": "src/i18n/locales/hr.json", "action": "modify", "purpose": "nameKeys for all new lessons" },
-    { "path": "src/lib/wordTypes.test.ts", "action": "modify", "purpose": "buildSteps/phaseAtStep for new phase kinds" },
-    { "path": "src/lib/wordTemplates.test.ts", "action": "modify", "purpose": "whole-number + shape + count assertions for new template families" },
-    { "path": "src/lib/wordGen.test.ts", "action": "modify", "purpose": "stratification + GenContext range scoping" },
-    { "path": "src/components/FractionVisual.test.tsx", "action": "create", "purpose": "fraction visual render/answer" },
-    { "path": "src/components/ShapeDiagram.test.tsx", "action": "create", "purpose": "diagram render + perimeter/area" },
-    { "path": "src/components/MiniBarChart.test.tsx", "action": "create", "purpose": "chart read" }
+    {
+      "path": "src/lib/wordTypes.ts",
+      "action": "modify",
+      "purpose": "new phase kinds (solve/compare/choice/fraction), GenContext, op union *,/"
+    },
+    {
+      "path": "src/lib/wordGen.ts",
+      "action": "modify",
+      "purpose": "thread GenContext into generate(); poolFor new convert kinds"
+    },
+    {
+      "path": "src/lib/wordTemplates.ts",
+      "action": "modify",
+      "purpose": "length/money/time conversions, mul/div word templates, number-sense, fraction, perimeter/area, choice templates"
+    },
+    {
+      "path": "src/lib/types.ts",
+      "action": "modify",
+      "purpose": "extend WordKind union; WordLessonSetup.maxNumber?"
+    },
+    {
+      "path": "src/lib/operations.ts",
+      "action": "modify",
+      "purpose": "isConvertKind + wordChip for new families"
+    },
+    {
+      "path": "src/lib/lessons.ts",
+      "action": "modify",
+      "purpose": "declarative lessons for all new types (HR-only)"
+    },
+    {
+      "path": "src/routes/WordPractice.tsx",
+      "action": "modify",
+      "purpose": "render + handle solve/compare/choice/fraction phases; *,/ glyphs"
+    },
+    {
+      "path": "src/components/PracticeUI.tsx",
+      "action": "modify",
+      "purpose": "ComparePad, ChoicePad, new step-line renderers"
+    },
+    {
+      "path": "src/components/FractionVisual.tsx",
+      "action": "create",
+      "purpose": "tier 4 fraction visual"
+    },
+    {
+      "path": "src/components/ShapeDiagram.tsx",
+      "action": "create",
+      "purpose": "tier 5 rectangle/square diagram with side labels"
+    },
+    {
+      "path": "src/components/ShapeGlyphs.tsx",
+      "action": "create",
+      "purpose": "tier 6 SVG solids/2D shapes for recognition"
+    },
+    {
+      "path": "src/components/MiniBarChart.tsx",
+      "action": "create",
+      "purpose": "tier 6 read-only bar chart"
+    },
+    {
+      "path": "src/i18n/locales/hr.json",
+      "action": "modify",
+      "purpose": "nameKeys for all new lessons"
+    },
+    {
+      "path": "src/lib/wordTypes.test.ts",
+      "action": "modify",
+      "purpose": "buildSteps/phaseAtStep for new phase kinds"
+    },
+    {
+      "path": "src/lib/wordTemplates.test.ts",
+      "action": "modify",
+      "purpose": "whole-number + shape + count assertions for new template families"
+    },
+    {
+      "path": "src/lib/wordGen.test.ts",
+      "action": "modify",
+      "purpose": "stratification + GenContext range scoping"
+    },
+    {
+      "path": "src/components/FractionVisual.test.tsx",
+      "action": "create",
+      "purpose": "fraction visual render/answer"
+    },
+    {
+      "path": "src/components/ShapeDiagram.test.tsx",
+      "action": "create",
+      "purpose": "diagram render + perimeter/area"
+    },
+    {
+      "path": "src/components/MiniBarChart.test.tsx",
+      "action": "create",
+      "purpose": "chart read"
+    }
   ],
   "public_contracts": [
-    { "kind": "method", "signature": "WordPhase adds 'solve' | 'compare' | 'choice' | 'fraction' variants", "change": "new" },
-    { "kind": "method", "signature": "WordTemplate.generate(ctx?: GenContext)", "change": "modified" },
-    { "kind": "method", "signature": "Unit adds LengthUnit | MoneyUnit | TimeUnit", "change": "modified" },
-    { "kind": "cli-flag", "signature": "WordKind adds convertLength/convertMoney/convertTime + number-sense + fraction + geometry/data families", "change": "new" },
-    { "kind": "method", "signature": "WordLessonSetup.maxNumber?: number", "change": "new" },
-    { "kind": "method", "signature": "new lessons g2-units-money, g3-units-length, g3-units-time, g2/g3/g4-word-*, number-sense/fraction/geometry/data lessons in lessons.ts", "change": "new" }
+    {
+      "kind": "method",
+      "signature": "WordPhase adds 'solve' | 'compare' | 'choice' | 'fraction' variants",
+      "change": "new"
+    },
+    {
+      "kind": "method",
+      "signature": "WordTemplate.generate(ctx?: GenContext)",
+      "change": "modified"
+    },
+    {
+      "kind": "method",
+      "signature": "Unit adds LengthUnit | MoneyUnit | TimeUnit",
+      "change": "modified"
+    },
+    {
+      "kind": "cli-flag",
+      "signature": "WordKind adds convertLength/convertMoney/convertTime + number-sense + fraction + geometry/data families",
+      "change": "new"
+    },
+    {
+      "kind": "method",
+      "signature": "WordLessonSetup.maxNumber?: number",
+      "change": "new"
+    },
+    {
+      "kind": "method",
+      "signature": "new lessons g2-units-money, g3-units-length, g3-units-time, g2/g3/g4-word-*, number-sense/fraction/geometry/data lessons in lessons.ts",
+      "change": "new"
+    }
   ],
   "success_criteria": [
-    { "id": "SC1", "description": "length/money/time conversion lessons generate whole-number problems", "verification": "wordTemplates.test.ts + wordGen.test.ts" },
-    { "id": "SC2", "description": "grade 2-4 word problems incl. mul/div, range-scoped", "verification": "wordGen.test.ts range test; wordTemplates.test.ts mul/div" },
-    { "id": "SC3", "description": "number-sense lessons playable via solve/compare phases", "verification": "wordTypes.test.ts; component tests" },
-    { "id": "SC4", "description": "fraction lessons render visual + accept answers", "verification": "FractionVisual.test.tsx" },
-    { "id": "SC5", "description": "perimeter/area lessons render diagram + compute", "verification": "ShapeDiagram.test.tsx + template tests" },
-    { "id": "SC6", "description": "geometry recognition + data + probability lessons playable", "verification": "choice phase tests; MiniBarChart.test.tsx" },
-    { "id": "SC7", "description": "all new lessons have hr nameKey; build + test + lint clean", "verification": "npm run build, npm test, npm run check" },
-    { "id": "SC8", "description": "integer-only operands and answers; money in euro", "verification": "whole-number assertions per template suite" }
+    {
+      "id": "SC1",
+      "description": "length/money/time conversion lessons generate whole-number problems",
+      "verification": "wordTemplates.test.ts + wordGen.test.ts"
+    },
+    {
+      "id": "SC2",
+      "description": "grade 2-4 word problems incl. mul/div, range-scoped",
+      "verification": "wordGen.test.ts range test; wordTemplates.test.ts mul/div"
+    },
+    {
+      "id": "SC3",
+      "description": "number-sense lessons playable via solve/compare phases",
+      "verification": "wordTypes.test.ts; component tests"
+    },
+    {
+      "id": "SC4",
+      "description": "fraction lessons render visual + accept answers",
+      "verification": "FractionVisual.test.tsx"
+    },
+    {
+      "id": "SC5",
+      "description": "perimeter/area lessons render diagram + compute",
+      "verification": "ShapeDiagram.test.tsx + template tests"
+    },
+    {
+      "id": "SC6",
+      "description": "geometry recognition + data + probability lessons playable",
+      "verification": "choice phase tests; MiniBarChart.test.tsx"
+    },
+    {
+      "id": "SC7",
+      "description": "all new lessons have hr nameKey; build + test + lint clean",
+      "verification": "npm run build, npm test, npm run check"
+    },
+    {
+      "id": "SC8",
+      "description": "integer-only operands and answers; money in euro",
+      "verification": "whole-number assertions per template suite"
+    }
   ],
   "test_manifest": [
     { "path": "src/lib/wordTypes.test.ts", "covers": ["SC3"] },
-    { "path": "src/lib/wordTemplates.test.ts", "covers": ["SC1", "SC2", "SC3", "SC5", "SC6", "SC8"] },
+    {
+      "path": "src/lib/wordTemplates.test.ts",
+      "covers": ["SC1", "SC2", "SC3", "SC5", "SC6", "SC8"]
+    },
     { "path": "src/lib/wordGen.test.ts", "covers": ["SC1", "SC2"] },
     { "path": "src/components/FractionVisual.test.tsx", "covers": ["SC4"] },
     { "path": "src/components/ShapeDiagram.test.tsx", "covers": ["SC5"] },
@@ -61,8 +196,17 @@
   "security_impact": "none",
   "baseline_area": "problem-types",
   "delta": {
-    "adds": ["solve/compare/choice/fraction phase kinds", "length/money/time/number-sense/fraction/geometry/data lessons", "FractionVisual/ShapeDiagram/ShapeGlyphs/MiniBarChart components"],
-    "modifies": ["WordTemplate.generate signature", "Unit union", "WordKind union", "WordLessonSetup"],
+    "adds": [
+      "solve/compare/choice/fraction phase kinds",
+      "length/money/time/number-sense/fraction/geometry/data lessons",
+      "FractionVisual/ShapeDiagram/ShapeGlyphs/MiniBarChart components"
+    ],
+    "modifies": [
+      "WordTemplate.generate signature",
+      "Unit union",
+      "WordKind union",
+      "WordLessonSetup"
+    ],
     "removes": []
   },
   "assumptions": [

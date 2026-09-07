@@ -9,6 +9,12 @@ export const PROFILE_KEYS = {
   lastSession: "lastSession",
   setups: "setups",
   pendingSession: "pendingSession",
+  // Reading module. Deliberately separate from the math keys above: a reading
+  // round records words-per-minute over a story, not answers to problems, so
+  // it has its own record shape. Keeping it under its own key means the math
+  // history on kids' devices needs no migration (rule §9.4).
+  readingSessions: "readingSessions",
+  readingProgress: "readingProgress",
 } as const;
 
 export type ProfileKey = (typeof PROFILE_KEYS)[keyof typeof PROFILE_KEYS];
