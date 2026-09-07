@@ -105,6 +105,18 @@ export type Language = "hr" | "en";
 /** How the kid enters answers during practice; switchable on the fly. */
 export type InputMode = "pad" | "write" | "talk";
 
+/**
+ * Letterform the reading module renders story text in.
+ *
+ * Croatian schools teach reading in velika tiskana slova first, so a child who
+ * has only just left letter recognition often still reads uppercase. Sentence
+ * case is the default because word shape — ascenders and descenders — is a
+ * cue that ALL CAPS discards, and this module is about fluency rather than
+ * letter recognition. But that only holds once a child is past the uppercase
+ * stage, which is a fact about the child, not about the app.
+ */
+export type ReadingCase = "sentence" | "upper";
+
 export type AppSettings = {
   themeKey: ThemeKey;
   dark: boolean;
@@ -118,6 +130,8 @@ export type AppSettings = {
    * mic pipeline that doesn't cycle on Android Chrome. Defaults off.
    */
   useWhisper?: boolean;
+  /** Letterform for reading practice. Defaults to sentence case. */
+  readingCase?: ReadingCase;
 };
 
 /**

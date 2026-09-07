@@ -288,6 +288,10 @@
     "history": "Reading history",
     "historyEmpty": "No stories read yet.",
     "trend": "Speed over time",
-    "best": "best"
+    "best": "best",
+    "case": {
+      "sentence": "Mixed case",
+      "upper": "Capitals"
+    }
   }
 }

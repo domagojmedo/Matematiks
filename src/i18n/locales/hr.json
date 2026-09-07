@@ -317,6 +317,10 @@
     "history": "Povijest čitanja",
     "historyEmpty": "Još nema pročitanih priča.",
     "trend": "Brzina kroz vrijeme",
-    "best": "najbolje"
+    "best": "najbolje",
+    "case": {
+      "sentence": "Mala slova",
+      "upper": "Velika slova"
+    }
   }
 }

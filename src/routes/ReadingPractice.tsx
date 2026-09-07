@@ -37,6 +37,7 @@ function ReadingRound({
   const navigate = useNavigate();
   const round = useReadingRound(story);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const uppercase = settings.readingCase === "upper";
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
   const progress =
@@ -98,6 +99,7 @@ function ReadingRound({
                 currentIndex={round.sentenceIndex}
                 theme={theme}
                 dark={settings.dark}
+                uppercase={uppercase}
               />
             </div>
             <div className="mt-6">
@@ -124,6 +126,7 @@ function ReadingRound({
             progressLabel={t("reading.question")}
             onAnswer={round.answerQuestion}
             theme={theme}
+            uppercase={uppercase}
           />
         )}
 

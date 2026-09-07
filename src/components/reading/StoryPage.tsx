@@ -17,16 +17,23 @@ export function StoryPage({
   currentIndex,
   theme,
   dark,
+  uppercase,
 }: {
   paragraphs: string[][];
   /** Index into the flattened sentence list. */
   currentIndex: number;
   theme: Theme;
   dark: boolean;
+  /**
+   * Render in velika tiskana slova. Done with CSS `text-transform` rather than
+   * `toUpperCase()` so the DOM keeps the real text — screen readers, copy and
+   * the tests all still see "Maca je mala."
+   */
+  uppercase: boolean;
 }) {
   let flat = -1;
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className={`space-y-5 md:space-y-6 ${uppercase ? "uppercase" : ""}`}>
       {paragraphs.map((paragraph, pIndex) => (
         <p
           // biome-ignore lint/suspicious/noArrayIndexKey: story paragraphs are fixed content, never reordered or inserted into, so the index is stable identity.

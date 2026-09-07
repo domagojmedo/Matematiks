@@ -38,6 +38,7 @@ export function ReadingWarmup() {
   }, []);
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
+  const uppercase = settings.readingCase === "upper";
   const drill = drills[index];
   const done = index >= drills.length;
 
@@ -93,11 +94,15 @@ export function ReadingWarmup() {
               className="flex min-h-[16rem] w-full items-center justify-center rounded-[2rem] bg-white p-8 shadow-sm ring-2 ring-stone-200 transition active:scale-[0.99] dark:bg-stone-900 dark:ring-stone-800"
             >
               {drill.kind === "syllable" ? (
-                <span className="text-7xl font-black tracking-tight text-stone-900 md:text-8xl dark:text-white">
+                <span
+                  className={`text-7xl font-black tracking-tight text-stone-900 md:text-8xl dark:text-white ${uppercase ? "uppercase" : ""}`}
+                >
                   {drill.text}
                 </span>
               ) : (
-                <span className="flex flex-col items-center gap-4">
+                <span
+                  className={`flex flex-col items-center gap-4 ${uppercase ? "uppercase" : ""}`}
+                >
                   <span className="flex items-center gap-2">
                     {drill.parts.map((part, i) => (
                       <span

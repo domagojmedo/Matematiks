@@ -16,7 +16,7 @@ import { generatedForDay, storiesForLevel } from "../lib/reading/stories";
 
 export function Reading() {
   const { t } = useTranslation();
-  const { theme, settings } = useSettings();
+  const { theme, settings, setReadingCase } = useSettings();
   const { profileId } = useProfiles();
   const navigate = useNavigate();
 
@@ -122,6 +122,30 @@ export function Reading() {
             </button>
           </div>
         )}
+
+        {/* Letterform sits here rather than in Settings: which script a child
+            reads in changes week to week early on, and a grown-up should be
+            able to flip it on the way into a story. */}
+        <div className="mb-4 flex items-center gap-2 rounded-2xl bg-white p-1.5 ring-1 ring-stone-200 dark:bg-stone-900 dark:ring-stone-800">
+          {(["sentence", "upper"] as const).map((value) => {
+            const active = (settings.readingCase ?? "sentence") === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setReadingCase(value)}
+                aria-pressed={active}
+                className={`h-10 flex-1 rounded-xl text-sm font-black transition ${
+                  active
+                    ? `text-white ${theme.primary}`
+                    : "text-stone-500 dark:text-stone-400"
+                } ${value === "upper" ? "uppercase" : ""}`}
+              >
+                {t(`reading.case.${value}`)}
+              </button>
+            );
+          })}
+        </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
           {READING_LEVELS.map((value) => (

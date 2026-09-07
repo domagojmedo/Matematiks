@@ -10,7 +10,13 @@ import {
 import { useTranslation } from "react-i18next";
 import { readJSON, STORAGE_KEYS, writeJSON } from "../lib/storage";
 import { THEMES, type Theme } from "../lib/themes";
-import type { AppSettings, InputMode, Language, ThemeKey } from "../lib/types";
+import type {
+  AppSettings,
+  InputMode,
+  Language,
+  ReadingCase,
+  ThemeKey,
+} from "../lib/types";
 
 const DEFAULT_SETTINGS: AppSettings = {
   themeKey: "warmPurple",
@@ -18,6 +24,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: "hr",
   voiceInput: false,
   inputMode: "pad",
+  readingCase: "sentence",
 };
 
 type SettingsContextValue = {
@@ -29,6 +36,7 @@ type SettingsContextValue = {
   setVoiceInput: (enabled: boolean) => void;
   setInputMode: (mode: InputMode) => void;
   setUseWhisper: (enabled: boolean) => void;
+  setReadingCase: (readingCase: ReadingCase) => void;
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -71,6 +79,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setUseWhisper = useCallback((useWhisper: boolean) => {
     setSettings((s) => ({ ...s, useWhisper }));
   }, []);
+  const setReadingCase = useCallback((readingCase: ReadingCase) => {
+    setSettings((s) => ({ ...s, readingCase }));
+  }, []);
 
   const value = useMemo<SettingsContextValue>(
     () => ({
@@ -82,6 +93,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setVoiceInput,
       setInputMode,
       setUseWhisper,
+      setReadingCase,
     }),
     [
       settings,
@@ -91,6 +103,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setVoiceInput,
       setInputMode,
       setUseWhisper,
+      setReadingCase,
     ],
   );
 

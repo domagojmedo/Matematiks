@@ -20,6 +20,7 @@ export function QuestionPad({
   progressLabel,
   onAnswer,
   theme,
+  uppercase,
 }: {
   question: ReadingQuestion;
   index: number;
@@ -27,6 +28,8 @@ export function QuestionPad({
   progressLabel: string;
   onAnswer: (optionIndex: number) => void;
   theme: Theme;
+  /** The child reads the question and the options too, so they follow suit. */
+  uppercase: boolean;
 }) {
   const order = useMemo(() => {
     const indices = question.options.map((_, i) => i);
@@ -55,7 +58,9 @@ export function QuestionPad({
       <p className="mb-1 text-xs font-bold tracking-wider text-stone-500 uppercase dark:text-stone-400">
         {progressLabel}
       </p>
-      <h2 className="mb-6 text-2xl leading-snug font-black tracking-tight text-stone-900 md:text-3xl dark:text-white">
+      <h2
+        className={`mb-6 text-2xl leading-snug font-black tracking-tight text-stone-900 md:text-3xl dark:text-white ${uppercase ? "uppercase" : ""}`}
+      >
         {question.prompt}
       </h2>
 
@@ -85,7 +90,7 @@ export function QuestionPad({
               type="button"
               disabled={revealed}
               onClick={() => choose(originalIndex)}
-              className={`min-h-16 rounded-2xl px-5 py-4 text-left text-lg font-bold ring-2 shadow-sm transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 md:text-xl ${tone} ${theme.primaryFocus}`}
+              className={`min-h-16 rounded-2xl px-5 py-4 text-left text-lg font-bold ring-2 shadow-sm transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 md:text-xl ${tone} ${theme.primaryFocus} ${uppercase ? "uppercase" : ""}`}
             >
               {option}
             </button>
