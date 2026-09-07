@@ -27,7 +27,9 @@
     "sessionsSubtitle": "Tvoja povijest",
     "quickStart": "Brzi početak",
     "byGrade": "Po razredu",
-    "gradeShort": "razred"
+    "gradeShort": "razred",
+    "reading": "Čitanje",
+    "readingSubtitle": "Priče i brzina čitanja"
   },
   "grades": {
     "g1": "1. razred",
@@ -280,5 +282,41 @@
     "pad": "Tipke",
     "write": "Piši",
     "talk": "Govori"
+  },
+  "reading": {
+    "title": "Čitanje",
+    "levelShort": "{{level}}. razina",
+    "storyOfTheDay": "Priča dana",
+    "reread": "ponovno čitanje",
+    "readAloud": "Pročitaj naglas označenu rečenicu.",
+    "next": "Dalje",
+    "repeat": "Ponovi",
+    "question": "Pitanje",
+    "finished": "Pročitano!",
+    "wpm": "rij/min",
+    "newRecord": "Novi rekord! Prije: {{previous}}",
+    "yourRecord": "Tvoj rekord: {{best}}",
+    "time": "vrijeme",
+    "stumbles": "zastoji",
+    "questions": "pitanja",
+    "slowestLine": "Najsporija rečenica",
+    "beatRecord": "Pobij svoj rekord",
+    "pickAnother": "Odaberi drugu priču",
+    "leaveTitle": "Prekinuti čitanje?",
+    "leaveBody": "Ova priča neće biti spremljena.",
+    "leaveStay": "Ostani",
+    "leaveLeave": "Izađi",
+    "promoteTitle": "Pročitao si sve priče!",
+    "promoteBody": "Spreman si za {{level}}. razinu.",
+    "promoteAccept": "Idemo dalje",
+    "generated": "Nova priča",
+    "warmup": "Zagrijavanje",
+    "warmupDone": "Bravo!",
+    "warmupHint": "Pročitaj naglas pa dodirni za sljedeće.",
+    "sentenceCount": "{{count}} rečenica",
+    "history": "Povijest čitanja",
+    "historyEmpty": "Još nema pročitanih priča.",
+    "trend": "Brzina kroz vrijeme",
+    "best": "najbolje"
   }
 }

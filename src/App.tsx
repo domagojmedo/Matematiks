@@ -5,6 +5,10 @@ import { Grade } from "./routes/Grade";
 import { Home } from "./routes/Home";
 import { NotFound } from "./routes/NotFound";
 import { Practice } from "./routes/Practice";
+import { Reading } from "./routes/Reading";
+import { ReadingHistory } from "./routes/ReadingHistory";
+import { ReadingPractice } from "./routes/ReadingPractice";
+import { ReadingWarmup } from "./routes/ReadingWarmup";
 import { SessionDetail } from "./routes/SessionDetail";
 import { Sessions } from "./routes/Sessions";
 import { SettingsRoute } from "./routes/Settings";
@@ -33,6 +37,10 @@ function App() {
         <Route path="/grade/:grade" element={<Grade />} />
         <Route path="/practice/:operation" element={<Practice />} />
         <Route path="/word-practice/:lessonId" element={<WordPractice />} />
+        <Route path="/reading" element={<Reading />} />
+        <Route path="/reading/story/:storyId" element={<ReadingPractice />} />
+        <Route path="/reading/warmup" element={<ReadingWarmup />} />
+        <Route path="/reading/history" element={<ReadingHistory />} />
         <Route path="/summary" element={<Summary />} />
         <Route path="/sessions" element={<Sessions />} />
         <Route path="/session/:id" element={<SessionDetail />} />

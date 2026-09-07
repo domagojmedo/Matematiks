@@ -211,6 +211,36 @@ export function Home() {
         </div>
 
         <Link
+          to="/reading"
+          className={`mt-3.5 flex w-full items-center gap-3.5 rounded-3xl bg-white p-4 shadow-sm ring-2 ring-stone-200 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 md:mt-4 md:gap-5 md:px-6 md:py-5 dark:bg-stone-900 dark:ring-stone-800 ${theme.hoverPrimaryRing} ${theme.primaryFocus}`}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-2xl md:h-14 md:w-14 dark:bg-emerald-900/50">
+            <span aria-hidden="true">📖</span>
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-base font-black text-stone-900 md:text-xl dark:text-white">
+              {t("home.reading")}
+            </p>
+            <p className="text-xs font-semibold text-stone-500 md:text-sm dark:text-stone-400">
+              {t("home.readingSubtitle")}
+            </p>
+          </div>
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            className="text-stone-400"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </Link>
+
+        <Link
           to="/sessions"
           className={`mt-3.5 flex w-full items-center gap-3.5 rounded-3xl bg-stone-800 p-4 shadow-sm transition hover:bg-stone-900 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 md:mt-4 md:gap-5 md:px-6 md:py-5 dark:bg-stone-900 dark:hover:bg-stone-800 ${theme.primaryFocus}`}
         >

@@ -27,7 +27,9 @@
     "sessionsSubtitle": "See your last practices",
     "quickStart": "Quick start",
     "byGrade": "By grade",
-    "gradeShort": "grade"
+    "gradeShort": "grade",
+    "reading": "Reading",
+    "readingSubtitle": "Stories and reading speed"
   },
   "grades": {
     "g1": "1st grade",
@@ -251,5 +253,41 @@
     "pad": "Numbers",
     "write": "Write",
     "talk": "Talk"
+  },
+  "reading": {
+    "title": "Reading",
+    "levelShort": "Level {{level}}",
+    "storyOfTheDay": "Story of the day",
+    "reread": "re-read",
+    "readAloud": "Read the highlighted sentence aloud.",
+    "next": "Next",
+    "repeat": "Again",
+    "question": "Question",
+    "finished": "Finished!",
+    "wpm": "wpm",
+    "newRecord": "New record! Was: {{previous}}",
+    "yourRecord": "Your record: {{best}}",
+    "time": "time",
+    "stumbles": "stumbles",
+    "questions": "questions",
+    "slowestLine": "Slowest sentence",
+    "beatRecord": "Beat your record",
+    "pickAnother": "Pick another story",
+    "leaveTitle": "Stop reading?",
+    "leaveBody": "This story will not be saved.",
+    "leaveStay": "Stay",
+    "leaveLeave": "Leave",
+    "promoteTitle": "You have read them all!",
+    "promoteBody": "Ready for level {{level}}.",
+    "promoteAccept": "Move up",
+    "generated": "New story",
+    "warmup": "Warm-up",
+    "warmupDone": "Well done!",
+    "warmupHint": "Read it aloud, then tap for the next one.",
+    "sentenceCount": "{{count}} sentences",
+    "history": "Reading history",
+    "historyEmpty": "No stories read yet.",
+    "trend": "Speed over time",
+    "best": "best"
   }
 }
