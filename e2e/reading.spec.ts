@@ -117,3 +117,66 @@ test("a story tapped straight through is not recorded", async ({ page }) => {
   await page.goto("/reading/history");
   await expect(page.getByText("Još nema pročitanih priča.")).toBeVisible();
 });
+
+test("can be read start to finish with the keyboard alone", async ({
+  page,
+}) => {
+  await page.goto(STORY);
+
+  for (let i = 0; i < 5; i++) {
+    await page.waitForTimeout(800);
+    await page.keyboard.press("Space");
+  }
+
+  await expect(
+    page.getByRole("heading", { name: /Tko ima loptu/ }),
+  ).toBeVisible();
+  // Nothing is focused until an arrow is pressed, so a stray Space on arrival
+  // cannot answer the question.
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByText("Pročitano!")).toBeVisible();
+});
+
+test("left arrow re-reads the line instead of advancing", async ({ page }) => {
+  await page.goto(STORY);
+  const first = page.getByText("Maca je mala.");
+  await expect(first).toHaveAttribute("data-current", "true");
+
+  await page.keyboard.press("ArrowLeft");
+  await expect(first).toHaveAttribute("data-current", "true");
+
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByText("Maca ima loptu.")).toHaveAttribute(
+    "data-current",
+    "true",
+  );
+});
+
+test("space activates the focused button, not the advance key", async ({
+  page,
+}) => {
+  await page.goto(STORY);
+  const first = page.getByText("Maca je mala.");
+
+  // Clicking Ponovi leaves it focused. Space must then re-read that line --
+  // the key handler has to stand down for a focused control, or it would
+  // advance instead and swallow the button's own activation.
+  await page.getByRole("button", { name: "Ponovi" }).click();
+  await expect(first).toHaveAttribute("data-current", "true");
+
+  await page.keyboard.press("Space");
+  await expect(first).toHaveAttribute("data-current", "true");
+});
+
+test("warm-up cards advance with the keyboard", async ({ page }) => {
+  await page.goto("/reading/warmup");
+  await expect(page.getByText("1/20")).toBeVisible();
+
+  await page.keyboard.press("Space");
+  await expect(page.getByText("2/20")).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByText("3/20")).toBeVisible();
+});

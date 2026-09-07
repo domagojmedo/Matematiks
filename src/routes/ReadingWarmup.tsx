@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useSettings } from "../contexts/SettingsContext";
 import { EXPOSURE_STEPS, useExposure } from "../hooks/useExposure";
+import { useReadingKeys } from "../hooks/useReadingKeys";
 import { STORIES } from "../lib/reading/readingStories";
 import {
   type Drill,
@@ -54,6 +55,8 @@ export function ReadingWarmup() {
     }
     setIndex(index + 1);
   };
+
+  useReadingKeys({ enabled: !done, next: onCardTap });
 
   return (
     <div className={`flex min-h-dvh w-full flex-col ${pageBg}`}>

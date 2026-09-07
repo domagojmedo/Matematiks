@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useOptionKeys } from "../../hooks/useReadingKeys";
 import type { ReadingQuestion } from "../../lib/reading/readingTypes";
 import type { Theme } from "../../lib/themes";
 
@@ -43,6 +44,11 @@ export function QuestionPad({
 
   const [picked, setPicked] = useState<number | null>(null);
   const revealTimer = useRef<number | null>(null);
+  const optionButtons = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Arrows move focus between options; Enter and Space then activate the
+  // focused button natively. Disabled once an answer is in.
+  useOptionKeys({ enabled: picked === null, buttons: optionButtons });
 
   /**
    * Cancel the pending reveal on unmount.
@@ -83,7 +89,7 @@ export function QuestionPad({
       </h2>
 
       <div className="flex flex-col gap-3">
-        {order.map((originalIndex) => {
+        {order.map((originalIndex, position) => {
           const option = question.options[originalIndex];
           const isCorrect = originalIndex === question.expectedIndex;
           const revealed = picked !== null;
@@ -106,6 +112,9 @@ export function QuestionPad({
             <button
               key={option}
               type="button"
+              ref={(node) => {
+                optionButtons.current[position] = node;
+              }}
               disabled={revealed}
               onClick={() => choose(originalIndex)}
               className={`min-h-16 rounded-2xl px-5 py-4 text-left text-lg font-bold ring-2 shadow-sm transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 md:text-xl ${tone} ${theme.primaryFocus} ${uppercase ? "uppercase" : ""}`}

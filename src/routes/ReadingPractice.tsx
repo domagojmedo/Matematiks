@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { QuestionPad } from "../components/reading/QuestionPad";
 import { StoryPage, VerdictPad } from "../components/reading/StoryPage";
 import { useSettings } from "../contexts/SettingsContext";
+import { useReadingKeys } from "../hooks/useReadingKeys";
 import { useReadingRound } from "../hooks/useReadingRound";
 import { slowestSentence } from "../lib/reading/readingStats";
 import type { Story } from "../lib/reading/readingTypes";
@@ -38,6 +39,23 @@ function ReadingRound({
   const round = useReadingRound(story);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const uppercase = settings.readingCase === "upper";
+
+  useReadingKeys({
+    enabled: round.phase === "reading" && !confirmLeave,
+    next: round.nextSentence,
+    repeat: round.repeatSentence,
+  });
+
+  // Escape backs out of the leave dialog. Deliberately not bound to *open* it:
+  // a child hitting Escape mid-story should not be shown an exit prompt.
+  useEffect(() => {
+    if (!confirmLeave) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setConfirmLeave(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [confirmLeave]);
 
   const pageBg = settings.dark ? theme.pageBgDark : theme.pageBg;
   const progress =
